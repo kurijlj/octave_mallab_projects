@@ -1,6 +1,6 @@
 % =============================================================================
-% Image Histogram - Simple histogram calculation algorithm for 8 bit depth and
-%                   16 bit depth images.
+% DICOM Image Histogram - Simple histogram calculation algorithm for
+%                         DICOM images.
 %
 %  Copyright (C) 2021 Ljubomir Kurij <ljubomir_kurij@protonmail.com>
 %
@@ -24,7 +24,7 @@
 %
 % 2021-09-18 Ljubomir Kurij <ljubomir_kurij@protonmail.com
 %
-% * imhist.m: created.
+% * dicom_imhist.m: created.
 %
 % =============================================================================
 
@@ -41,55 +41,26 @@
 
 % /////////////////////////////////////////////////////////////////////////////
 %
-% function imhist(img)
+% function dicom_imhist(img)
 %
 % It takes a raw dicom image and applies the linear window level transfer
 % function to it for on screen display purposes.
 %
 % /////////////////////////////////////////////////////////////////////////////
 
-function result = imhist (img)
+function result = dicom_imhist (img)
     height      = size(img)(1);
     width       = size(img)(2);
-    samples     = 1;
-    bins        = NaN;
-    depth       = class(img);
-
-    if(2 < size(size(img))(2))
-        samples = size(img)(3);
-    endif;
-
-    switch(depth)
-        case "uint8"
-            bins = 16;
-
-        case "uint16"
-            bins = 32;
-
-        otherwise
-            error(
-                "imhsit: Unsupported depth",
-                "Pixel depth unsupported"
-                );
-
-    endswitch;
-
-    result = zeros(bins,samples);
+    depth       = max(max(img)) - min(min(img));
+    exponent    = floor(log(depth)/log(2)) + 1;
+    bins        = 4*exponent;
+    result      = zeros(bins,1);
 
     for j = 1:height
         for i = 1:width
-            if(1 < samples)
-                for k = 1:samples
-                    rho = img(j,i,k);
-                    bin = floor(rho/(bins + 1)) + 1;
-                    result(bin,k) = result(bin,k) + 1;
-                endfor;
-            else
-                rho = img(j,i);
-                bin = floor(rho/(bins + 1)) + 1;
-                result(bin,1) = result(bin,1) + 1;
-
-            endif;
+            rho = img(j,i);
+            bin = floor(rho/(bins + 1)) + 1;
+            result(bin,1) = result(bin,1) + 1;
 
         end;
 
