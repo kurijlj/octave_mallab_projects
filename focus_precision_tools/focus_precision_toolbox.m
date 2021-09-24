@@ -70,34 +70,21 @@ printf("Focus Precision Toolbox v%s\n\n", kVersionString);
 
 % /////////////////////////////////////////////////////////////////////////////
 %
-% function load_axis_data()
+% function load_axis_data(file1, file2)
 %
 % TODO: Put function description here
 %
 % /////////////////////////////////////////////////////////////////////////////
 
-function load_axis_data(file1, file2)
+function result = load_axis_data(file1, file2)
+    % Initialize return variable
+    result.raw_1 = NaN;
+    result.raw_2 = NaN;
+
+
     % Do some basic sanity checks
-    match_pattern = "[0-9]{4}-[0-9]{2}-[0-9]{2}_[XYZ]_#[12]\.dat";
 
-    if(~regexp(file1, match_pattern))
-        error(
-            "load_axis_data: Invalid data file",
-            "File '%s' is not valid focus precision data file",
-            file1
-            );
-
-    endif;
-
-    if(~regexp(file2, match_pattern))
-        error(
-            "load_axis_data: Invalid data file",
-            "File '%s' is not valid focus precision data file",
-            file1
-            );
-
-    endif;
-
+    % First check if we are dealing with existing regular files
     if(~isfile(file1))
         error(
             "load_axis_data: File does not exist",
@@ -116,6 +103,162 @@ function load_axis_data(file1, file2)
 
     endif;
 
-    printf("%s\n%s\n\n", file1, file2);
+    % Then check if files have regular file names
+    match_name = "[0-9]{4}-[0-9]{2}-[0-9]{2}_[XYZ]_#[12]";
+    match_ext  = ".dat";
+
+    [dir, filename, extension] = fileparts(file1);
+
+    if(~strcmp(match_ext, extension) || ~regexp(filename, match_name))
+        error(
+            "load_axis_data: Invalid data file",
+            "File '%s' is not valid focus precision data file",
+            file1
+            );
+
+    endif;
+
+    [dir, filename, extension] = fileparts(file2);
+
+    if(~strcmp(match_ext, extension) || ~regexp(filename, match_name))
+        error(
+            "load_axis_data: Invalid data file",
+            "File '%s' is not valid focus precision data file",
+            file2
+            );
+
+    endif;
+
+    % Load data from file1
+    fid = fopen(file1, 'r');
+
+    % First let's count how many data rows we have
+    rows = 1;
+    while (~feof(fid))
+        line = fgetl(fid);
+        rows = rows + 1;
+    endwhile;
+
+    if(190 >= rows)
+        error(
+            "load_axis_data: Too few data points",
+            "File '%s' has incomplete data set",
+            file1, rows
+            );
+
+    endif;
+
+    % Reset file position to beginning of the file
+    fseek(fid, 0);
+
+    % Allocate storage for data points
+    result.raw_1 = zeros(rows - 1, 2);
+
+    % Read and store data
+    row = 1;
+    while (~feof(fid))
+        line = fgetl(fid);
+        fields = strsplit(line);
+
+        % Data in file must be arranged in exactly two columns
+        if(2 ~= size(fields)(2))
+        error(
+            "load_axis_data: Invalid number of data fields",
+            "File '%s' data integrity failed in row %s",
+            file1, rows
+            );
+
+        endif;
+
+        % Try to convert data strings to double
+        x = str2double(fields(1));
+        y = str2double(fields(2));
+
+        % Check if conversion was successful
+        if(NaN == x || NaN == y)
+        error(
+            "load_axis_data: Invalid data type",
+            "File '%s' data integrity failed in row %s",
+            file1, rows
+            );
+
+        endif;
+
+        % Data integrity is a pass. Save the data
+        result.raw_1(row, 1) = x / 1000;  % Divide by 1000 to get mm
+        result.raw_1(row, 2) = y;
+
+        row = row + 1;
+
+    endwhile;
+
+    fclose(fid);
+
+    % Load data from file2
+    fid = fopen(file2, 'r');
+
+    % Reset row counter
+    rows = 1;
+
+    % Count number of rows
+    while (~feof(fid))
+        line = fgetl(fid);
+        rows = rows + 1;
+    endwhile;
+
+    if(190 >= rows)
+        error(
+            "load_axis_data: Too few data points",
+            "File '%s' has incomplete data set",
+            file2, rows
+            );
+
+    endif;
+
+    % Reset file position to beginning of the file
+    fseek(fid, 0);
+
+    % Allocate storage for data points
+    result.raw_2 = zeros(rows - 1, 2);
+
+    % Read and store data
+    row = 1;
+    while (~feof(fid))
+        line = fgetl(fid);
+        fields = strsplit(line);
+
+        % Data in file must be arranged in exactly two columns
+        if(2 ~= size(fields)(2))
+        error(
+            "load_axis_data: Invalid number of data fields",
+            "File '%s' data integrity failed in row %s",
+            file2, rows
+            );
+
+        endif;
+
+        % Try to convert data strings to double
+        x = str2double(fields(1));
+        y = str2double(fields(2));
+
+        % Check if conversion was successful
+        if(NaN == x || NaN == y)
+        error(
+            "load_axis_data: Invalid data type",
+            "File '%s' data integrity failed in row %s",
+            file2, rows
+            );
+
+        endif;
+
+        % Data integrity is a pass. Save the data
+        result.raw_2(rows - row, 1) = x / 1000;  % Divide by 1000 to get mm
+        result.raw_2(rows - row, 2) = y;
+
+        row = row + 1;
+
+    endwhile;
+
+    fclose(fid);
 
 endfunction;
