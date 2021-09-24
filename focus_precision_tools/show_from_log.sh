@@ -58,22 +58,17 @@
 #
 #//////////////////////////////////////////////////////////////////////////////
 function print_usage {
-	echo -e "Usage: slckaddpkgs.sh [OPTION]" >&2
-	echo -e "" >&2
-	echo -e "    -l [LOG_NAME]      file path to a log from which to extract data" >&2
-	echo -e "" >&2
-	echo -e "    -a [AXIS]          it can take one of the following char values:">&2
-	echo -e "                       'X', 'Y' or 'Z' representing axis to print measurement" >&2
-	echo -e "                       results for" >&2
-	echo -e "" >&2
-	echo -e "    -m [MSRNO]         it can take one of the following integer values:" >&2
-	echo -e "                       1 or 2 representing exact measurement to print" >&2
-	echo -e "                       along given axis" >&2
-	echo -e "" >&2
-	echo -e "    -h                 give this help list" >&2
-	echo -e "" >&2
-	echo -e "Report bugs to ljubomir_kurij@protonmail.com." >&2
-	echo -e "" >&2
+    printf "Usage: show_from_log [OPTION]\n
+        -l [LOG_NAME]      file path to a log from which to extract data\n
+        -a [AXIS]          it can take one of the following char values:
+                           'X', 'Y' or 'Z' representing axis to print
+                           measurement results for\n
+        -m [MSRNO]         it can take one of the following integer values:
+                           1 or 2 representing exact measurement to print
+                           along given axis\n
+        -V                 show version info\n
+        -h                 give this help list\n
+Report bugs to ljubomir_kurij@protonmail.com.\n\n"
 }
 
 
@@ -85,11 +80,10 @@ function print_usage {
 #
 #//////////////////////////////////////////////////////////////////////////////
 function print_version {
-	echo -e "show_from_log.sh 1.0 Copyright (C) 2021 Ljubomir Kurij." >&2
-	echo -e "License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>" >&2
-	echo -e "This is free software: you are free to change and redistribute it." >&2
-	echo -e "There is NO WARRANTY, to the extent permitted by law." >&2
-	echo -e "" >&2
+    printf "show_from_log.sh 1.0 Copyright (C) 2021 Ljubomir Kurij.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.\n\n"
 }
 
 
@@ -103,22 +97,28 @@ function print_version {
 [[ 0 = $# ]] && print_usage && exit 1
 
 # User input storage variables
-LOG_NAME=""  # Log file name
-AXIS="X"      # Axis selection string
-MSRNO=1      # MEasurement selection
+LOG_NAME=""       # Log file name
+LOG_DATE=""       # Log file date
+OUT_FILE_NAME=""  # File to store filtered data to
+AXIS="X"          # Axis selection string
+POS_DATA_INDEX=2  # Index of position data column in log
+MSRNO="1"         # MEasurement selection
 
-while getopts ":a:l:m:hv" opt; do
+while getopts ":a:l:m:hV" opt; do
     case "$opt" in
         a)
             case "$OPTARG" in
                 X)
                     AXIS="X"
+                    POS_DATA_INDEX=2
                     ;;
                 Y)
                     AXIS="Y"
+                    POS_DATA_INDEX=3
                     ;;
                 Z)
                     AXIS="Z"
+                    POS_DATA_INDEX=4
                     ;;
                 *)
                     print_usage
@@ -129,18 +129,19 @@ while getopts ":a:l:m:hv" opt; do
         l)
             if [[ -s "$OPTARG" ]]; then
                 LOG_NAME="$OPTARG"
+                LOG_DATE=$(printf "%s" "$LOG_NAME" | egrep -io "[0-9]{4}-[0-9]{2}-[0-9]{2}")
             else
-                echo -e "show_from_log: File $OPTARG does not exist or is empty!" >&2
+                printf "show_from_log: File %s does not exist or is empty!" "$OPTARG"
                 exit 1
             fi
             ;;
         m)
             case "$OPTARG" in
                 1)
-                    MSRNO=1
+                    MSRNO="1"
                     ;;
                 2)
-                    MSRNO=2
+                    MSRNO="2"
                     ;;
                 *)
                     print_usage
@@ -150,9 +151,11 @@ while getopts ":a:l:m:hv" opt; do
             ;;
         h)
             print_usage
+            exit 0
             ;;
-        v)
+        V)
             print_version
+            exit 0
             ;;
         *)
             print_usage
@@ -161,4 +164,10 @@ while getopts ":a:l:m:hv" opt; do
     esac
 done
 
-echo -e "$LOG_NAME $AXIS #$MSRNO" >&2
+# Format output file name
+printf -v OUT_FILE_NAME "%s_%s_#%s.dat" "$LOG_DATE" "$AXIS" "$MSRNO"
+
+# Send results to standard output and to a data file
+printf -v MATCH_PATTERN "%s1-%s" "$AXIS" "$MSRNO"
+#printf "%s\n\n" "$MATCH_PATTERN"
+cat "$LOG_NAME" | tr -d '",' | awk -v p="$MATCH_PATTERN" -v d=$POS_DATA_INDEX 'p == $1 {if (2 == d) print $2, $5; if (3 == d) print $3, $5; if (4 == d) print $4, $5}' | tee "$OUT_FILE_NAME"
