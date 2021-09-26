@@ -81,10 +81,26 @@ function result = load_axis_data(file1, file2)
     result.raw_1 = NaN;
     result.raw_2 = NaN;
 
-
     % Do some basic sanity checks
 
-    % First check if we are dealing with existing regular files
+    % First check if both arguments are supplied
+    if(~file1)
+        error(
+            "load_axis_data: Missing argument",
+            "Argument 'file1' is missing"
+            );
+
+    endif;
+
+    if(~file2)
+        error(
+            "load_axis_data: Missing argument",
+            "Argument 'file2' is missing"
+            );
+
+    endif;
+
+    % Then check if we are dealing with existing regular files
     if(~isfile(file1))
         error(
             "load_axis_data: File does not exist",
@@ -259,6 +275,119 @@ function result = load_axis_data(file1, file2)
 
     endwhile;
 
+    fclose(fid);
+
+endfunction;
+
+
+% /////////////////////////////////////////////////////////////////////////////
+%
+% function load_profile_from_csv(file1)
+%
+% TODO: Put function description here
+%
+% /////////////////////////////////////////////////////////////////////////////
+
+function result = load_profile_from_csv(file_name, dpi=400, delimiter=",")
+    % Initialize return variable
+    result = NaN;
+
+    % Do some basic sanity checks
+
+    % First check if both arguments are supplied
+    if(~file_name)
+        error(
+            "load_profile_from_csv: Missing argument",
+            "Argument 'file_name' is missing"
+            );
+
+    endif;
+
+    % Then check if we are dealing with existing regular files
+    if(~isfile(file_name))
+        error(
+            "load_profile_from_csv: File does not exist",
+            "File '%s' does not exist or not a regular file",
+            file_name
+            );
+
+    endif;
+
+    % Calculate factor for converting pixels to milimeters according to
+    % user supplied dpi
+    pix_to_mm = 25.4 / dpi;
+
+    % Load data from file
+
+    % Load data from file
+    fid = fopen(file_name, 'r');
+
+    % Set row counter
+    rows = 1;
+
+    % Count number of rows so we can allocate data storage structure
+    while (~feof(fid))
+        line = fgetl(fid);
+        rows = rows + 1;
+    endwhile;
+
+    % We hit 'feof' one iteration before conditional expression evaluation, so
+    % we have to subtract one from row count. Also 'csv' files created by ImageJ
+    % contain headers, and we don't need them.
+    rows = rows - 2;
+
+    % Reset file position to beginning of the file
+    fseek(fid, 0);
+
+    % Allocate storage for data points. We assume only two data columns
+    result = zeros(rows, 2);
+
+    % Read and store data
+
+    % Set row counter so we can index row position in the data storage structure
+    row = 1;
+
+    % Read header line to put file pointer at the data rows beginning
+    fgetl(fid);
+
+    while (~feof(fid))
+        line = fgetl(fid);
+        fields = strsplit(line, delimiter);
+
+        % Data in file must be arranged in exactly two columns
+        if(2 ~= size(fields)(2))
+        error(
+            "load_profile_from_csv: Invalid number of data fields",
+            "File '%s' data integrity failed in row %s",
+            file1, rows
+            );
+
+        endif;
+
+        % Try to convert data strings to double
+        x = str2double(fields(1));
+        y = str2double(fields(2));
+
+        % Check if conversion was successful
+        if(NaN == x || NaN == y)
+        error(
+            "load_profile_from_csv: Invalid data type",
+            "File '%s' data integrity failed in row %s",
+            file1, rows
+            );
+
+        endif;
+
+        % Data integrity is a pass. Save the data
+        result(row, 1) = x * pix_to_mm;  % Convert position to mm
+        result(row, 2) = y;
+
+        row = row + 1;
+
+    endwhile;
+
+
+    % We have finished loading
     fclose(fid);
 
 endfunction;
