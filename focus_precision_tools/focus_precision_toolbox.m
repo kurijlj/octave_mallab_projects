@@ -45,6 +45,7 @@
 %
 % * Applied Medical Image Processing 2nd Ed, CRC Press
 % * DICOM is Easy <https://dicomiseasy.blogspot.com/>
+% * 1-D Haar Wavelets <https://www.numerical-tours.com/matlab/wavelet_1_haar1d/>
 %
 % =============================================================================
 
@@ -72,7 +73,7 @@ printf("Focus Precision Toolbox v%s\n\n", kVersionString);
 %
 % function load_axis_data(file1, file2)
 %
-% TODO: Put function description here
+%  TODO: Put function description here
 %
 % /////////////////////////////////////////////////////////////////////////////
 
@@ -284,7 +285,7 @@ endfunction;
 %
 % function load_profile_from_csv(file1)
 %
-% TODO: Put function description here
+%  TODO: Put function description here
 %
 % /////////////////////////////////////////////////////////////////////////////
 
@@ -390,4 +391,44 @@ function result = load_profile_from_csv(file_name, dpi=400, delimiter=",")
     % We have finished loading
     fclose(fid);
 
+endfunction;
+
+
+% =============================================================================
+%
+% Haar Wavelet transform section
+%
+% =============================================================================
+
+sample_signal = [4, 6, 10, 12, 8, 6, 5, 5];
+
+
+% /////////////////////////////////////////////////////////////////////////////
+%
+% function fht(data) - Forward Haar Transform
+%
+%  TODO: Put function description here
+%
+% /////////////////////////////////////////////////////////////////////////////
+
+function result = fht(data)
+    result = zeros(1, length(data));
+    result(1:length(data)/2) = [data(1:2:length(data)) + data(2:2:length(data))] / sqrt(2);
+    result(length(data)/2+1:length(data)) = [data(1:2:length(data)) - data(2:2:length(data))] / sqrt(2);
+endfunction;
+
+
+% /////////////////////////////////////////////////////////////////////////////
+%
+% function iht(data) - Inverse Haar Transform
+%
+%  TODO: Put function description here
+%
+% /////////////////////////////////////////////////////////////////////////////
+
+function result = iht(data, diffs)
+    dim = 2*length(data);
+    result = zeros(1, dim);
+    result(1:2:dim) = [data + diffs]/sqrt(2);
+    result(2:2:dim) = [data - diffs]/sqrt(2);
 endfunction;
