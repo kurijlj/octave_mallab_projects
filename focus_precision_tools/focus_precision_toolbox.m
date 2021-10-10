@@ -411,10 +411,55 @@ sample_signal = [4, 6, 10, 12, 8, 6, 5, 5];
 %
 % /////////////////////////////////////////////////////////////////////////////
 
-function result = fht(data)
+function result = fht_old(data)
     result = zeros(1, length(data));
     result(1:length(data)/2) = [data(1:2:length(data)) + data(2:2:length(data))] / sqrt(2);
     result(length(data)/2+1:length(data)) = [data(1:2:length(data)) - data(2:2:length(data))] / sqrt(2);
+endfunction;
+
+
+function [a, d] = fht(signal)
+    even_signal = NaN;   % Keeps input signal data
+    a = NaN;             % Keeps trend signal data
+    d = NaN;             % Keeps signal fluctuations data
+    l = length(signal);  % Keeps length of the input signal
+    h = floor(l / 2);    % Keeps calculated length of the trend
+                         % and fluctuations arrays
+
+    % Check if signal have even number of samples
+    if (l / 2 ~= h)
+        % We are dealing with a signal with odd number of samples. To deal with
+        % this we will extend signal by one by copying the last sample.
+        even_signal = zeros(1, l + 1);   % Allocate memory for the extended signal
+        even_signal(1:l) = signal(:);    % Copy input signal to new storage
+        even_signal(l + 1) = signal(l);  % Copy the last sample at the end
+        l = length(even_signal);         % Set new input signal length
+        h = floor(l / 2);                % Set new length for the resulting arrays
+
+    else
+        % Signal is of even number of samples
+        even_signal = signal;
+
+    endif;
+
+    % Check if we are dealing with signal with at least 2 samples
+    if(2 > l)
+        error(
+            "fhtv2: Too few data samples",
+            "Signal does not contain enough data samples to apply transform"
+            );
+
+        % Return empty structures and bail out
+        return;
+
+    endif;
+
+    % Allocate memory for the trend and fluctuations arrays
+    a = zeros(1, h);
+    d = zeros(1, h);
+    a(:) = [even_signal(1:2:(l-1)) + even_signal(2:2:l)] / sqrt(2);
+    d(:) = [even_signal(1:2:(l-1)) - even_signal(2:2:l)] / sqrt(2);
+
 endfunction;
 
 
@@ -426,9 +471,9 @@ endfunction;
 %
 % /////////////////////////////////////////////////////////////////////////////
 
-function result = iht(data, diffs)
-    dim = 2*length(data);
+function result = iht(trend, fluctuations)
+    dim = 2*length(trend);
     result = zeros(1, dim);
-    result(1:2:dim) = [data + diffs]/sqrt(2);
-    result(2:2:dim) = [data - diffs]/sqrt(2);
+    result(1:2:dim) = [trend + fluctuations]/sqrt(2);
+    result(2:2:dim) = [trend - fluctuations]/sqrt(2);
 endfunction;
