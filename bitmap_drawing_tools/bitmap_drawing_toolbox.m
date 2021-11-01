@@ -277,3 +277,41 @@ function result = draw_circle_from_center(canvas, x=1, y=1, r=1, intensity=255)
     result = canvas;
 
 endfunction;
+
+
+% /////////////////////////////////////////////////////////////////////////////
+%
+% function draw_circle_from_center(canvas, x, y, r, intensity)
+%
+% It uses Bresenham's line algorithm to draw diagonal line across canvas. For
+% details see: https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm
+%
+%  TODO: Put function description here
+%
+% /////////////////////////////////////////////////////////////////////////////
+
+function result = make_test_pixmap(width, height)
+    % Basic sanity checking
+    if(width < 1 || height < 1) return; endif;
+
+    % Initialize return value
+    result = zeros(height, width);
+
+    dx = width;
+    dy = height;
+    D = 2*dy - dx;
+    y = 0;
+
+    for x = 0:width
+        result = draw_point(result, x, y);
+
+        if(D > 0)
+            y = y + 1;
+            D = D - 2*dx;
+        endif;
+
+        D = D + 2*dy;
+
+    endfor;
+
+endfunction;
