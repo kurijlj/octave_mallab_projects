@@ -78,31 +78,38 @@ pkg load image;
 
 % /////////////////////////////////////////////////////////////////////////////
 %
-% function optical_density(image) - image to optical density
+% function absolute_od(image) - image to optical density
 %
 % Convert 16 bit grayscale image to optical density using formula:
 %
 %       OD = log10(I0/I)
 %
-% Input image must be single channel grayscale image of type uint16 (16 bits).
-% Otherwise function returns NaN and reports error.
+% where I0 equals to maximum pixel intensity of 2^16-1 = 65535. Input image
+% must be single channel grayscale image of type uint16 (16 bits). Otherwise
+% function returns NaN and reports error.
 %
 % /////////////////////////////////////////////////////////////////////////////
 
-function result = optical_density(image)
+function result = absolute_od(image)
+    result = NaN;
+
     if ("uint16" != class(image))
         error(
-            "optical_density: Invalid data type!",
+            "absolute_od: Invalid data type!",
             "Given image data not of type 'uint16'."
         );
+
+        return;
 
     endif;
 
     if (2 != size(size(image))(2))
         error(
-            "optical_density: Not a grayscale image!",
+            "absolute_od: Not a grayscale image!",
             "Given image has more than one color channel."
         );
+
+        return;
 
     endif;
 
@@ -112,20 +119,98 @@ function result = optical_density(image)
     % Allocate memory for the result
     result = zeros(width, height);
 
+    printf("processing:     ");
+
     for i = 1:width
         for j = 1:height
             result(i,j) = log10(65535.0 / double(image(i,j)));
 
         endfor;
 
+        printf("\b\b\b\b\b%4d%%", uint32((i / width) * 100))
+
     endfor;
+
+    printf("\n");
 
 endfunction;
 
 
 % /////////////////////////////////////////////////////////////////////////////
 %
-% function optical_density_mean(image, fit)
+% function relative_od(ref, signal) - image to optical density
+%
+% Convert 16 bit grayscale image to optical density using using reference, and
+% image containing signal and formula:
+%
+%       OD = log10(I0/I)
+%
+% where I0 represents reference image and I represents image with signal.
+% Reference and input images must be single channel grayscale images of type
+% uint16 (16 bits) and both images must be with same dimensions (equal width and
+% height). Otherwise function returns NaN and reports error.
+%
+% /////////////////////////////////////////////////////////////////////////////
+
+function result = relative_od(ref, signal)
+    result = NaN;
+
+    if (("uint16" != class(ref)) || ("uint16" != class(signal)))
+        error(
+            "relative_od: Invalid data type!",
+            "Given image data not of type 'uint16'."
+        );
+
+        return;
+
+    endif;
+
+    if ((2 != size(size(ref))(2)) || (2 != size(size(signal))(2)))
+        error(
+            "realtive_od: Not a grayscale image!",
+            "Given image has more than one color channel."
+        );
+
+        return;
+
+    endif;
+
+    if ((size(ref)(1) != size(signal)(1)) || (size(ref)(2) != size(signal)(2)))
+        error(
+            "relative_od: Dimensions mismatch!",
+            "Reference and signal images are not of the equal dimensions."
+        );
+
+        return;
+
+    endif;
+
+    width  = size(ref)(1);
+    height = size(ref)(2);
+
+    % Allocate memory for the result
+    result = zeros(width, height);
+
+    printf("processing:     ");
+
+    for i = 1:width
+        for j = 1:height
+            result(i,j) = log10(double(ref(i,j)) / double(signal(i,j)));
+
+        endfor;
+
+        printf("\b\b\b\b\b%4d%%", uint32((i / width) * 100))
+
+    endfor;
+
+    printf("\n");
+
+endfunction;
+
+
+% /////////////////////////////////////////////////////////////////////////////
+%
+% function od_mean(image, fit)
 % - calculate average optical density values
 %
 % Calculate pixelwise average optical density from optical density matrix,
@@ -133,7 +218,7 @@ endfunction;
 %
 % /////////////////////////////////////////////////////////////////////////////
 
-function result = optical_density_mean(od, fit="median")
+function result = od_mean(od, fit="median")
     if("median" == fit)
         result = medfilt2(od, [10 10]);
 
@@ -150,7 +235,7 @@ endfunction;
 
 % /////////////////////////////////////////////////////////////////////////////
 %
-% function optical_density_std(image, fit)
+% function od_stdev(image, fit)
 % - calculate standard deviation of optical density values
 %
 % Calculate pixelwise standard deviation of optical density values from optical
@@ -159,7 +244,7 @@ endfunction;
 %
 % /////////////////////////////////////////////////////////////////////////////
 
-function result = optical_density_std(od, fit="median")
+function result = od_stdev(od, fit="median")
     if("median" == fit)
         odm = medfilt2(od, [10 10]);
 
