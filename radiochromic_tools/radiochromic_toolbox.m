@@ -131,7 +131,7 @@ function result = absolute_od(image)
 
     endfor;
 
-    printf("\n");
+    printf("\b\b\b\b\b Completed!\n");
 
 endfunction;
 
@@ -203,7 +203,7 @@ function result = relative_od(ref, signal)
 
     endfor;
 
-    printf("\n");
+    printf("\b\b\b\b\b Completed!\n");
 
 endfunction;
 
@@ -287,8 +287,10 @@ sample_signal = [4, 6, 10, 12, 8, 6, 5, 5];
 
 function result = fht_old(data)
     result = zeros(1, length(data));
-    result(1:length(data)/2) = [data(1:2:length(data)) + data(2:2:length(data))] / sqrt(2);
-    result(length(data)/2+1:length(data)) = [data(1:2:length(data)) - data(2:2:length(data))] / sqrt(2);
+    result(1:length(data)/2) ...
+        = [data(1:2:length(data)) + data(2:2:length(data))] / sqrt(2);
+    result(length(data)/2+1:length(data)) ...
+        = [data(1:2:length(data)) - data(2:2:length(data))] / sqrt(2);
 endfunction;
 
 
@@ -350,4 +352,159 @@ function result = iht(trend, fluctuations)
     result = zeros(1, dim);
     result(1:2:dim) = [trend + fluctuations]/sqrt(2);
     result(2:2:dim) = [trend - fluctuations]/sqrt(2);
+endfunction;
+
+
+
+
+% =============================================================================
+%
+% GUI section
+%
+% =============================================================================
+
+% /////////////////////////////////////////////////////////////////////////////
+%
+% function cross_plot - plot cross profiles for given image
+%
+%  TODO: Put function description here
+%
+% /////////////////////////////////////////////////////////////////////////////
+
+function cross_plot(img, x_center=-1, y_center=-1)
+    width  = size(img)(2);
+    height = size(img)(1);
+
+    % If not supplied calculate the center of image
+    if(0 > x_center || width < x_center)
+        x_center = floor(double(width / 2));
+
+    endif;
+
+    if(0 > y_center || height < y_center)
+        y_center = floor(double(height / 2));
+
+    endif;
+
+    subplot(2, 1, 1);
+    plot([1:width], img(y_center,:));
+    xlabel("Position [pixels]");
+    ylabel("OD");
+    title("X Profile");
+    subplot(2, 1, 2);
+    plot([1:height], img(:,x_center));
+    xlabel("Position [pixels]");
+    ylabel("OD");
+    title("Y Profile");
+
+endfunction;
+
+
+% /////////////////////////////////////////////////////////////////////////////
+%
+% function cross_plot_compare - plot cross profiles for given image
+%
+%  TODO: Put function description here
+%
+% /////////////////////////////////////////////////////////////////////////////
+
+function cross_plot_compare(img1, img2, centers=[-1, -1, -1, -1])
+    width1  = size(img1)(2);
+    height1 = size(img1)(1);
+    width2  = size(img2)(2);
+    height2 = size(img2)(1);
+
+    % If not supplied calculate the centers of images
+    if(0 > centers(1) || width1 < centers(1))
+        centers(1) = floor(double(width1 / 2));
+
+    endif;
+
+    if(0 > centers(2) || height1 < centers(2))
+        centers(2) = floor(double(height1 / 2));
+
+    endif;
+
+    if(0 > centers(3) || width2 < centers(3))
+        centers(3) = floor(double(width2 / 2));
+
+    endif;
+
+    if(0 > centers(4) || height2 < centers(4))
+        centers(4) = floor(double(height2 / 2));
+
+    endif;
+
+    % Plot cross profiles
+    subplot(2, 1, 1);
+    plot([1:width1] - centers(1), ...
+        img1(centers(2),:), ...
+        [1:width2] - centers(3), ...
+        img2(centers(4),:), ...
+        [0, 0], ...
+        [0, max([max(img1(centers(2),:)), max(img2(centers(4),:))])], ...
+        color="k" ...
+        );
+    legend("Profile #1", "Profile #2");
+    xlabel("Position [pixels]");
+    ylabel("OD");
+    title("Cross Profile");
+
+    % Plot inline profiles
+    subplot(2, 1, 2);
+    plot([1:height1] - centers(2), ...
+        img1(:,centers(1)), ...
+        [1:height2] - centers(4), ...
+        img2(:,centers(3)), ...
+        [0, 0], ...
+        [0, max([max(img1(:,centers(1))), max(img2(:,centers(3)))])], ...
+        color="k" ...
+        );
+    legend("Profile #1", "Profile #2");
+    xlabel("Position [pixels]");
+    ylabel("OD");
+    title("Inline Profile");
+
+endfunction;
+
+
+% /////////////////////////////////////////////////////////////////////////////
+%
+% function cross_plot_compare - plot cross profiles for given image
+%
+%  TODO: Put function description here
+%
+% /////////////////////////////////////////////////////////////////////////////
+
+function test_dialog()
+    MainFrm = figure ( ...
+        'position', [100, 100, 250, 350] ...
+        );
+
+    TitleFrm = axes ( ...
+      'position', [0, 0.8, 1, 0.2], ...
+      'color',    [0.9, 0.95, 1], ...
+      'xtick',    [], ...
+      'ytick',    [], ...
+      'xlim',     [0, 1], ...
+      'ylim',     [0, 1] ...
+      );
+
+    Title = text (0.05, 0.5, 'Preview Image', 'fontsize', 30);
+
+    ImgFrm = axes ( ...
+      'position', [0, 0.2, 1, 0.6], ...
+      'xtick',    [], ...
+      'ytick',    [], ...
+      'xlim',     [0, 1], ...
+      'ylim',     [0, 1] ...
+      );
+
+    ButtonFrm = uicontrol (MainFrm, ...
+      'style',    'pushbutton', ...
+      'string',   'OPEN THE IMAGE', ...
+      'units',    'normalized', ...
+      'position', [0, 0, 1, 0.2] ...
+      );
+
 endfunction;
