@@ -93,6 +93,7 @@ pkg load image;
 function result = absolute_od(image)
     result = NaN;
 
+    % Do basic sanity checking
     if ("uint16" != class(image))
         error(
             "absolute_od: Invalid data type!",
@@ -155,6 +156,7 @@ endfunction;
 function result = relative_od(ref, signal)
     result = NaN;
 
+    % Do basic sanity checking
     if (("uint16" != class(ref)) || ("uint16" != class(signal)))
         error(
             "relative_od: Invalid data type!",
@@ -204,6 +206,100 @@ function result = relative_od(ref, signal)
     endfor;
 
     printf("\b\b\b\b\b Completed!\n");
+
+endfunction;
+
+
+% /////////////////////////////////////////////////////////////////////////////
+%
+% function rc_hist(image, nbins)
+% - calculate histogram for given optical density and number of bins
+%
+% /////////////////////////////////////////////////////////////////////////////
+
+function result = rc_hist(od, nbins=1000)
+    result = NaN;
+
+    % Do basic sanity checking
+    if ("uint16" != class(od))
+        error(
+            "rc_hist: Invalid data type!",
+            "Given image data not of type 'uint16'."
+        );
+
+        return;
+
+    endif;
+
+    if (2 != size(size(od))(2))
+        error(
+            "rc_hist: Not a grayscale image!",
+            "Given image has more than one color channel."
+        );
+
+        return;
+
+    endif;
+
+    width  = size(od)(1);
+    height = size(od)(2);
+    depth = 65535;          % Range of pixel values
+    %depth = max(max(od)) - min(min(od));
+    bin_width = floor(depth / nbins);
+
+    % Allocate memory for the result
+    result = zeros(nbins, 1);
+
+    printf("processing:     ");
+
+    for i = 1:width
+        for j = 1:height
+            bin = floor(od(i, j)/(bin_width + 1)) + 1;
+            result(bin, 1) = result(bin, 1) + 1;
+
+        endfor;
+
+        printf("\b\b\b\b\b%4d%%", uint32((i / width) * 100))
+
+    endfor;
+
+    printf("\b\b\b\b\b Completed!\n");
+
+endfunction;
+
+
+% /////////////////////////////////////////////////////////////////////////////
+%
+% function rc_hist_plot(od, nbins)
+% - calculate and plot histogram for given optical density and number of bins
+%
+% /////////////////////////////////////////////////////////////////////////////
+
+function rc_hist_plot(od, nbins=1000)
+    % Do basic sanity checking
+    if ("uint16" != class(od))
+        error(
+            "rc_hist: Invalid data type!",
+            "Given image data not of type 'uint16'."
+        );
+
+        return;
+
+    endif;
+
+    if (2 != size(size(od))(2))
+        error(
+            "rc_hist: Not a grayscale image!",
+            "Given image has more than one color channel."
+        );
+
+        return;
+
+    endif;
+
+    h = rc_hist(od, nbins);
+    h = h / max(h);  % Normalize histogram for plotting
+    bar([1:nbins] * (65535/nbins), h);
 
 endfunction;
 
