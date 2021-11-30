@@ -57,6 +57,8 @@
 
 % We put dummy expression into scripts header to prevent Octave command line
 % enivornment to interpret it as a simple function file
+
+rctCurrentDir = "";  % Keeps track of the last directory accessd via rct_read routines
 kVersionString = "0.1";
 printf("Radiochromic Toolbox v%s\n\n", kVersionString);
 
@@ -78,7 +80,7 @@ pkg load image;
 
 % /////////////////////////////////////////////////////////////////////////////
 %
-% function absolute_od(image) - image to optical density
+% function rct_absolute_od(image) - image to optical density
 %
 % Convert 16 bit grayscale image to optical density using formula:
 %
@@ -90,7 +92,7 @@ pkg load image;
 %
 % /////////////////////////////////////////////////////////////////////////////
 
-function result = absolute_od(image)
+function result = rct_absolute_od(image)
     result = NaN;
 
     % Do basic sanity checking
@@ -139,7 +141,7 @@ endfunction;
 
 % /////////////////////////////////////////////////////////////////////////////
 %
-% function relative_od(ref, signal) - image to optical density
+% function rct_relative_od(ref, signal) - image to optical density
 %
 % Convert 16 bit grayscale image to optical density using using reference, and
 % image containing signal and formula:
@@ -153,7 +155,7 @@ endfunction;
 %
 % /////////////////////////////////////////////////////////////////////////////
 
-function result = relative_od(ref, signal)
+function result = rct_relative_od(ref, signal)
     result = NaN;
 
     % Do basic sanity checking
@@ -212,12 +214,12 @@ endfunction;
 
 % /////////////////////////////////////////////////////////////////////////////
 %
-% function rc_hist(image, nbins)
+% function rct_hist(image, nbins)
 % - calculate histogram for given optical density and number of bins
 %
 % /////////////////////////////////////////////////////////////////////////////
 
-function result = rc_hist(od, nbins=1000)
+function result = rct_hist(od, nbins=1000)
     result = NaN;
 
     % Do basic sanity checking
@@ -270,12 +272,12 @@ endfunction;
 
 % /////////////////////////////////////////////////////////////////////////////
 %
-% function rc_hist_plot(od, nbins)
+% function rct_hist_plot(od, nbins)
 % - calculate and plot histogram for given optical density and number of bins
 %
 % /////////////////////////////////////////////////////////////////////////////
 
-function rc_hist_plot(od, nbins=1000)
+function rct_hist_plot(od, nbins=1000)
     % Do basic sanity checking
     if ("uint16" != class(od))
         error(
@@ -306,7 +308,7 @@ endfunction;
 
 % /////////////////////////////////////////////////////////////////////////////
 %
-% function od_mean(image, fit)
+% function rct_od_mean(image, fit)
 % - calculate average optical density values
 %
 % Calculate pixelwise average optical density from optical density matrix,
@@ -314,7 +316,7 @@ endfunction;
 %
 % /////////////////////////////////////////////////////////////////////////////
 
-function result = od_mean(od, fit="median")
+function result = rct_od_mean(od, fit="median")
     if("median" == fit)
         result = medfilt2(od, [10 10]);
 
@@ -331,7 +333,7 @@ endfunction;
 
 % /////////////////////////////////////////////////////////////////////////////
 %
-% function od_stdev(image, fit)
+% function rct_od_stdev(image, fit)
 % - calculate standard deviation of optical density values
 %
 % Calculate pixelwise standard deviation of optical density values from optical
@@ -340,7 +342,7 @@ endfunction;
 %
 % /////////////////////////////////////////////////////////////////////////////
 
-function result = od_stdev(od, fit="median")
+function result = rct_od_stdev(od, fit="median")
     if("median" == fit)
         odm = medfilt2(od, [10 10]);
 
@@ -370,18 +372,18 @@ endfunction;
 %
 % =============================================================================
 
-sample_signal = [4, 6, 10, 12, 8, 6, 5, 5];
+rctSampleSignal = [4, 6, 10, 12, 8, 6, 5, 5];
 
 
 % /////////////////////////////////////////////////////////////////////////////
 %
-% function fht(data) - Forward Haar Transform
+% function rct_fht(data) - Forward Haar Transform
 %
 %  TODO: Put function description here
 %
 % /////////////////////////////////////////////////////////////////////////////
 
-function result = fht_old(data)
+function result = rct_fht_old(data)
     result = zeros(1, length(data));
     result(1:length(data)/2) ...
         = [data(1:2:length(data)) + data(2:2:length(data))] / sqrt(2);
@@ -390,7 +392,7 @@ function result = fht_old(data)
 endfunction;
 
 
-function [a, d] = fht(signal)
+function [a, d] = rct_fht(signal)
     even_signal = NaN;   % Keeps input signal data
     a = NaN;             % Keeps trend signal data
     d = NaN;             % Keeps signal fluctuations data
@@ -437,13 +439,13 @@ endfunction;
 
 % /////////////////////////////////////////////////////////////////////////////
 %
-% function iht(data) - Inverse Haar Transform
+% function rct_iht(data) - Inverse Haar Transform
 %
 %  TODO: Put function description here
 %
 % /////////////////////////////////////////////////////////////////////////////
 
-function result = iht(trend, fluctuations)
+function result = rct_iht(trend, fluctuations)
     dim = 2*length(trend);
     result = zeros(1, dim);
     result(1:2:dim) = [trend + fluctuations]/sqrt(2);
@@ -461,13 +463,141 @@ endfunction;
 
 % /////////////////////////////////////////////////////////////////////////////
 %
-% function cross_plot - plot cross profiles for given image
+% function rct_read_ref - read images containing reference signal scan
+%
+% Read data from image filenames list, extract red channel and calculate and
+% return mean pixel value of the red channel. It is assumed that user supplied 
+% scans of the same film cut. All images must bu 48 bit RGB images with
+% identical dimensions (height and width), otherwise function returns error.
+% First image in the list is used as reference image for dimensions.
+%
+% /////////////////////////////////////////////////////////////////////////////
+
+function [pixel_mean, pixel_std] = rct_read_ref(flist)
+    % Initialize result to error value
+    pixel_mean = NaN;
+    pixel_std = NaN;
+
+    % Do basic sanity checking
+    if("cell" != class(flist))
+        error(
+            "rct_read_ref: Invalid data type!",
+            "Given argument is not a cell array."
+        );
+
+        return;
+
+    endif;
+
+    nitems = length(flist);
+
+    if(0 == nitems)
+        error(
+            "rct_read_ref: Empty file list!",
+            "Given cell array contain no items"
+        );
+
+        return;
+
+    endif;
+
+    % Start reading images
+    r_width = 0;
+    r_height = 0;
+    r_samples = 0;
+    reds = cell(nitems);
+
+    for i = 1:nitems
+        printf("Reading image: %s\n", flist{i});
+        image = imread(flist{i});
+
+        % Check image data type
+        if (0 == strcmp("uint16", class(image)))
+            error(
+                "rct_read_ref: Invalid data type!",
+                "Image '%s' data not of type 'uint16'.",
+                flist{i}
+            );
+
+            return;
+
+        endif;
+
+        [height, width, samples] = size(image);
+
+        % If first red image set reference dimensions
+        if(0 == r_width)
+            r_height = height;
+            r_width = width;
+            r_samples = samples;
+
+        % Check if image dimensions match dimensions of the first image
+        elseif(r_height ~= height ...
+                    || r_width ~= width ...
+                    || r_samples ~= samples
+                )
+            error(
+                "rct_read_ref: Dimensions mismatch!",
+                "Image: %s dimensions do not match dimensions of the reference image.",
+                flist{i}
+            );
+
+            return;
+
+        endif;
+
+        % Check if we are dealing with RGB image (samples = 3)
+        if(3 ~= samples)
+            error(
+                "rct_read_ref: Invalid number of color samples!",
+                "Image '%s' is not an RGB image.",
+                flist{i}
+            );
+
+            return;
+
+        endif;
+
+        reds{i} = image(:,:,1);
+
+    endfor;
+
+    printf("Reading complete!\n");
+
+    printf("Calculating mean pixel value:     ");
+    pixel_mean = zeros(height, width);
+    pixel_std = zeros(height, width);
+
+    for j = 1:r_height
+        for i = 1:r_width
+            pixels = zeros(nitems, 1);
+            for k = 1:nitems
+                pixels(k) = reds{k}(j, i);
+            endfor;
+
+            pixel_mean(j, i) = mean(pixels);
+            pixel_std(j, i) = std(pixels);
+
+        endfor;
+
+        printf("\b\b\b\b\b%4d%%", uint32((j / r_height) * 100))
+
+    endfor;
+
+    printf("\b\b\b\b\b Completed!\n");
+
+endfunction;
+
+
+% /////////////////////////////////////////////////////////////////////////////
+%
+% function rct_cross_plot - plot cross profiles for given image
 %
 %  TODO: Put function description here
 %
 % /////////////////////////////////////////////////////////////////////////////
 
-function cross_plot(img, dpi=0, x_center=-1, y_center=-1)
+function rct_cross_plot(img, dpi=0, x_center=-1, y_center=-1)
     width  = size(img)(2);
     height = size(img)(1);
 
@@ -515,13 +645,13 @@ endfunction;
 
 % /////////////////////////////////////////////////////////////////////////////
 %
-% function cross_plot_compare - plot cross profiles for given image
+% function rct_cross_plot_compare - plot cross profiles for given image
 %
 %  TODO: Put function description here
 %
 % /////////////////////////////////////////////////////////////////////////////
 
-function cross_plot_compare(img1, img2, dpi=0, centers=[-1, -1, -1, -1])
+function rct_cross_plot_compare(img1, img2, dpi=0, centers=[-1, -1, -1, -1])
     width1  = size(img1)(2);
     height1 = size(img1)(1);
     width2  = size(img2)(2);
