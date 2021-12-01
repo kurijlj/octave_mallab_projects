@@ -463,7 +463,7 @@ endfunction;
 
 % /////////////////////////////////////////////////////////////////////////////
 %
-% function rct_read_ref - read images containing reference signal scan
+% function rct_read_scanset - read images containing film scan set
 %
 % Read data from image filenames list, extract red channel and calculate and
 % return mean pixel value of the red channel. It is assumed that user supplied 
@@ -473,12 +473,12 @@ endfunction;
 %
 % /////////////////////////////////////////////////////////////////////////////
 
-function [pixel_mean, pixel_std] = rct_read_ref(flist)
+function [pixel_mean, pixel_std] = rct_read_scanset(flist)
     % Initialize result to error value
     pixel_mean = NaN;
     pixel_std = NaN;
 
-    % Do basic sanity checking
+    % Do basic sanity checking. Check if we got cell array (file list) at all.
     if("cell" != class(flist))
         error(
             "rct_read_ref: Invalid data type!",
@@ -489,6 +489,7 @@ function [pixel_mean, pixel_std] = rct_read_ref(flist)
 
     endif;
 
+    % Check if file list contain any item.
     nitems = length(flist);
 
     if(0 == nitems)
@@ -501,7 +502,8 @@ function [pixel_mean, pixel_std] = rct_read_ref(flist)
 
     endif;
 
-    % Start reading images
+    % Start reading images. Initialize variables for storing reference
+    % dimensions, as well for storing extracted red channels.
     r_width = 0;
     r_height = 0;
     r_samples = 0;
@@ -735,6 +737,155 @@ function rct_cross_plot_compare(img1, img2, dpi=0, centers=[-1, -1, -1, -1])
     ylabel("OD");
     legend("Profile #1", "Profile #2");
     title("Inline Profile");
+
+endfunction;
+
+
+% /////////////////////////////////////////////////////////////////////////////
+%
+% function rct_multi_cross_plot- plot cross profiles for given monochrome images
+%
+%  TODO: Put function description here
+%
+% /////////////////////////////////////////////////////////////////////////////
+
+function rct_multi_cross_plot(images, dpi=0)
+    % Do basic sanity checking
+    if("cell" != class(images))
+        error(
+            "rct_multi_cross_plot: Invalid data type!",
+            "Given argument is not a cell array."
+        );
+
+        return;
+
+    endif;
+
+    nitems = length(images);
+
+    if(0 == nitems)
+        error(
+            "rct_multi_cross_plot: Empty file list!",
+            "Given cell array contain no items"
+        );
+
+        return;
+
+    endif;
+
+    % Initiialize variables for keeping reference dimensions of the plot. We use
+    % the largest dimensions of all supplied images as reference dimensions.
+    r_height = 0;
+    r_width = 0;
+
+    % Determine maximum extents of plot.
+    for i = 1:nitems
+        [height, width, samples] = size(images{i});
+
+        % Check if we are dealing with more than one sample per pixel.
+        if(1 < samples)
+            % We have more than one sample per pixel (not a monochrome image)
+            % so print error message and bail out.
+            error(
+                "rct_read_ref: Invalid number of color samples!",
+                "Image '%s' is not an monochrome image.",
+                flist{i}
+            );
+
+            return;
+
+        endif;
+
+        % If image height is bigger than reference height set refernce height to
+        % image height.
+        if(r_height < height)
+            r_height = height;
+
+        endif;
+
+        % If image width is bigger than reference width set refernce width to
+        % image width.
+        if(r_width < width)
+            r_width = width;
+
+        endif;
+
+    endfor;
+
+    % Initialize variable for keeping reference maximal optical density value
+    % for drawing OD axis.
+    od_max = 0;
+
+    % Initialize variable for storing legend items.
+    legend_entries{1} = [];
+
+    % Start plotting the profiles.
+    % Determine scale of plot abscissas (i.e. pixel position along profiles).
+    for i = 1:nitems
+        % Determine the center of image
+        height = size(images{i})(1);
+        width = size(images{i})(2);
+
+        in_c = floor(double(height / 2));
+        cross_c = floor(double(width / 2));
+
+        % Determine maximal optical density value along cross plots
+        od_max_l = max(max(images{i}(in_c,:)), max(images{i}(:,cross_c)));
+
+        % If maximum OD value is bigger than reference OD value set it as a
+        % reference one
+        if(od_max < od_max_l)
+            od_max = od_max_l;
+        endif;
+
+        % Plot cross profile.
+        subplot(2, 1, 1);
+        hold on;
+        if(0 < dpi)
+            % Plot positions in milimeters
+            mm = 25.4 / dpi;
+            plot(([1:width] - cross_c) * mm, images{i}(in_c,:));
+            xlabel("Position [mm]");
+        else
+            plot([1:width] - cross_c, images{i}(in_c,:));
+            xlabel("Position [pixels]");
+        endif;
+        hold off;
+
+        % Plot inline profiles
+        subplot(2, 1, 2);
+        hold on;
+        if(0 < dpi)
+            % Plot positions in milimeters
+            mm = 25.4 / dpi;
+            plot(([1:height] - in_c) * mm, images{i}(:,cross_c));
+            xlabel("Position [mm]");
+        else
+            plot([1:height] - in_c, images{i}(:,cross_c));
+            xlabel("Position [pixels]");
+        endif;
+        hold off;
+
+        % Format legend entry
+        legend_entries{i} = sprintf('Profile #%d', i);
+
+    endfor;
+
+    subplot(2, 1, 1);
+    hold on;
+    plot([0, 0], [0, od_max], color="k");
+    ylabel("OD");
+    legend(legend_entries);
+    title("Cross Profile");
+    hold off;
+
+    subplot(2, 1, 2);
+    hold on;
+    plot([0, 0], [0, od_max], color="k");
+    ylabel("OD");
+    legend(legend_entries);
+    title("Inline Profile");
+    hold off;
 
 endfunction;
 
