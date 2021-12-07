@@ -593,6 +593,46 @@ endfunction;
 
 % /////////////////////////////////////////////////////////////////////////////
 %
+% function rct_read_scanset_gui - read images containing film scan set using GUI
+%
+% Read data from image filenames list, extract red channel and calculate and
+% return mean pixel value of the red channel. It is assumed that user supplied 
+% scans of the same film cut. All images must bu 48 bit RGB images with
+% identical dimensions (height and width), otherwise function returns error.
+% First image in the list is used as reference image for dimensions.
+%
+% /////////////////////////////////////////////////////////////////////////////
+
+function [pixel_mean, pixel_std] = rct_read_scanset()
+
+    handles = guidata(caller_h);
+
+    [fnames, fpath] = uigetfile( ...
+        {'*.tif', 'Radiochromic Film Scanset'}, ...
+        'Select Scanset', ...
+        fullfile(rctCurrentDir, filesep()),
+       "MultiSelect", "on" ...
+        );
+
+    paths = cell(length(fnames));
+
+    % If we have valid path and file name we can load the image
+    if(0 != fnames)
+        % Set current dir and reference scan file name
+        rctCurrentDir = fpath;
+
+        for i = 1:length(fnames)
+            paths = fullfile(fpath, fnames{i});
+
+        endfor;
+
+    endif;
+
+endfunction;
+
+
+% /////////////////////////////////////////////////////////////////////////////
+%
 % function rct_cross_plot - plot cross profiles for given image
 %
 %  TODO: Put function description here
