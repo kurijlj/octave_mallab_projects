@@ -58,7 +58,6 @@
 % We put dummy expression into scripts header to prevent Octave command line
 % enivornment to interpret it as a simple function file
 
-rctCurrentDir = "";  % Keeps track of the last directory accessd via rct_read routines
 kVersionString = "0.1";
 printf("Radiochromic Toolbox v%s\n\n", kVersionString);
 
@@ -603,9 +602,12 @@ endfunction;
 %
 % /////////////////////////////////////////////////////////////////////////////
 
-function [pixel_mean, pixel_std] = rct_read_scanset()
-
-    handles = guidata(caller_h);
+function [pixel_mean, pixel_std] = rct_read_scanset_gui()
+    persistent rctCurrentDir = pwd();  % Keeps track of the last directory
+                                     % accessd via rct_read routines
+    paths = NaN;
+    pixel_mean = NaN;
+    pixel_std = NaN;
 
     [fnames, fpath] = uigetfile( ...
         {'*.tif', 'Radiochromic Film Scanset'}, ...
@@ -614,17 +616,20 @@ function [pixel_mean, pixel_std] = rct_read_scanset()
        "MultiSelect", "on" ...
         );
 
-    paths = cell(length(fnames));
-
     % If we have valid path and file name we can load the image
-    if(0 != fnames)
+    if("cell" == class(fnames))
         % Set current dir and reference scan file name
         rctCurrentDir = fpath;
 
+        % Initialize 'paths' as cell array
+        paths = cell(length(fnames),1);
+
         for i = 1:length(fnames)
-            paths = fullfile(fpath, fnames{i});
+            paths{i} = fullfile(fpath, fnames{i});
 
         endfor;
+
+        [pixel_mean, pixel_std] = rct_read_scanset(paths);
 
     endif;
 
