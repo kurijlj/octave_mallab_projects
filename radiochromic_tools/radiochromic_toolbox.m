@@ -456,6 +456,141 @@ endfunction;
 
 % =============================================================================
 %
+% Segmentation tools section
+%
+% =============================================================================
+
+% /////////////////////////////////////////////////////////////////////////////
+%
+% function rct_rg_segment - do OD segmentation by using region grow
+%
+% Segment an optical density image using region grow algorithm for a given seed
+% and threshold.
+%
+% /////////////////////////////////////////////////////////////////////////////
+
+function mask = rct_rg_segment(od, thrsh=0.05, seed=[-1, -1])
+    % Initialize result to error value
+    mask = NaN;
+
+    % Initialize OD image size.
+    width  = size(od)(2);
+    height = size(od)(1);
+
+    % Do basic sanity checking. Check if we got cell array (file list) at all.
+    if((1 > width) && (1 > height))
+        error(
+            "rct_rg_segment: Invalid dimensions!",
+            "Given optical density image has invalid dimensions (< 1 pixel)."
+        );
+
+        return;
+
+    endif;
+
+    if("double" ~= class(od))
+        error(
+            "rct_rg_segment: Invalid data type!",
+            "Given argument is not of double type."
+        );
+
+        return;
+
+    endif;
+
+    if(2 ~= size(seed)(2))
+        error(
+            "rct_rg_segment: Invalid seed!",
+            "Seed positional coordinates incomplete (~= 2)."
+        );
+
+        return;
+
+    endif;
+
+    if(~(0.0 < thrsh))
+        error(
+            "rct_rg_segment: Invalid data value!",
+            "Threshold argument must have positive value greater than zero."
+        );
+
+        return;
+
+    endif;
+
+    % If seed is not specified use point in the center of an OD image as seed.
+    if(0 > seed(2) || width < seed(2))
+        seed(2) = floor(double(width / 2));
+
+    endif;
+
+    if(0 > seed(1) || height < seed(1))
+        seed(1) = floor(double(height / 2));
+
+    endif;
+
+    % Initialize seed mask.
+    mask = uint8(zeros(height, width));
+    mask(seed(1), seed(2)) = 255;
+
+    % Define value range selection criteria.
+    seed_int = od(seed(1), seed(2));
+    seed_rng_bot = seed_int - thrsh;
+    seed_rng_top = seed_int + thrsh;
+
+    olds = 1;  % Old seeds count
+    news = 0;  % New seeds count
+
+    while news ~= olds
+        olds = news;
+        news = 0;
+
+        for j = 2:(height - 1)
+            for i = 2:(width - 1)
+                if(0 < mask(j, i))
+                    int = od((j-1), i);
+                    if((int >= seed_rng_bot) && (int <= seed_rng_top))
+                        news = news + 1;
+                        mask((j-1), i) = 255;
+
+                    endif;
+
+                    int = od((j+1), i);
+                    if((int >= seed_rng_bot) && (int <= seed_rng_top))
+                        news = news + 1;
+                        mask((j+1), i) = 255;
+
+                    endif;
+
+                    int = od(j, (i-1));
+                    if((int >= seed_rng_bot) && (int <= seed_rng_top))
+                        news = news + 1;
+                        mask(j, (i-1)) = 255;
+
+                    endif;
+
+                    int = od(j, (i+1));
+                    if((int >= seed_rng_bot) && (int <= seed_rng_top))
+                        news = news + 1;
+                        mask(j, (i+1)) = 255;
+
+                    endif;
+
+                endif;
+
+            endfor;
+
+        endfor;
+
+    endwhile;
+
+endfunction;
+
+
+
+
+% =============================================================================
+%
 % GUI section
 %
 % =============================================================================
