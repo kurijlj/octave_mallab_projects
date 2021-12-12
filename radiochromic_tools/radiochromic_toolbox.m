@@ -720,7 +720,7 @@ function [pixel_mean, pixel_std] = rct_read_scanset(flist)
 
     endfor;
 
-    printf("\b\b\b\b\b Completed!\n");
+    printf("\b\b\b\b\b Complete!\n");
 
 endfunction;
 
@@ -737,7 +737,7 @@ endfunction;
 %
 % /////////////////////////////////////////////////////////////////////////////
 
-function [pixel_mean, pixel_std] = rct_read_scanset_gui()
+function [pixel_mean, pixel_std] = rct_read_scanset_gui(save_result=false)
     persistent rctCurrentDir = pwd();  % Keeps track of the last directory
                                      % accessd via rct_read routines
     paths = NaN;
@@ -765,6 +765,48 @@ function [pixel_mean, pixel_std] = rct_read_scanset_gui()
         endfor;
 
         [pixel_mean, pixel_std] = rct_read_scanset(paths);
+
+    endif;
+
+    if(save_result)
+        % Save data to CSV files. Construct file name using name of first file
+        % assuming that scanset filenames use format:
+        %     Procedure_MchineID_CoverPlateType_Field_#FilmNo_Date_ScanNo.tif
+        % e.g.:
+        %     Calibration_GK_plexi_16mm_#1_20200101_001.tif
+        %
+        [dir, name, ext] = fileparts(fnames{1});
+        name = strtrunc(name, length(name) - 3);
+        mean_name = strcat(name, "R_mean");
+        std_name = strcat(name, "R_std");
+        mean_csv_name = fullfile( ...
+            rctCurrentDir, ...
+            strcat(mean_name, ".csv") ...
+            );
+        std_csv_name = fullfile( ...
+            rctCurrentDir, ...
+            strcat(std_name, ".csv") ...
+            );
+        mean_tif_name = fullfile( ...
+            rctCurrentDir, ...
+            strcat(mean_name, ".tif") ...
+            );
+        std_tif_name = fullfile( ...
+            rctCurrentDir, ...
+            strcat(std_name, ".tif") ...
+            );
+
+        printf("Saving data to file: \"%s\"\n", mean_csv_name);
+        csvwrite(mean_csv_name, pixel_mean);
+        printf("Saving data to file: \"%s\"\n", mean_tif_name);
+        imwrite(uint16(round(pixel_mean)), mean_tif_name, "TIF");
+
+        printf("Saving data to file: \"%s\"\n", std_csv_name);
+        csvwrite(std_csv_name, pixel_std);
+        printf("Saving data to file: \"%s\"\n", std_tif_name);
+        imwrite(uint16(round(pixel_std)), std_tif_name, "TIF");
+
+        printf("Saving data complete!\n");
 
     endif;
 
