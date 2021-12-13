@@ -224,7 +224,7 @@ function result = rct_hist(od, nbins=1000)
     % Do basic sanity checking
     if ("uint16" != class(od))
         error(
-            "rc_hist: Invalid data type!",
+            "rct_hist: Invalid data type!",
             "Given image data not of type 'uint16'."
         );
 
@@ -234,7 +234,7 @@ function result = rct_hist(od, nbins=1000)
 
     if (2 != size(size(od))(2))
         error(
-            "rc_hist: Not a grayscale image!",
+            "rct_hist: Not a grayscale image!",
             "Given image has more than one color channel."
         );
 
@@ -265,6 +265,69 @@ function result = rct_hist(od, nbins=1000)
     endfor;
 
     printf("\b\b\b\b\b Completed!\n");
+
+endfunction;
+
+
+% /////////////////////////////////////////////////////////////////////////////
+%
+% function rct_hist_rev(data, nbins)
+%
+% TODO: Add function documentation here.
+%
+% /////////////////////////////////////////////////////////////////////////////
+function x=rct_hist_rev(data, nbins)
+    x = 0;
+    min_val = 0;
+    max_val = 0;
+    depth = 0;
+    dim = 0;
+    bin_size = 0;
+
+    if(ismatrix(data))
+        dim = size(size(data))(2);
+
+        if(3 < dim)
+            error(
+                "rct_hist_rev: Invalid data type!",
+                "Given data matrix has more than three dimensions."
+            );
+
+            return;
+
+        elseif(3 == dim)
+            min_val = min(min(min(data)));
+            max_val = max(max(max(data)));
+
+        elseif(2 == dim)
+            min_val = min(min(data));
+            max_val = max(max(data));
+
+        elseif(1 == dim)
+            min_val = min(data);
+            max_val = max(data);
+
+        endif;
+
+        depth = max_val - min_val;
+
+    else
+        error(
+            "rct_hist_rev: Invalid data type!",
+            "Given data is not a matrix."
+        );
+
+        return;
+
+    endif;
+
+    bin_size = depth / nbins;
+    x = zeros(1, nbins);
+
+    for i = 1:nbins
+        x(i) = min_val + bin_size*(i - 0.5);
+
+    endfor;
 
 endfunction;
 
