@@ -276,8 +276,9 @@ endfunction;
 % TODO: Add function documentation here.
 %
 % /////////////////////////////////////////////////////////////////////////////
-function x=rct_hist_rev(data, nbins)
-    x = 0;
+function [bins, x_bins]=rct_hist_rev(data, nbins)
+    x_bins = 0;
+    bins = 0;
     min_val = 0;
     max_val = 0;
     depth = 0;
@@ -288,9 +289,19 @@ function x=rct_hist_rev(data, nbins)
         dim = size(size(data))(2);
 
         if(3 < dim)
+            % We do not support matrixes with more than three dimesions.
             error(
                 "rct_hist_rev: Invalid data type!",
                 "Given data matrix has more than three dimensions."
+            );
+
+            return;
+
+        elseif(1 > dim)
+            % Probably an empty matrix.
+            error(
+                "rct_hist_rev: Invalid data type!",
+                "Given data matrix has no items."
             );
 
             return;
@@ -303,7 +314,8 @@ function x=rct_hist_rev(data, nbins)
             min_val = min(min(data));
             max_val = max(max(data));
 
-        elseif(1 == dim)
+        else
+            % We have one dimensional matrix (array)
             min_val = min(data);
             max_val = max(data);
 
@@ -312,6 +324,7 @@ function x=rct_hist_rev(data, nbins)
         depth = max_val - min_val;
 
     else
+        % We are not dealing woth a matrix
         error(
             "rct_hist_rev: Invalid data type!",
             "Given data is not a matrix."
@@ -322,12 +335,111 @@ function x=rct_hist_rev(data, nbins)
     endif;
 
     bin_size = depth / nbins;
-    x = zeros(1, nbins);
+    x_bins = zeros(1, nbins);
+    bins = zeros(1, nbins);
+
+    printf("processing:   0%%");
 
     for i = 1:nbins
-        x(i) = min_val + bin_size*(i - 0.5);
+        x_bins(i) = min_val + bin_size*(i - 0.5);
 
     endfor;
+
+    if(3 == dim)
+        height = size(data)(1);
+        width = size(data)(2);
+        depth = size(data)(3);
+
+        for y = 1:height
+            for x = 1:width
+                for z = 1:depth
+                    for i = 1:nbins
+                        bin_top = min_val + bin_size*i;
+                        bin_bot = min_val + bin_size*(i - 1);
+
+                        if((bin_top > data(y, x, z)) ...
+                                && (bin_bot <= data(y, x, z)))
+                            bins(i) = bins(i) + 1;
+
+                            % We found our bin so stop traversing histogram.
+                            break;
+
+                        endif;
+
+                    endfor;
+
+                endfor;
+
+                complete = (z - 1)*width*height + (y - 1)*width + x;
+                all = height*width*epth;
+                percent_complete = uint32(round((complete / all) * 100));
+                printf("\b\b\b\b\b%4d%%", percent_complete);
+
+            endfor;
+
+        endfor;
+
+    elseif(2 == dim)
+        height = size(data)(1);
+        width = size(data)(2);
+
+        for y = 1:height
+            for x = 1:width
+                % for i = 1:nbins
+                %     bin_top = min_val + bin_size*i;
+                %     bin_bot = min_val + bin_size*(i - 1);
+
+                %     if((bin_top > data(y, x)) ...
+                %             && (bin_bot <= data(y, x)))
+                %         bins(i) = bins(i) + 1;
+
+                %         % We found our bin so stop traversing histogram.
+                %         break;
+
+                %     endif;
+
+                % endfor;
+                div = floor((data(y, x) - min_val) / bin_size);
+                i = div + 1;
+                printf("div: %d, i: %d\n");
+                bins(i) = bins(i) + 1;
+
+                complete = (y - 1)*width + x;
+                all = width*depth;
+                percent_complete = uint32(round((complete / all) * 100));
+                printf("\b\b\b\b\b%4d%%", percent_complete);
+
+            endfor;
+
+        endfor;
+
+    else
+        len = length(data);
+
+        for x = 1:len
+            for i = 1:nbins
+                bin_top = min_val + bin_size*i;
+                bin_bot = min_val + bin_size*(i - 1);
+
+                if((bin_top > data(1, x)) ...
+                        && (bin_bot <= data(1, x)))
+                    bins(i) = bins(i) + 1;
+
+                    % We found our bin so stop traversing histogram.
+                    break;
+
+                endif;
+
+                percent_complete = uint32(round((x / len) * 100));
+                printf("\b\b\b\b\b%4d%%", percent_complete);
+
+            endfor;
+
+        endfor;
+
+    endif;
+
+    printf("\b\b\b\b\b Completed!\n");
 
 endfunction;
 
