@@ -213,70 +213,13 @@ endfunction;
 
 % /////////////////////////////////////////////////////////////////////////////
 %
-% function rct_hist(image, nbins)
-% - calculate histogram for given optical density and number of bins
+% function rct_hist(data, nbins) - calculate data frequency distribution
+%
+% Calculate data frequency distribution for given dataser. This function is only
+% to be used for teaching and demonstration purposes.
 %
 % /////////////////////////////////////////////////////////////////////////////
-
-function result = rct_hist(od, nbins=1000)
-    result = NaN;
-
-    % Do basic sanity checking
-    if ("uint16" != class(od))
-        error(
-            "rct_hist: Invalid data type!",
-            "Given image data not of type 'uint16'."
-        );
-
-        return;
-
-    endif;
-
-    if (2 != size(size(od))(2))
-        error(
-            "rct_hist: Not a grayscale image!",
-            "Given image has more than one color channel."
-        );
-
-        return;
-
-    endif;
-
-    width  = size(od)(1);
-    height = size(od)(2);
-    depth = 65535;          % Range of pixel values
-    %depth = max(max(od)) - min(min(od));
-    bin_width = floor(depth / nbins);
-
-    % Allocate memory for the result
-    result = zeros(nbins, 1);
-
-    printf("processing:     ");
-
-    for i = 1:width
-        for j = 1:height
-            bin = floor(od(i, j)/(bin_width + 1)) + 1;
-            result(bin, 1) = result(bin, 1) + 1;
-
-        endfor;
-
-        printf("\b\b\b\b\b%4d%%", uint32((i / width) * 100))
-
-    endfor;
-
-    printf("\b\b\b\b\b Completed!\n");
-
-endfunction;
-
-
-% /////////////////////////////////////////////////////////////////////////////
-%
-% function rct_hist_rev(data, nbins)
-%
-% TODO: Add function documentation here.
-%
-% /////////////////////////////////////////////////////////////////////////////
-function [bins, x_bins]=rct_hist_rev(data, nbins)
+function [bins, x_bins]=rct_hist(data, nbins)
     x_bins = 0;
     bins = 0;
     min_val = 0;
@@ -324,7 +267,7 @@ function [bins, x_bins]=rct_hist_rev(data, nbins)
         depth = max_val - min_val;
 
     else
-        % We are not dealing woth a matrix
+        % We are not dealing with a matrix
         error(
             "rct_hist_rev: Invalid data type!",
             "Given data is not a matrix."
@@ -385,24 +328,20 @@ function [bins, x_bins]=rct_hist_rev(data, nbins)
 
         for y = 1:height
             for x = 1:width
-                % for i = 1:nbins
-                %     bin_top = min_val + bin_size*i;
-                %     bin_bot = min_val + bin_size*(i - 1);
+                for i = 1:nbins
+                    bin_top = min_val + bin_size*i;
+                    bin_bot = min_val + bin_size*(i - 1);
 
-                %     if((bin_top > data(y, x)) ...
-                %             && (bin_bot <= data(y, x)))
-                %         bins(i) = bins(i) + 1;
+                    if((bin_top > data(y, x)) ...
+                            && (bin_bot <= data(y, x)))
+                        bins(i) = bins(i) + 1;
 
-                %         % We found our bin so stop traversing histogram.
-                %         break;
+                        % We found our bin so stop traversing histogram.
+                        break;
 
-                %     endif;
+                    endif;
 
-                % endfor;
-                div = floor((data(y, x) - min_val) / bin_size);
-                i = div + 1;
-                printf("div: %d, i: %d\n");
-                bins(i) = bins(i) + 1;
+                endfor;
 
                 complete = (y - 1)*width + x;
                 all = width*depth;
@@ -438,6 +377,97 @@ function [bins, x_bins]=rct_hist_rev(data, nbins)
         endfor;
 
     endif;
+
+    printf("\b\b\b\b\b Completed!\n");
+
+endfunction;
+
+
+% /////////////////////////////////////////////////////////////////////////////
+%
+% function rct_fast_hist(data, nbins) - calculate data frequency distribution
+%
+% Fast algorithm for calculating data frequency distribution for given dataset
+% and given number of bins. Algorithm is mainly tested on the 2D data but it
+% should be able to handle n-dimensional data.
+%
+% /////////////////////////////////////////////////////////////////////////////
+
+function [values_count, values_range]=rct_fast_hist(data, nbins)
+    if(~ismatrix(data))
+        % We are not dealing with a matrix
+        error(
+            "rct_hist_rev_fast: Invalid data type!",
+            "Given data is not a matrix."
+        );
+
+        return;
+
+    endif;
+
+    min_val = 0;
+    max_val = 0;
+
+    dim = size(size(data))(2);
+
+    if(3 < dim)
+        % We do not support matrixes with more than three dimesions.
+        error(
+            "rct_hist_rev: Invalid data type!",
+            "Given data matrix has more than three dimensions."
+        );
+
+        return;
+
+    elseif(1 > dim)
+        % Probably an empty matrix.
+        error(
+            "rct_hist_rev: Invalid data type!",
+            "Given data matrix has no items."
+        );
+
+        return;
+
+    elseif(3 == dim)
+        min_val = min(min(min(data)));
+        max_val = max(max(max(data)));
+
+    elseif(2 == dim)
+        min_val = min(min(data));
+        max_val = max(max(data));
+
+    else
+        % We have one dimensional matrix (array)
+        min_val = min(data);
+        max_val = max(data);
+
+    endif;
+
+    depth = max_val - min_val;
+
+    bin_size = depth / nbins;
+    values_range = zeros(1, nbins);
+    values_count = zeros(1, nbins);
+
+    % Give some feedback on calculation progress
+    printf("processing:   0%%");
+
+    for i = 1:nbins
+        values_range(i) = min_val + bin_size*(i - 0.5);
+        bin_bot = min_val + bin_size*(i - 1);
+        bin_top = min_val + bin_size*i;
+
+        mask = data > bin_bot;
+        in_bin = data.*mask;
+        mask = data <= bin_top;
+        in_bin = in_bin.*mask;
+
+        values_count(i) = nnz(in_bin);
+
+        percent_complete = uint32(round((i / nbins) * 100));
+        printf("\b\b\b\b\b%4d%%", percent_complete);
+
+    endfor;
 
     printf("\b\b\b\b\b Completed!\n");
 
