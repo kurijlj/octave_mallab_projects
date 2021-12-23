@@ -457,7 +457,11 @@ function [values_count, values_range]=rct_fast_hist(data, nbins)
         bin_bot = min_val + bin_size*(i - 1);
         bin_top = min_val + bin_size*i;
 
-        mask = data > bin_bot;
+        if(1 == i)
+            mask = data >= bin_bot;
+        else
+            mask = data > bin_bot;
+        endif;
         in_bin = data.*mask;
         mask = data <= bin_top;
         in_bin = in_bin.*mask;
