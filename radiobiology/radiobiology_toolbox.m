@@ -97,7 +97,7 @@ function result = dvh_cml_to_diff(cml_dvh)
     endif
 
     % Allocate memory for the resulting data matrix
-    result = zeros(nbins, ncols);
+    result = zeros(nbins-1, ncols);
 
     for i = 2:nbins
         result(i-1, 1) = cml_dvh(i-1, 1) + (cml_dvh(i, 1) - cml_dvh(i-1, 1))/2;
