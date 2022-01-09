@@ -118,3 +118,253 @@ function result = dvh_cml_to_diff(cml_dvh)
     endfor;
 
 endfunction;
+
+
+% /////////////////////////////////////////////////////////////////////////////
+%
+% function dvh_read_from_gamma_plan(fname) - Read DVH data from GammaPlan file
+%
+% TODO: Put function description here
+%
+% /////////////////////////////////////////////////////////////////////////////
+
+function [dvh_data, ...
+        how_many_lines, ...
+        struct_name, ...
+        dvh_type, ...
+        dose_algorithm ...
+        ] = dvh_read_from_gamma_plan(file_path)
+    dvh_data = NaN;
+
+    func_name = "dvh_read_from_gamma_plan";
+    error_flag = false;
+    expected_many_data_rows = 0;
+
+    % Open file for reading.
+    file_id = fopen(file_path, "r");
+
+    % Read how many lines file contains
+    how_many_lines = fskipl(file_id, Inf);
+    fseek(file_id, 0);
+
+    fprintf(stdout, "%s: Validate file integrity for file: %s\n", ...
+        func_name, ...
+        file_path ...
+        );
+
+    % GammaPlan DVH files contain 8 lines long header and one trailing line at
+    % the end of the file. For the DVH data to have any sense we need at least
+    % two rows of data. So overall file containg DVH data at least, have to be
+    % eleven lines long. If file contains less lines than that we take the given
+    % file as corrupted.
+    if(11 > how_many_lines)
+        % File integrity failed, print error message to stderr and bail out.
+        fclose(file_id);
+        error_flag = true;
+        error("To few data lines. Detected %d lines, required at least 11 lines.", ...
+            how_many_lines ...
+            );
+        return;
+
+    endif;
+
+    fprintf(stdout, "%s: Validate file header integrity for file: %s\n", ...
+        func_name, ...
+        file_path ...
+        );
+
+    % Try to read number of data bins. Field containg number of data bins sits
+    % on line four of the file header.
+    fskipl(file_id, 3);
+    line = fgetl(file_id);
+    fseek(file_id, 0);
+
+    % Check if we have correct data field.
+    field_name= "number of bins";
+    if(length(field_name) > length(line))
+        error_flag = true;
+        fprintf(stderr, ...
+            "%s: ERROR: Missing 'Number of bins' field on line: 4.", ...
+            func_name ...
+            );
+
+    else
+        field_match = strncmpi(field_name, ...
+            line(1, 1:length(field_name)), ...
+            length(field_name) ...
+            );
+
+        if(not(field_match))
+            fprintf(stderr, ...
+                "%s: ERROR: Missing 'Number of bins' field on line: 4.", ...
+                func_name ...
+                );
+
+        else
+            % 
+            expected_many_data_rows = str2num(line(1, ...
+                (length(field_name) + 4):length(line) ...
+                ));
+
+        endif;
+
+    endif;
+
+    % Check if 'Number of bins' matches actual number of data rows.
+    how_many_data_rows = how_many_lines - 9;
+    if(how_many_data_rows ~= expected_many_data_rows)
+        error_flag = true;
+        fprintf(stderr, ...
+            "%s: ERROR: Actual data rows count does not match value stored in 'Number of bins' field (detected %d data rows, expected %d).", ...
+            func_name, ...
+            how_many_data_rows, ...
+            expected_many_data_rows ...
+            );
+
+    endif;
+
+    % Try to read structure name. Field containg structure name sits on line
+    % one of the file header.
+    line = fgetl(file_id);
+    fseek(file_id, 0);
+
+    % Check if we have correct data field.
+    field_name= "name";
+    field_match = strncmpi(field_name, ...
+        line(1, 1:length(field_name)), ...
+        length(field_name) ...
+        );
+    if(not(field_match) || (length(field_name) > length(line)))
+        error_flag = true;
+        fprintf(stderr, ...
+            "%s: ERROR: Missing 'Name' field on line: 1.", ...
+            func_name ...
+            );
+
+    endif;
+
+    struct_name = line(1, (length(field_name) + 4):length(line));
+
+    % Try to read DVH type. Field containg DVH type sits on line two of the
+    % file header.
+    fskipl(file_id, 1);
+    line = fgetl(file_id);
+    fseek(file_id, 0);
+
+    % Check if we have correct data field.
+    field_name= "type";
+    field_match = strncmpi(field_name, ...
+        line(1, 1:length(field_name)), ...
+        length(field_name) ...
+        );
+    if(not(field_match) || (length(field_name) > length(line)))
+        error_flag = true;
+        fprintf(stderr, ...
+            "%s: ERROR: Missing 'Tyie' field on line: 2.", ...
+            func_name ...
+            );
+
+    endif;
+
+    dvh_type = line(1, (length(field_name) + 4):length(line));
+
+    % Try to read dose algorithm. Field containg dose algorithm sits on line
+    % three of the file header.
+    fskipl(file_id, 2);
+    line = fgetl(file_id);
+    fseek(file_id, 0);
+
+    % Check if we have correct data field.
+    field_name= "dose algorithm";
+    field_match = strncmpi(field_name, ...
+        line(1, 1:length(field_name)), ...
+        length(field_name) ...
+        );
+    if(not(field_match) || (length(field_name) > length(line)))
+        error_flag = true;
+        fprintf(stderr, ...
+            "%s: ERROR: Missing 'Dose algorithm' field on line: 3.", ...
+            func_name ...
+            );
+
+    endif;
+
+    dose_algorithm = line(1, (length(field_name) + 3):length(line));
+
+    % Verify integrity of remaining header fields.
+    fskipl(file_id, 4);
+    line = fgetl(file_id);
+    fseek(file_id, 0);
+
+    field_name= "bin size";
+    field_match = strncmpi(field_name, ...
+        line(1, 1:length(field_name)), ...
+        length(field_name) ...
+        );
+    if(not(field_match) || (length(field_name) > length(line)))
+        error_flag = true;
+        fprintf(stderr, ...
+            "%s: ERROR: Missing 'Bin size' field on line: 5.", ...
+            func_name ...
+            );
+
+    endif;
+
+    fskipl(file_id, 5);
+    line = fgetl(file_id);
+    fseek(file_id, 0);
+
+    field_name= "bin range";
+    field_match = strncmpi(field_name, ...
+        line(1, 1:length(field_name)), ...
+        length(field_name) ...
+        );
+    if(not(field_match) || (length(field_name) > length(line)))
+        error_flag = true;
+        fprintf(stderr, ...
+            "%s: ERROR: Missing 'Bin range' field on line: 6.", ...
+            func_name ...
+            );
+
+    endif;
+
+    fskipl(file_id, 7);
+    line = fgetl(file_id);
+    h1 = "bin center";
+    h2 = "volume";
+
+    field_match = strncmpi(h1, ...
+        line(1, 1:length(h1)), ...
+        length(h1) ...
+        );
+    if(not(field_match) || ((length(h1) + 4) > length(line)))
+        error_flag = true;
+        fprintf(stderr, ...
+            "%s: ERROR: Missing 'Bin center' data column on line: 8.", ...
+            func_name ...
+            );
+
+    endif;
+
+    field_match = strncmpi(h2, ...
+        line(1, (length(h1) + 6):(length(h1) + 6 + length(h2))), ...
+        length(h2) ...
+        );
+    if(not(field_match) || ((length(h2) + 4) > length(line)))
+        error_flag = true;
+        fprintf(stderr, ...
+            "%s: ERROR: Missing 'Volume' data column on line: 8.", ...
+            func_name ...
+            );
+
+    endif;
+
+    if(error_flag)
+        fclose(file_id);
+        error("File '%s' is corrupted!");
+        return;
+
+    endif;
+
+    fclose(file_id);
+endfunction;
