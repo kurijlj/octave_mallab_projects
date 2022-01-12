@@ -219,7 +219,7 @@ endfunction;
 % to be used for teaching and demonstration purposes.
 %
 % /////////////////////////////////////////////////////////////////////////////
-function [bins, x_bins]=rct_hist(data, nbins)
+function [bins, x_bins] = rct_hist(data, nbins)
     x_bins = 0;
     bins = 0;
     min_val = 0;
@@ -393,7 +393,7 @@ endfunction;
 %
 % /////////////////////////////////////////////////////////////////////////////
 
-function [values_count, values_range]=rct_fast_hist(data, nbins)
+function [values_count, values_range] = rct_fast_hist(data, nbins)
     if(~ismatrix(data))
         % We are not dealing with a matrix
         error(
@@ -485,31 +485,68 @@ endfunction;
 %
 % /////////////////////////////////////////////////////////////////////////////
 
-function rct_hist_plot(od, nbins=1000)
+function rct_hist_plot(od, dataset_name="Unknown", nbins=1000)
     % Do basic sanity checking
-    if ("uint16" != class(od))
-        error(
-            "rc_hist: Invalid data type!",
-            "Given image data not of type 'uint16'."
-        );
+    if (not(isequal("uint16", class(od))))
+        error("Invalid data type. Parameter 'od' must be of type 'uint16' not '%s'.", ...
+            class(od) ...
+            );
+
 
         return;
 
     endif;
 
-    if (2 != size(size(od))(2))
-        error(
-            "rc_hist: Not a grayscale image!",
-            "Given image has more than one color channel."
-        );
+    if (2 ~= size(size(od))(2))
+        error("Invalid data type. Not a grayscale image.");
 
         return;
 
     endif;
 
-    h = rc_hist(od, nbins);
+    if(not(isequal("char", class(dataset_name))))
+        error("Invalid data type. Parameter 'dataset_name' must be of type 'char' not '%s'.", ...
+            class(dataset_name) ...
+            );
+
+        return;
+
+    endif;
+
+    h = rct_fast_hist(od, nbins);
     h = h / max(h);  % Normalize histogram for plotting
+
+    % Display intensity distribution in the upper half of the figure.
+    subplot(2, 1, 1);
+    hold on;
     bar([1:nbins] * (65535/nbins), h);
+    xlim([0 65535]);
+    ylim([0 1]);
+    xlabel("Intensities");
+    ylabel("Distribution");
+    title(sprintf("Histogram for: %s", dataset_name));
+    box on;
+    hold off;
+
+    % Display intensity gradient in the lower part of the figure.
+    subplot(2, 1, 2);
+    hold on;
+    gradient = uint16(zeros(50, nbins));
+    for i = 1:nbins
+        gradient(:, i) = (i * 65535)/nbins;
+    endfor;
+    imshow(gradient);
+    % set(gca, "ytick", [1:-1:0]);
+    % set(gca, "xtick", [0 65535]);
+    % set(gca, "ytick", [0 1]);
+    axis on;
+    xlabel("Intensities");
+    set(gca, "xtick", [0:13107:65535]);
+    set(gca, "xticklabel", {});
+    set(gca, "ytick", [0 1]);
+    set(gca, "yticklabel", {});
+    box on;
+    hold off;
 
 endfunction;
 
