@@ -92,24 +92,32 @@ pkg load image;
 % /////////////////////////////////////////////////////////////////////////////
 
 function result = rct_absolute_od(image)
+
+    % Initialize return variables.
     result = NaN;
 
-    % Do basic sanity checking
-    if ("uint16" != class(image))
-        error(
-            "absolute_od: Invalid data type!",
-            "Given image data not of type 'uint16'."
-        );
+    % Do basic sanity checking. First verify if given parameter is
+    % matrix at all.
+    if(not(ismatrix(image)))
+        error("Invalid data type. Parameter 'image' must be an matrix of pixel values.");
 
         return;
 
     endif;
 
-    if (2 != size(size(image))(2))
-        error(
-            "absolute_od: Not a grayscale image!",
-            "Given image has more than one color channel."
-        );
+    % Verify data class for 'image' paramter.
+    if (not(isequal("uint16", class(image))))
+        error("Invalid data type. Parameter 'image' must be of type 'uint16' not '%s'.", ...
+            class(image) ...
+            );
+
+        return;
+
+    endif;
+
+    % Verify if 'image' is monochrome (i.e. a 2D matrx).
+    if (2 ~= size(size(od))(2))
+        error("Invalid data type. Parameter 'image' must be a monochrome image.");
 
         return;
 
@@ -155,33 +163,64 @@ endfunction;
 % /////////////////////////////////////////////////////////////////////////////
 
 function result = rct_relative_od(ref, signal)
+
+    % Initialize return variables.
     result = NaN;
 
-    % Do basic sanity checking
-    if (("uint16" != class(ref)) || ("uint16" != class(signal)))
-        error(
-            "relative_od: Invalid data type!",
-            "Given image data not of type 'uint16'."
-        );
+    % Do basic sanity checking. First verify if given parameters are
+    % matrices at all.
+    if(not(ismatrix(ref)))
+        error("Invalid data type. Parameter 'ref' must be an matrix of pixel values.");
 
         return;
 
     endif;
 
-    if ((2 != size(size(ref))(2)) || (2 != size(size(signal))(2)))
-        error(
-            "realtive_od: Not a grayscale image!",
-            "Given image has more than one color channel."
-        );
+    if(not(ismatrix(signal)))
+        error("Invalid data type. Parameter 'signal' must be an matrix of pixel values.");
 
         return;
 
     endif;
 
-    if ((size(ref)(1) != size(signal)(1)) || (size(ref)(2) != size(signal)(2)))
+    % Verify data class for given parameters.
+    if (not(isequal("uint16", class(ref))))
+        error("Invalid data type. Parameter 'ref' must be of type 'uint16' not '%s'.", ...
+            class(ref) ...
+            );
+
+        return;
+
+    endif;
+
+    if (not(isequal("uint16", class(signal))))
+        error("Invalid data type. Parameter 'signal' must be of type 'uint16' not '%s'.", ...
+            class(signal) ...
+            );
+
+        return;
+
+    endif;
+
+    % Verify if both parameters are monochrome (ie. 2D) images.
+    if (2 ~= size(size(ref))(2))
+        error("Invalid data type. Parameter 'ref' must be a monochrome image.");
+
+        return;
+
+    endif;
+
+    if (2 ~= size(size(signal))(2))
+        error("Invalid data type. Parameter 'signal' must be a monochrome image.");
+
+        return;
+
+    endif;
+
+    % Verify if both matrices are of equal sizes.
+    if (not(size_equal(ref, signal)))
         error(
-            "relative_od: Dimensions mismatch!",
-            "Reference and signal images are not of the equal dimensions."
+            "Size mismatch. Reference and signal images are not of equal sizes."
         );
 
         return;
@@ -394,7 +433,7 @@ endfunction;
 % /////////////////////////////////////////////////////////////////////////////
 
 function [values_count, values_range] = rct_fast_hist(data, nbins)
-    if(~ismatrix(data))
+    if(not(ismatrix(data)))
         % We are not dealing with a matrix
         error(
             "rct_hist_rev_fast: Invalid data type!",
@@ -492,7 +531,6 @@ function rct_hist_plot(od, dataset_name="Unknown", nbins=1000)
             class(od) ...
             );
 
-
         return;
 
     endif;
@@ -517,6 +555,8 @@ function rct_hist_plot(od, dataset_name="Unknown", nbins=1000)
     h = h / max(h);  % Normalize histogram for plotting
 
     % Display intensity distribution in the upper half of the figure.
+    figure();  % Spawn new figure.
+
     subplot(2, 1, 1);
     hold on;
     bar([1:nbins] * (65535/nbins), h);
@@ -536,9 +576,6 @@ function rct_hist_plot(od, dataset_name="Unknown", nbins=1000)
         gradient(:, i) = (i * 65535)/nbins;
     endfor;
     imshow(gradient);
-    % set(gca, "ytick", [1:-1:0]);
-    % set(gca, "xtick", [0 65535]);
-    % set(gca, "ytick", [0 1]);
     axis on;
     xlabel("Intensities");
     set(gca, "xtick", [0:13107:65535]);
@@ -695,6 +732,7 @@ function result = rct_iht(trend, fluctuations)
     result = zeros(1, dim);
     result(1:2:dim) = [trend + fluctuations]/sqrt(2);
     result(2:2:dim) = [trend - fluctuations]/sqrt(2);
+
 endfunction;
 
 
@@ -1357,3 +1395,54 @@ function rct_multi_cross_plot(images, dpi=0)
 
 endfunction;
 
+
+% /////////////////////////////////////////////////////////////////////////////
+%
+% function rct_gui_test - Function for testing various GUI controls
+%
+%  TODO: Put function description here
+%
+% /////////////////////////////////////////////////////////////////////////////
+
+function rct_gui_test()
+
+    graphics_toolkit qt;
+
+    % Get available screen size to calculate main window extents
+    scr_size = get(0, 'ScreenSize');
+    origin_x = floor(scr_size(3) * 0.2);
+    origin_y = floor(scr_size(4) * 0.2);
+    width = 3 * floor(scr_size(3) * 0.2);
+    height = 3 * floor(scr_size(4) * 0.2);
+
+    main_window = figure( ...
+        'name', 'RCT GUI Controls Test', ...
+        'position', [origin_x, origin_y, width, height] ...
+        );
+
+    % Generate a structure of handles to pass to callbacks, and store it.
+    handles = guihandles(main_window);
+
+    handles.main_window = main_window;
+
+    handles.level_selector = uicontrol( ...
+        main_window, ...
+        'style', 'slider', ...
+        'units', 'normalized', ...
+        'string', 'level', ...
+        % 'callback', @callback_func_1, ...
+        'value', 0.5, ...
+        'position', [0.04 0.04 0.92 0.44] ...
+        );
+
+    handles.window_selector = uicontrol( ...
+        main_window, ...
+        'style', 'slider', ...
+        'units', 'normalized', ...
+        'string', 'window', ...
+        % 'callback', @callback_func_1, ...
+        'value', 0.5, ...
+        'position', [0.04 0.52 0.92 0.44] ...
+        );
+
+endfunction;

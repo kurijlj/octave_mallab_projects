@@ -89,7 +89,7 @@ graphics_toolkit qt;
 %
 % =============================================================================
 
-% Set screen size to calculate main window extents
+% Get screen size to calculate main window extents
 ssize = get(0, 'ScreenSize');
 x_pos = floor(ssize(3) * 0.2);
 y_pos = floor(ssize(4) * 0.2);
@@ -184,9 +184,9 @@ guidata(main_window, handles);
 
 % /////////////////////////////////////////////////////////////////////////////
 %
-% function select_point - TODO:short function description
+% function select_point - TODO: Put short function description
 %
-% TODO: full function description
+% TODO: Put full function description
 %
 % /////////////////////////////////////////////////////////////////////////////
 
@@ -224,9 +224,9 @@ endfunction;
 
 % /////////////////////////////////////////////////////////////////////////////
 %
-% function select_ref - TODO:short function description
+% function select_ref - TODO: Put short function description
 %
-% TODO: full function description
+% TODO: Put full function description
 %
 % /////////////////////////////////////////////////////////////////////////////
 
