@@ -519,22 +519,123 @@ endfunction;
 
 % /////////////////////////////////////////////////////////////////////////////
 %
+% function rct_fast_hist_gui(data, nbins) - calculate data frequency distribution
+%
+% Fast algorithm for calculating data frequency distribution for given dataset
+% and given number of bins. Algorithm is mainly tested on the 2D data but it
+% should be able to handle n-dimensional data.
+%
+% This is the same function as rct_fast_hist() function, modified to be
+% compatibile for use in GUI applications.
+%
+% /////////////////////////////////////////////////////////////////////////////
+
+function [values_count, values_range] = rct_fast_hist_gui( ...
+        data, ...
+        nbins, ...
+        name='RCT Fast Histogram', ...
+        parent=0 ...
+        )
+
+    % Do some basic sanity checks first.
+    if(not(ismatrix(data)))
+        % We are not dealing with a matrix
+        error(
+            "rct_hist_rev_fast: Invalid data type!",
+            "Given data is not a matrix."
+        );
+
+        return;
+
+    endif;
+
+    min_val = 0;
+    max_val = 0;
+
+    dim = size(size(data))(2);
+
+    if(3 < dim)
+        % We do not support matrixes with more than three dimesions.
+        error(
+            "rct_hist_rev: Invalid data type!",
+            "Given data matrix has more than three dimensions."
+        );
+
+        return;
+
+    elseif(1 > dim)
+        % Probably an empty matrix.
+        error(
+            "rct_hist_rev: Invalid data type!",
+            "Given data matrix has no items."
+        );
+
+        return;
+
+    elseif(3 == dim)
+        min_val = min(min(min(data)));
+        max_val = max(max(max(data)));
+
+    elseif(2 == dim)
+        min_val = min(min(data));
+        max_val = max(max(data));
+
+    else
+        % We have one dimensional matrix (array)
+        min_val = min(data);
+        max_val = max(data);
+
+    endif;
+
+    depth = max_val - min_val;
+
+    bin_size = depth / nbins;
+    values_range = zeros(1, nbins);
+    values_count = zeros(1, nbins);
+
+    % Give some feedback on calculation progress
+    h_pbar = waitbar( ...
+        0.0, ...
+        'Calculating histogram ...', ...
+        'parent', parent, ...
+        'name', name ...
+        );
+
+    for i = 1:nbins
+        values_range(i) = min_val + bin_size*(i - 0.5);
+        bin_bot = min_val + bin_size*(i - 1);
+        bin_top = min_val + bin_size*i;
+
+        if(1 == i)
+            mask = data >= bin_bot;
+        else
+            mask = data > bin_bot;
+        endif;
+        in_bin = data.*mask;
+        mask = data <= bin_top;
+        in_bin = in_bin.*mask;
+
+        values_count(i) = nnz(in_bin);
+
+        waitbar(i/nbins, h_pbar);
+
+    endfor;
+
+    delete(h_pbar);
+
+endfunction;
+
+
+% /////////////////////////////////////////////////////////////////////////////
+%
 % function rct_hist_plot(od, nbins)
 % - calculate and plot histogram for given optical density and number of bins
 %
 % /////////////////////////////////////////////////////////////////////////////
 
 function rct_hist_plot(od, dataset_name="Unknown", nbins=1000)
+
     % Do basic sanity checking
-    if (not(isequal("uint16", class(od))))
-        error("Invalid data type. Parameter 'od' must be of type 'uint16' not '%s'.", ...
-            class(od) ...
-            );
-
-        return;
-
-    endif;
-
     if (2 ~= size(size(od))(2))
         error("Invalid data type. Not a grayscale image.");
 
@@ -551,39 +652,41 @@ function rct_hist_plot(od, dataset_name="Unknown", nbins=1000)
 
     endif;
 
-    h = rct_fast_hist(od, nbins);
+    h = rct_fast_hist_gui(od, nbins, 'RCT Histogram Plot');
     h = h / max(h);  % Normalize histogram for plotting
 
     % Display intensity distribution in the upper half of the figure.
-    figure();  % Spawn new figure.
+    h_figure = figure( ...
+        'name', 'RCT Histogram Plot' ...
+        );  % Spawn new figure.
 
-    subplot(2, 1, 1);
+    % subplot(2, 1, 1);
     hold on;
-    bar([1:nbins] * (65535/nbins), h);
-    xlim([0 65535]);
+    bar([1:nbins] * (max(max(od))/nbins), h);
+    xlim([min(min(od)) max(max(od))]);
     ylim([0 1]);
-    xlabel("Intensities");
+    xlabel("Values");
     ylabel("Distribution");
     title(sprintf("Histogram for: %s", dataset_name));
     box on;
     hold off;
 
-    % Display intensity gradient in the lower part of the figure.
-    subplot(2, 1, 2);
-    hold on;
-    gradient = uint16(zeros(50, nbins));
-    for i = 1:nbins
-        gradient(:, i) = (i * 65535)/nbins;
-    endfor;
-    imshow(gradient);
-    axis on;
-    xlabel("Intensities");
-    set(gca, "xtick", [0:13107:65535]);
-    set(gca, "xticklabel", {});
-    set(gca, "ytick", [0 1]);
-    set(gca, "yticklabel", {});
-    box on;
-    hold off;
+    % % Display value gradient in the lower part of the figure.
+    % subplot(2, 1, 2);
+    % hold on;
+    % gradient = uint16(zeros(50, nbins));
+    % for i = 1:nbins
+    %     gradient(:, i) = (i * 65535)/nbins;
+    % endfor;
+    % imshow(gradient);
+    % axis on;
+    % xlabel("Intensities");
+    % set(gca, "xtick", [0:13107:65535]);
+    % set(gca, "xticklabel", {});
+    % set(gca, "ytick", [0 1]);
+    % set(gca, "yticklabel", {});
+    % box on;
+    % hold off;
 
 endfunction;
 
@@ -1410,8 +1513,8 @@ function rct_update_gui_test(obj)
     switch(gcbo)
         case {h.level_selector}
             window_value = get(h.window_selector, 'value');
-            window_min = h.value_range(1, 1);
-            window_max = h.value_range(1, 2);
+            window_min = 0;
+            window_max = h.value_range(1, 2) - h.value_range(1, 1);
             level_value = get(h.level_selector, 'value');
             set(h.level_label, 'string', sprintf("Level: %d", level_value));
 
@@ -1419,24 +1522,26 @@ function rct_update_gui_test(obj)
             % histogram.
             frame_left = level_value - (window_value / 2);
             frame_right = level_value + (window_value / 2);
+            imshow(h.img, [frame_left frame_right], 'parent', h.image_view);
             h.plot = plot( ...
-                'parent', h.histogram, ...
+                'parent', h.hist_view, ...
+                [1:length(h.hist)] * (max(max(h.img))/length(h.hist)), h.hist, 'b', ...
                 [frame_left frame_right], [0 0], 'r', ...
                 [frame_right frame_right], [0 1], 'r', ...
                 [frame_left frame_right], [1 1], 'r', ...
                 [frame_left frame_left], [0 1], 'r' ...
                 );
-            set(h.histogram, 'xlim', [window_min window_max]);
-            set(h.histogram, 'xtick', [window_min window_max]);
-            set(h.histogram, 'xticklabel', {});
-            set(h.histogram, 'ylim', [0 1]);
-            set(h.histogram, 'ytick', [0 1]);
-            set(h.histogram, 'yticklabel', {});
+            set(h.hist_view, 'xlim', [window_min window_max]);
+            set(h.hist_view, 'xtick', [window_min window_max]);
+            set(h.hist_view, 'xticklabel', {});
+            set(h.hist_view, 'ylim', [0 1]);
+            set(h.hist_view, 'ytick', [0 1]);
+            set(h.hist_view, 'yticklabel', {});
 
         case {h.window_selector}
             window_value = get(h.window_selector, 'value');
-            window_min = h.value_range(1, 1);
-            window_max = h.value_range(1, 2);
+            window_min = 0;
+            window_max = h.value_range(1, 2) - h.value_range(1, 1);
             level_value = get(h.level_selector, 'value');
             level_min = window_min + (window_value / 2);
             level_max = window_max - (window_value / 2);
@@ -1475,32 +1580,36 @@ function rct_update_gui_test(obj)
             % histogram.
             frame_left = level_value - (window_value / 2);
             frame_right = level_value + (window_value / 2);
+            imshow(h.img, [frame_left frame_right], 'parent', h.image_view);
             h.plot = plot( ...
-                'parent', h.histogram, ...
+                'parent', h.hist_view, ...
+                [1:length(h.hist)] * (max(max(h.img))/length(h.hist)), h.hist, 'b', ...
                 [frame_left frame_right], [0 0], 'r', ...
                 [frame_right frame_right], [0 1], 'r', ...
                 [frame_left frame_right], [1 1], 'r', ...
                 [frame_left frame_left], [0 1], 'r' ...
                 );
-            set(h.histogram, 'xlim', [window_min window_max]);
-            set(h.histogram, 'xtick', [window_min window_max]);
-            set(h.histogram, 'xticklabel', {});
-            set(h.histogram, 'ylim', [0 1]);
-            set(h.histogram, 'ytick', [0 1]);
-            set(h.histogram, 'yticklabel', {});
+            set(h.hist_view, 'xlim', [window_min window_max]);
+            set(h.hist_view, 'xtick', [window_min window_max]);
+            set(h.hist_view, 'xticklabel', {});
+            set(h.hist_view, 'ylim', [0 1]);
+            set(h.hist_view, 'ytick', [0 1]);
+            set(h.hist_view, 'yticklabel', {});
 
     endswitch;
 
 endfunction;
 
 
-function rct_gui_test(img)
+function rct_gui_test(img, nbins)
 
     graphics_toolkit qt;
 
     value_range = [min(min(img)), max(max(img))];
+    hist = rct_fast_hist_gui(img, nbins, "RCT GUI Test");
+    hist = hist / max(hist);  % Normalize histogram for plotting
 
-    % Get available screen size to calculate main window extents
+    % Get available screen size to calculate main_figure extents
     scr_size = get(0, 'ScreenSize');
     origin_x = floor(scr_size(3) * 0.25);
     origin_y = floor(scr_size(4) * 0.25);
@@ -1526,7 +1635,7 @@ function rct_gui_test(img)
     scale_label_padding = 5;
 
     % Spawn new figure to prevent overwritting existing one.
-    main_window = figure( ...
+    main_figure = figure( ...
         'name', 'RCT GUI Controls Test', ...
         'units', 'points', ...
         'userdata', [value_range(1, 1), value_range(1, 2)], ...
@@ -1534,8 +1643,8 @@ function rct_gui_test(img)
         );
 
     % Calculate ranges and current values for the selectors
-    window_min = value_range(1, 1);
-    window_max = value_range(1, 2);
+    window_min = 0;
+    window_max = value_range(1, 2) - value_range(1, 1);
     % NOTE: The actual slider step size is scaled by the range:
     %   ActualStep = SliderStep * (Max - Min)
     % window_step = (window_max - window_min) / 100;
@@ -1546,14 +1655,16 @@ function rct_gui_test(img)
     level_value = level_min + ((level_max - level_min) / 2);
 
     % Generate a structure of handles to pass to callbacks, and store it.
-    h = guihandles(main_window);
+    h = guihandles(main_figure);
 
-    h.main_window = main_window;
+    h.main_figure = main_figure;
     h.value_range = value_range;
+    h.img = img;
+    h.hist = hist;
 
     row = 10;
-    h.image = axes( ...
-        'parent', main_window, ...
+    h.image_view = axes( ...
+        'parent', main_figure, ...
         'units', 'points', ...
         'box', 'on', ...
         'position', [ ...
@@ -1563,11 +1674,11 @@ function rct_gui_test(img)
             height - padding - (row - 1)*(row_height + padding) ...
             ] ...
         );
-    imshow(img, [window_min window_max]);
+    imshow(h.img, [window_min window_max], 'parent', h.image_view);
 
     row = 7;
-    h.histogram = axes( ...
-        'parent', main_window, ...
+    h.hist_view = axes( ...
+        'parent', main_figure, ...
         'units', 'points', ...
         'box', 'on', ...
         'position', [ ...
@@ -1578,22 +1689,23 @@ function rct_gui_test(img)
             ] ...
         );
     h.plot = plot( ...
-        'parent', h.histogram, ...
+        'parent', h.hist_view, ...
+        [1:length(h.hist)] * (max(max(h.img))/length(h.hist)), h.hist, 'b', ...
         [window_min window_max], [0 0], 'r', ...
         [window_max window_max], [0 1], 'r', ...
         [window_min window_max], [1 1], 'r', ...
         [window_min window_min], [1 0], 'r' ...
         );
-    set(h.histogram, 'xlim', [window_min window_max]);
-    set(h.histogram, 'xtick', [window_min window_max]);
-    set(h.histogram, 'xticklabel', {});
-    set(h.histogram, 'ylim', [0 1]);
-    set(h.histogram, 'ytick', [0 1]);
-    set(h.histogram, 'yticklabel', {});
+    set(h.hist_view, 'xlim', [window_min window_max]);
+    set(h.hist_view, 'xtick', [window_min window_max]);
+    set(h.hist_view, 'xticklabel', {});
+    set(h.hist_view, 'ylim', [0 1]);
+    set(h.hist_view, 'ytick', [0 1]);
+    set(h.hist_view, 'yticklabel', {});
 
     row = 6;
     h.level_label = uicontrol( ...
-        'parent', main_window, ...
+        'parent', main_figure, ...
         'style', 'text', ...
         'units', 'points', ...
         'tag', 'level_label', ...
@@ -1610,14 +1722,14 @@ function rct_gui_test(img)
 
     row = 5;
     h.level_selector = uicontrol( ...
-        'parent', main_window, ...
+        'parent', main_figure, ...
         'style', 'slider', ...
         'units', 'points', ...
         'tag', 'level', ...
         'tooltipstring', 'Select level', ...
         'callback', @rct_update_gui_test, ...
         'min', level_min, 'max', level_max, ...
-        'sliderstep', [0.01 0.01], ...
+        'sliderstep', [0.001 0.001], ...
         'value', level_value, ...
         'enable', 'off', ...
         'position', [ ...
@@ -1630,7 +1742,7 @@ function rct_gui_test(img)
 
     row = 4;
     h.level_scale_label_left = uicontrol( ...
-        'parent', main_window, ...
+        'parent', main_figure, ...
         'style', 'text', ...
         'units', 'points', ...
         'tag', 'level_scale_label_left', ...
@@ -1647,7 +1759,7 @@ function rct_gui_test(img)
 
     row = 4;
     h.level_scale_label_right = uicontrol( ...
-        'parent', main_window, ...
+        'parent', main_figure, ...
         'style', 'text', ...
         'units', 'points', ...
         'tag', 'level_scale_label_right', ...
@@ -1664,7 +1776,7 @@ function rct_gui_test(img)
 
     row = 3;
     h.window_label = uicontrol( ...
-        'parent', main_window, ...
+        'parent', main_figure, ...
         'style', 'text', ...
         'units', 'points', ...
         'tag', 'window_label', ...
@@ -1681,14 +1793,14 @@ function rct_gui_test(img)
 
     row = 2;
     h.window_selector = uicontrol( ...
-        'parent', main_window, ...
+        'parent', main_figure, ...
         'style', 'slider', ...
         'units', 'points', ...
         'tag', 'window', ...
         'tooltipstring', 'Select window', ...
         'callback', @rct_update_gui_test, ...
         'min', window_min, 'max', window_max, ...
-        'sliderstep', [0.01 0.01], ...
+        'sliderstep', [0.001 0.001], ...
         'value', window_value, ...
         'position', [ ...
             slider_origin (row - 1)*(row_height + padding) ...
@@ -1699,7 +1811,7 @@ function rct_gui_test(img)
 
     row = 1;
     h.window_scale_label_left = uicontrol( ...
-        'parent', main_window, ...
+        'parent', main_figure, ...
         'style', 'text', ...
         'units', 'points', ...
         'tag', 'window_scale_label_left', ...
@@ -1716,7 +1828,7 @@ function rct_gui_test(img)
 
     row = 1;
     h.window_scale_label_right = uicontrol( ...
-        'parent', main_window, ...
+        'parent', main_figure, ...
         'style', 'text', ...
         'units', 'points', ...
         'tag', 'window_scale_label_right', ...
@@ -1731,7 +1843,7 @@ function rct_gui_test(img)
             ] ...
         );
 
-    % Store all handles in main_window as userdata.
-    guidata(main_window, h);
+    % Store all handles in main_figure as userdata.
+    guidata(main_figure, h);
 
 endfunction;

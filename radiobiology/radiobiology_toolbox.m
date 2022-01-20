@@ -69,9 +69,83 @@ printf("Radiobiology Toolbox v%s\n\n", kVersionString);
 
 % =============================================================================
 %
+% Global constants definition section
+%
+% =============================================================================
+
+alpha_beta_k = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 5.0, 6.0, 7.0, 8.0, ...
+    9.0, 10.0, 12.0, 14.0, 16.0, 18.0, 20.0 25.0, 30.0];
+
+% =============================================================================
+%
 % Functions declarations
 %
 % =============================================================================
+
+% /////////////////////////////////////////////////////////////////////////////
+%
+% function lq_bed(ab, tdose, fr) - Calculate biologically effective dose
+%
+% TODO: Put function description here
+%
+% /////////////////////////////////////////////////////////////////////////////
+
+function result = lq_bed(ab, D, n)
+
+    % Initialize result.
+    result = NaN;
+
+    % Do some basic sanity checking first.
+    if(not(0 < ab))
+        error("Invalid parameter value for 'ab': %.1f! Alpha/beta ratio must be a positive value greater than zero.", ab);
+        return;
+    endif;
+    if(not(1.5 <= D))
+        error("Invalid parameter value for 'D': %.1f! Total treatment dose must be a positive value greater than one.", ab);
+        return;
+    endif;
+    if(not(1 <= n))
+        error("Invalid parameter value for 'n': %d! Number of fractions must be a positive integer value greater than zero.", ab);
+        return;
+    endif;
+
+    d = D/n;
+    result = D*(1 + (d/ab));
+
+endfunction;
+
+
+% /////////////////////////////////////////////////////////////////////////////
+%
+% function lq_eqd2(ab, tdose, fr) - Calculate equivalent dose
+%
+% TODO: Put function description here
+%
+% /////////////////////////////////////////////////////////////////////////////
+
+function result = lq_eqd2(ab, D, n)
+
+    % Initialize result.
+    result = NaN;
+
+    % Do some basic sanity checking first.
+    if(not(0 < ab))
+        error("Invalid parameter value for 'ab': %.1f! Alpha/beta ratio must be a positive value greater than zero.", ab);
+        return;
+    endif;
+    if(not(1.5 <= D))
+        error("Invalid parameter value for 'D': %.1f! Total treatment dose must be a positive value greater than one.", ab);
+        return;
+    endif;
+    if(not(1 <= n))
+        error("Invalid parameter value for 'n': %d! Number of fractions must be a positive integer value greater than zero.", ab);
+        return;
+    endif;
+
+    result = lq_bed(ab, D, n)/(1 + (2.0/ab));
+
+endfunction;
+
 
 % /////////////////////////////////////////////////////////////////////////////
 %
