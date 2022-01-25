@@ -643,9 +643,18 @@ function rct_hist_plot(od, dataset_name="Unknown", nbins=1000)
 
     endif;
 
-    if(not(isequal("char", class(dataset_name))))
-        error("Invalid data type. Parameter 'dataset_name' must be of type 'char' not '%s'.", ...
+    if(not(ischar(dataset_name)))
+        error("Invalid data type! Parameter 'title' must be of type 'char' not '%s'.", ...
             class(dataset_name) ...
+            );
+
+        return;
+
+    endif;
+
+    if(not(isinteger(nbins)))
+        error("Invalid data type! Parameter 'num_bins' must be of type 'int' not '%s'.", ...
+            class(nbins) ...
             );
 
         return;
