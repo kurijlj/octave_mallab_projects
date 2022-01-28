@@ -45,13 +45,13 @@ function rct_gui_plot_hist(data, data_title="Unknown", num_bins=1000)
 
     endif;
 
-    % All is fine, proceed with execution
-    min_val = min(min(data));
-    max_val = max(max(data));
-
-    % Calculate and normalize data histogram
-    data_hist = rct_gui_fast_hist(data, num_bins, 'RCT Histogram Plot');
+    % All is fine, proceed with execution. Calculate and normalize
+    % data histogram
+    [data_hist, data_hist_bins] ...
+        = rct_gui_fast_hist(data, num_bins, 'RCT Histogram Plot');
     data_hist = data_hist / max(data_hist);
+    x_min = min(data_hist_bins);
+    x_max = max(data_hist_bins);
 
     % Load graphics toolkit
     graphics_toolkit qt;
@@ -70,14 +70,15 @@ function rct_gui_plot_hist(data, data_title="Unknown", num_bins=1000)
             0.8 ...
             ] ...
         );
-    plot( ...
+    bar( ...
         'parent', hist_view, ...
-        % [1:num_bins] * ((max_val - min_val)/num_bins), ...
-        [1:num_bins], ...
+        % [1:num_bins] * ((x_max - x_min)/num_bins), ...
+        % [1:num_bins], ...
+        data_hist_bins, ...
         data_hist ...
         );
-    set(hist_view, 'xlim', [min_val max_val]);
-    set(hist_view, 'xlabel', 'Bin centers');
+    set(hist_view, 'xlim', [x_min x_max]);
+    set(hist_view, 'xlabel', 'Bins centers');
     set(hist_view, 'ylim', [0 1]);
     set(hist_view, 'ylabel', 'Distribution');
     set(hist_view, 'title', sprintf("Histogram for: %s", data_title));
