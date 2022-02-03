@@ -1,19 +1,19 @@
-% 'rct_cli_fast_hist_flt' is a function from the package: 'Radiochromic Film Toolbox'
+% 'rct_cli_fast_hist_int8' is a function from the package: 'Radiochromic Film Toolbox'
 %
-%  -- [num_el, bin_centers] = rct_cli_fast_hist_flt (data, num_bins)
-%      Produce histogram counts for the given dataset of floating point values.
+%  -- [num_el, bin_centers] = rct_cli_fast_hist_int8 (data, num_bins)
+%      Produce histogram counts for the given dataset of int8 values.
 %
 %      Algorithm is mainly tested on the 2D data but it should be able to handle
 %      1-dimensional, as well as 3-dimensional data.
 %
 %      Calculation progress is displayed to 'stdout'.
 %
-%      See also: rct_cli_fast_hist_int, rct_gui_fast_hist, rct_gui_hist_plot.
+%      See also: rct_gui_fast_hist, rct_gui_hist_plot.
 
-function [num_el, bin_centers] = rct_cli_fast_hist_flt(data, num_bins)
+function [num_el, bin_centers] = rct_cli_fast_hist_int8(data, num_bins)
 
     % Initialize return variables
-    num_el = NaN;  % Store array of number of elements for each bin (data distribution)
+    num_el = NaN;  % Store array od number of elements for each bin (data distribution)
     bin_centers = NaN;  % Store array containg values of bin centers
 
     % Do basic sanity checking first. Before anything else we need a matrix
@@ -25,9 +25,14 @@ function [num_el, bin_centers] = rct_cli_fast_hist_flt(data, num_bins)
 
     endif;
 
-    % Matrix values must be of floating point type, ...
-    if(not(isfloat(data)))
-        error("Invalid data type!. Parameter 'data' must be a floating point value, not '%s'.", ...
+    % Matrix values must be of int8 type, ...
+    data_class = class(data);
+    if(not(strncmp( ...
+            'int8', ...
+            data_class, ...
+            min(length('int8'), length(data_class)) ...
+            )))
+        error("Invalid data type!. Parameter 'data' must be an int8 value, not '%s'.", ...
             class(data) ...
             );
 
@@ -36,8 +41,13 @@ function [num_el, bin_centers] = rct_cli_fast_hist_flt(data, num_bins)
     endif;
 
     % ... so must number of bins value.
-    if(not(isfloat(num_bins)))
-        error("Invalid data type! Parameter 'num_bins' must be a floating point value, not '%s'.", ...
+    num_bins_class = class(num_bins);
+    if(not(strncmp( ...
+            'int8', ...
+            num_bins_class, ...
+            min(length('int8'), length(num_bins_class)) ...
+            )))
+        error("Invalid data type! Parameter 'num_bins' must be an int8 value, not '%s'.", ...
             class(num_bins) ...
             );
 
@@ -69,44 +79,21 @@ function [num_el, bin_centers] = rct_cli_fast_hist_flt(data, num_bins)
 
     endif;
 
-    % All is fine, proceed with execution.
-    min_val = 0;
-    max_val = 0;
-    depth = 0;
+    % All is fine, proceed with execution. For integer values we want to span
+    % bins range all over the range of all possible integer values for the given
+    % integer class (uint8, int8, uint16, int16, uint 32, int32, uint64, int64)
+    min_val = intmin('int8');
+    max_val = intmax('int8');
 
-    % For floating point values we want to span bins range across the range
-    % from the minimum value existing in the dataset to the maximum value
-    % existing in the dataset
-    if(3 == dim)
-        min_val = min(min(min(data)));
-        max_val = max(max(max(data)));
-
-    elseif(2 == dim)
-        min_val = min(min(data));
-        max_val = max(max(data));
-
-    else
-        % We have one dimensional matrix (array)
-        min_val = min(data);
-        max_val = max(data);
-
-    endif;
-
-    depth = max_val - min_val;
-
-    if(0 == depth)
-        % We have special case when we are dealing with a single value
-        % dataset. In that case we are spanning bins range all over a
-        % possible range of values for the given floating point class
-        fp_class = class(data);
-        min_val = (-1)*flintmax(fp_class);
-        max_val = flintmax(fp_class);
-        depth = max_val - min_val;
-
-    endif;
+    % We are doing following portion of code because expression:
+    %
+    %   intmax(int_class) - intmin(int_class)
+    %
+    % yields values that are different from what we expect, for some reason
+    depth = intmax('int8');
 
     bin_size = depth / num_bins;
-    bin_centers = zeros(1, num_bins);
+    bin_centers = int8(zeros(1, num_bins));
     num_el = zeros(1, num_bins);
 
     % Give feedback on calculation progress to 'stdout'
