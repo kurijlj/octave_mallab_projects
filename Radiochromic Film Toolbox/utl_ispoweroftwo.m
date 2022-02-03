@@ -22,9 +22,10 @@ function result = utl_ispoweroftwo(X)
     endif;
 
     if(isinteger(X))
-        for n = uint64(1:intmax('uint64'))
-            Y = uint64(pow2(n));
+        n = uint64(1);
+        Y = uint64(pow2(n));
 
+        while(Y <= uint64(X))
             if(Y == uint64(X))
                 % X is power of two! Break execution and return 'true'.
                 result = 1;
@@ -32,21 +33,17 @@ function result = utl_ispoweroftwo(X)
 
             endif;
 
-            if(Y > uint64(X))
-                % We exhausted all powers of two that are smaller than X,
-                % so X can't be represented as 2^{n}. Break execution and
-                % return 'false'.
-                return;
+            n = n + 1;
+            Y = uint64(pow2(n));
 
-            endif;
-
-        endfor;
+        endwhile;
 
     else
         % We are dealing with a floating point value
-        for n = double(1:flintmax())
-            Y = double(pow2(n));
+        n = double(1);
+        Y = double(pow2(n));
 
+        while(Y <= double(X))
             if(Y == double(X))
                 % X is power of two! Break execution and return 'true'.
                 result = 1;
@@ -54,15 +51,10 @@ function result = utl_ispoweroftwo(X)
 
             endif;
 
-            if(Y > double(X))
-                % We exhausted all powers of two that are smaller than X,
-                % so X can't be represented as 2^{n}. Break execution and
-                % return 'false'.
-                return;
+            n = n + 1;
+            Y = double(pow2(n));
 
-            endif;
-
-        endfor;
+        endwhile;
 
     endif;
 
