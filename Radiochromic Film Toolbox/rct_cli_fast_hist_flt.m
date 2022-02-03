@@ -3,11 +3,10 @@
 %  -- [num_el, bin_centers] = rct_cli_fast_hist_flt (data, num_bins)
 %      Produce histogram counts for the given dataset of floating point values.
 %
-%      Algorithm is mainly tested on the 2D data but it should be able to
-%      1-dimensional, as well 3-dimensional data too.
+%      Algorithm is mainly tested on the 2D data but it should be able to handle
+%      1-dimensional, as well as 3-dimensional data.
 %
-%      The function also displays information on calculation progrees to the
-%      'stdout'.
+%      Calculation progress is displayed to 'stdout'.
 %
 %      See also: rct_cli_fast_hist_int, rct_gui_fast_hist, rct_gui_hist_plot.
 
@@ -26,9 +25,9 @@ function [num_el, bin_centers] = rct_cli_fast_hist_flt(data, num_bins)
 
     endif;
 
-    % Matrix values must be of numerical type
+    % Matrix values must be of floating point type
     if(not(isfloat(data)))
-        error("Invalid data type!. Parameter 'data' must be a floating point value, not a '%s'.", ...
+        error("Invalid data type!. Parameter 'data' must be a floating point value, not '%s'.", ...
             class(data) ...
             );
 
@@ -36,8 +35,8 @@ function [num_el, bin_centers] = rct_cli_fast_hist_flt(data, num_bins)
 
     endif;
 
-    if(not(isinteger(num_bins)))
-        error("Invalid data type! Parameter 'num_bins' must be an integer value, not a'%s'.", ...
+    if(not(isfloat(num_bins)))
+        error("Invalid data type! Parameter 'num_bins' must be a floating point value, not '%s'.", ...
             class(num_bins) ...
             );
 
@@ -95,7 +94,7 @@ function [num_el, bin_centers] = rct_cli_fast_hist_flt(data, num_bins)
     depth = max_val - min_val;
 
     if(0 == depth)
-        % We have special case where we are dealing with single value
+        % We have special case when we are dealing with a single value
         % dataset. In that case we are spanning bins range all over a
         % possible range of values for the given floating point class
         fp_class = class(data);

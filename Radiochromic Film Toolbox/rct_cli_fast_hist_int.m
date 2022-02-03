@@ -1,18 +1,16 @@
-% 'rct_cli_fast_hist' is a function from the package: 'Radiochromic Film Toolbox'
+% 'rct_cli_fast_hist_int' is a function from the package: 'Radiochromic Film Toolbox'
 %
-%  -- [num_el, bin_centers] = rct_cli_fast_hist (data, num_bins)
-%      Produce histogram counts for the given dataset.
+%  -- [num_el, bin_centers] = rct_cli_fast_hist_int (data, num_bins)
+%      Produce histogram counts for the given dataset of integer values.
 %
-%      Algorithm is mainly tested on the 2D data but it should be able to
-%      1-dimensional, as well 3-dimensional data too. It is also designed to
-%      handle any type of numerical data (e.g. integer, floating point).
+%      Algorithm is mainly tested on the 2D data but it should be able to handle
+%      1-dimensional, as well as 3-dimensional data.
 %
-%      The function also displays information on calculation progrees to the
-%      'stdout'.
+%      Calculation progress is displayed to 'stdout'.
 %
 %      See also: rct_gui_fast_hist, rct_gui_hist_plot.
 
-function [num_el, bin_centers] = rct_cli_fast_hist(data, num_bins)
+function [num_el, bin_centers] = rct_cli_fast_hist_int(data, num_bins)
 
     % Initialize return variables
     num_el = NaN;  % Store array od number of elements for each bin (data distribution)
@@ -27,9 +25,9 @@ function [num_el, bin_centers] = rct_cli_fast_hist(data, num_bins)
 
     endif;
 
-    % Matrix values must be of numerical type
-    if(not(isnumeric(data)))
-        error("Invalid data type!. Parameter 'data' must be a numerical matrix, not '%s'.", ...
+    % Matrix values must be of integer type
+    if(not(isinteger(data)))
+        error("Invalid data type!. Parameter 'data' must be an integer value, not '%s'.", ...
             class(data) ...
             );
 
@@ -37,8 +35,8 @@ function [num_el, bin_centers] = rct_cli_fast_hist(data, num_bins)
 
     endif;
 
-    if(not(isnumeric(num_bins)))
-        error("Invalid data type! Parameter 'num_bins' must be of numeric type, not '%s'.", ...
+    if(not(isinteger(num_bins)))
+        error("Invalid data type! Parameter 'num_bins' must be an integer value, not '%s'.", ...
             class(num_bins) ...
             );
 
@@ -75,68 +73,33 @@ function [num_el, bin_centers] = rct_cli_fast_hist(data, num_bins)
     max_val = 0;
     depth = 0;
 
-    if(isinteger(data))
-        % If we are dealing with integer data we span bins range all over the
-        % range of all possible integer values for the given integer class
-        % (uint8, int8, uint16, int16, uint 32, int32, uint64, int64)
-        int_class = class(data);
-        min_val = intmin(int_class);
-        max_val = intmax(int_class);
+    % For integer values we want to span bins range all over the range of all
+    %possible integer values for the given integer class (uint8, int8, uint16,
+    % int16, uint 32, int32, uint64, int64)
+    int_class = class(data);
+    min_val = intmin(int_class);
+    max_val = intmax(int_class);
 
-        % We are doing following portion of code because expression:
-        %
-        %   intmax(int_class) - intmin(int_class)
-        %
-        % yields values that are different from what we expect, for some reason
-        switch(int_class)
-            case {'uint8' 'int8'}
-                depth = intmax('uint8');
+    % We are doing following portion of code because expression:
+    %
+    %   intmax(int_class) - intmin(int_class)
+    %
+    % yields values that are different from what we expect, for some reason
+    switch(int_class)
+        case {'uint8' 'int8'}
+            depth = intmax('uint8');
 
-            case {'uint16' 'int16'}
-                depth = intmax('uint16');
+        case {'uint16' 'int16'}
+            depth = intmax('uint16');
 
-            case {'uint32' 'int32'}
-                depth = intmax('uint32');
+        case {'uint32' 'int32'}
+            depth = intmax('uint32');
 
-            otherwise
-                % We are dealing with 64-bits wide values (uint64, int64)
-                depth = intmax('uint64');
+        otherwise
+            % We are dealing with 64-bits wide values (uint64, int64)
+            depth = intmax('uint64');
 
-        endswitch;
-
-    else
-        % We are dealing with floating point values. For floating point values
-        % we want to span bins range across the range from the minimum value
-        % existing in the dataset to the maximum value existing in the dataset
-        if(3 == dim)
-            min_val = min(min(min(data)));
-            max_val = max(max(max(data)));
-
-        elseif(2 == dim)
-            min_val = min(min(data));
-            max_val = max(max(data));
-
-        else
-            % We have one dimensional matrix (array)
-            min_val = min(data);
-            max_val = max(data);
-
-        endif;
-
-        depth = max_val - min_val;
-
-        if(0 == depth)
-            % We have special case where we are dealing with single value
-            % dataset. In that case we are spanning bins range all over a
-            % possible range of values for the given floating point class
-            fp_class = class(data);
-            min_val = (-1)*flintmax(fp_class);
-            max_val = flintmax(fp_class);
-            depth = max_val - min_val;
-
-        endif;
-
-    endif;
+    endswitch;
 
     bin_size = depth / num_bins;
     bin_centers = zeros(1, num_bins);
