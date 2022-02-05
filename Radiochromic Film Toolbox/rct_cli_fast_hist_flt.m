@@ -53,7 +53,7 @@ function [num_el, bin_centers] = rct_cli_fast_hist_flt(data, num_bins)
         % We do not support matrixes with more than three dimesions
         error(
             "Invalid data type! Parameter 'data' must be a matrix with up to three dimensions."
-        );
+            );
 
         return;
 
@@ -63,7 +63,19 @@ function [num_el, bin_centers] = rct_cli_fast_hist_flt(data, num_bins)
         % Probably an empty matrix
         error(
             "Invalid data type! Parameter 'data' has no items (empty matrix)."
-        );
+            );
+
+        return;
+
+    endif;
+
+    % Check if we are dealing with number of data bins supported by the
+    % algorithm
+    if(rct_num_bins_max() < num_bins)
+        error(
+            "Invalid value! Not defined for 'num_bins' > '%d' objects.", ...
+            rct_num_bins_max()
+            );
 
         return;
 
@@ -92,15 +104,30 @@ function [num_el, bin_centers] = rct_cli_fast_hist_flt(data, num_bins)
 
     endif;
 
+    % Check if data range is within range supported by algorithm
+    lower_bound = (-1)*(double(intmax('uint16')) + 1);
+    upper_bound = double(intmax('uint16'));
+    if(not((lower_bound <= min_val) && (upper_bound >= min_val)) ...
+            || not((lower_bound <= max_val) && (upper_bound >= max_val)) ...
+            )
+        error(
+            "Invalid data range! Not defined for data values < %d and > %d.", ...
+            lower_bound, ...
+            upper_bound ...
+            );
+
+        return;
+
+    endif;
+
     depth = max_val - min_val;
 
     if(0 == depth)
         % We have special case when we are dealing with a single value
         % dataset. In that case we are spanning bins range all over a
-        % possible range of values for the given floating point class
-        fp_class = class(data);
-        min_val = (-1)*flintmax(fp_class);
-        max_val = flintmax(fp_class);
+        % supported range of values (i.e. from -65536 to 65535)
+        min_val = lower_bound;
+        max_val = upper_bound;
         depth = max_val - min_val;
 
     endif;

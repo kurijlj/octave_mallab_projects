@@ -18,10 +18,10 @@
 %      Possible values for TYPE, and coressponding maximum number of bins are:
 %
 %           "int8"
-%                signed 8-bit integer, NUM_BINS_MAX = 256.
+%                signed 8-bit integer, NUM_BINS_MAX = 255.
 %
 %           "int16"
-%                signed 16-bit integer, NUM_BINS_MAX = 65536.
+%                signed 16-bit integer, NUM_BINS_MAX = 65535.
 %
 %           "int32"
 %                signed 32-bit integer, NUM_BINS_MAX = 0 (NOT SUPPORTED).
@@ -30,10 +30,10 @@
 %                signed 64-bit integer, NUM_BINS_MAX = 0 (NOT SUPPORTED).
 %
 %           "uint8"
-%                unsigned 8-bit integer, NUM_BINS_MAX = 256.
+%                unsigned 8-bit integer, NUM_BINS_MAX = 255.
 %
 %           "uint16"
-%                unsigned 16-bit integer, NUM_BINS_MAX = 65536.
+%                unsigned 16-bit integer, NUM_BINS_MAX = 65535.
 %
 %           "uint32"
 %                unsigned 32-bit integer, NUM_BINS_MAX = 0 (NOT SUPPORTED).
@@ -42,10 +42,10 @@
 %                unsigned 64-bit integer, NUM_BINS_MAX = 0 (NOT SUPPORTED).
 %
 %           "single"
-%                single precision floating point, NUM_BINS_MAX = 131072.
+%                single precision floating point, NUM_BINS_MAX = 131071.
 %
 %           "double"
-%                double precision floating point, NUM_BINS_MAX = 131072.
+%                double precision floating point, NUM_BINS_MAX = 131071.
 %
 %           The default for TYPE is "double".
 %
@@ -58,7 +58,7 @@ function result = rct_num_bins_max(VAR="double")
     var_type = class(VAR);  % Set to default value.
 
     % Do basic sanity checking first. Given value must be numerical.
-    if(ischar(VAR))
+    if(ischar(VAR) && isrow(VAR))
         % Type string passed, reinitialize type string.
         var_type = strcat(VAR);
 
@@ -66,10 +66,10 @@ function result = rct_num_bins_max(VAR="double")
 
     switch(var_type)
         case {"uint8" "int8"}
-            result = uint32(intmax("uint8")) + 1;
+            result = uint32(intmax("uint8"));
 
         case {"uint16" "int16"}
-            result = uint32(intmax("uint16")) + 1;
+            result = uint32(intmax("uint16"));
 
         case {"uint32" "int32"}
             return;
@@ -78,11 +78,11 @@ function result = rct_num_bins_max(VAR="double")
             return;
 
         case {"single" "double"}
-            result = (double(intmax("uint16")) + 1)*2;
+            result = double(intmax('uint16'))*2 + 1;
             return;
 
         otherwise
-            if(ischar(VAR))
+            if(ischar(VAR) && isrow(VAR))
                 error("Invalid data type!. Not defined for '%s' objects.", ...
                     VAR ...
                     );

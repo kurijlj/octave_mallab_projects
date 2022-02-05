@@ -13,7 +13,7 @@ function result = utl_ispoweroftwo(X)
 
     % Do basic sanity checking first. Given value must be numerical.
     if(not(isnumeric(X)))
-        error("Invalid data type!. Parameter 'X' must be a numerical value, not '%s'.", ...
+        error("Invalid data type!. Not defined for '%s' objects.", ...
             class(data) ...
             );
 
@@ -22,7 +22,7 @@ function result = utl_ispoweroftwo(X)
     endif;
 
     if(isinteger(X))
-        n = uint64(1);
+        n = uint64(0);
         Y = uint64(pow2(n));
 
         while(Y <= uint64(X))
@@ -40,7 +40,7 @@ function result = utl_ispoweroftwo(X)
 
     else
         % We are dealing with a floating point value
-        n = double(1);
+        n = double(0);
         Y = double(pow2(n));
 
         while(Y <= double(X))
