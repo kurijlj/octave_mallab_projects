@@ -1,11 +1,27 @@
-% 'rct_fast_hist'_2D is a function from the package: 'Radiochromic Film Toolbox'
+% 'rct_fast_hist_2D' is a function from the package: 'Radiochromic Film Toolbox'
 %
-%  -- [dist, bin_centers] = rct_cli_fast_hist (data, num_bins)
-%      Produce histogram counts for the given 2D dataset.
+%  -- [dist, bin_centers] = rct_fast_hist_2D (data, num_bins, feedback)
+%      Produce histogram counts for the given dataset.
 %
-%      See also: rct_gui_fast_hist, rct_gui_hist_plot.
+%      Algorithm supports datasets of floating point values, int8, uint8, int16
+%      and uint16.
+%
+%      If needed function can display calculation progress to 'cli' or 'gui'.
+%      For this to be enabled user must specify desired progress status display
+%      to 'feedback' parameter. Possible values for 'feedback' are
+%
+%      'none'
+%          No progress indicator is required.
+%
+%      'CLI'
+%          Display calculation status to 'Command Window'.
+%
+%      'GUI'
+%          Display calculation status to GUI dialog box.
+%
+%      See also: rct_gui_hist_plot.
 
-function [dist, bin_centers] = rct_fast_hist_2D(data, num_bins, feedback=0)
+function [dist, bin_centers] = rct_fast_hist_2D(data, num_bins, feedback='none')
 
     % Initialize return variables
     num_el = NaN;  % Store array od number of elements for each bin (data distribution).
@@ -14,7 +30,7 @@ function [dist, bin_centers] = rct_fast_hist_2D(data, num_bins, feedback=0)
     % Do basic sanity checking first. Before anything else we need a matrix
     % to deal with.
     if(not(ismatrix(data)))
-        error("Invalid data type!. Not defined for non-matrix objects.");
+        error('Invalid data type!. Not defined for non-matrix objects.');
 
         return;
 
@@ -23,7 +39,7 @@ function [dist, bin_centers] = rct_fast_hist_2D(data, num_bins, feedback=0)
     % Check if we are dealing with 2D matrix.
     dim = size(size(data))(2);
     if(2 ~= dim)
-        error("Invalid data type!. Not defined for non-2D matrices.");
+        error('Invalid data type!. Not defined for matrices with more than 2 dimensions.');
 
         return;
 
@@ -31,7 +47,7 @@ function [dist, bin_centers] = rct_fast_hist_2D(data, num_bins, feedback=0)
 
     % Matrix values must be of numerical type ...
     if(not(isnumeric(data)))
-        error("Invalid data type!. Not defined for non-numerical matrices.");
+        error('Invalid data type!. Not defined for non-numerical matrices.');
 
         return;
 
@@ -39,7 +55,7 @@ function [dist, bin_centers] = rct_fast_hist_2D(data, num_bins, feedback=0)
 
     % so must number of bins.
     if(not(isnumeric(num_bins)))
-        error("Invalid data type! Not defined for non-numerical number of bins.");
+        error('Invalid data type! Number of bins must be a numerical value.');
 
         return;
 
@@ -73,7 +89,7 @@ function [dist, bin_centers] = rct_fast_hist_2D(data, num_bins, feedback=0)
             otherwise
                 % We are dealing with unsupported bit depths (i.e. int32,
                 % uint32, int64, uint64). Report error and stop execution.
-                error("Invalid data type! Not defined for more than 16 bits per sample.");
+                error('Invalid data type! Not defined for more than 16 bits per sample.');
 
                 return;
 
@@ -99,67 +115,53 @@ function [dist, bin_centers] = rct_fast_hist_2D(data, num_bins, feedback=0)
 
     endif;
 
-    % if(is_function_handle(feedback))
-    %     feval(feedback, 0);
+    % If progress feedback is required by the user initialize progress indicator
+    % display
+    progress_window = NaN;
+    switch(feedback)
+        case 'CLI'
+            utl_cli_progress_indicator(0);
 
-    % endif;
+        case 'GUI'
+            progress_window = waitbar( ...
+                0.0, ...
+                'Calculating histogram ...', ...
+                'name', 'RCT Fast Histogram Calculator' ...
+                );
 
-    % Calculate bin centers
-    bin_size = depth / (num_bins - 1);
+    endswitch;
+
+    % Calculate bin centers and distribution
+    bin_size = depth/(num_bins - 1);
     bin_centers = zeros(1, num_bins);
-    index = 1;
+    dist = zeros(1, num_bins);
+    index = 1;  % Initialize counter
     while(num_bins >= index)
         bin_centers(index) = min_val + (index - 1)*bin_size;
+        lbound = min_val + (index - 1.5)*bin_size;
+        lmask = data > lbound;
+        ubound = min_val + (index - 0.5)*bin_size;
+        umask = data <= ubound;
+        dist(index) = sum(sum(lmask.*umask));
+
+        % Update progress indicator
+        switch(feedback)
+            case 'CLI'
+                utl_cli_progress_indicator(index/num_bins);
+
+            case 'GUI'
+                waitbar(index/num_bins, progress_window);
+
+        endswitch;
+
         index = index + 1;
 
     endwhile;
 
-    % Calculate distribution
-    dist= zeros(1, num_bins);
-    binned_data = arrayfun( ...
-        @(x) rct_bin_index(x, min_val, max_val, num_bins), ...
-        data ...
-        );
+    % Clean up GUI
+    if(ishandle(progress_window))
+        delete(progress_window);
 
-    index = 1;
-    while(num_bins >= index)
-        dist(index) = sum(sum(binned_data == index));
-        index = index + 1;
-
-    endwhile;
-
-    % [height, width] = size(data);
-    % x = 1;
-    % y = 1;
-
-    % while(height >= y)
-    %     while(width >= x)
-    %         index = rct_bin_index(data(y, x), min_val, max_val, num_bins);
-    %         dist(index) = dist(index) + 1;
-    %         x = x + 1;
-
-    %     endwhile;
-
-    %     if(is_function_handle(feedback))
-    %         if(y > height && x <= width)
-    %             feval(feedback, (height*x)/(height*width));
-
-    %         elseif(y <= height && x > width)
-    %             feval(feedback, (y*width)/(height*width));
-
-    %         elseif(y > height && x > width)
-    %             feval(feedback, 1);
-
-    %         else
-    %             feval(feedback, (y*x)/(height*width));
-
-    %         endif;
-
-    %     endif;
-
-    %     y = y + 1;
-    %     x = 1;  % Reset counter
-
-    % endwhile;
+    endif;
 
 endfunction;

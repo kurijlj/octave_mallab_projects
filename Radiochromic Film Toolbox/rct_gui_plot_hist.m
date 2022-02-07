@@ -1,54 +1,74 @@
 % 'rct_gui_plot_hist' is a GUI tool from the package: 'Radiochromic Film Toolbox'
 %
-%  -- rct_gui_plot_hist (data, title="Unknown", num_bins=1000)
+%  -- rct_gui_plot_hist (data, title, num_bins)
 %      Plot histogram for the given dataset.
 %
-%      Interface uses rct_gui_fast_hist() to calculate data distribution.
+%      It utilitizes rct_fast_hist_2D() function to calculate data distribution.
 %
-%      See also: rct_cli_fast_hist, rct_gui_fast_hist.
+%      See also: rct_fast_hist_2D.
 
-function rct_gui_plot_hist(data, data_title="Unknown", num_bins=1000)
+function rct_gui_plot_hist(data, data_title='Unknown', num_bins=1024)
 
     % Do basic sanity checking first
     if(not(ismatrix(data)))
-        error("Invalid data type!. Parameter 'data' must be a matrix.");
+        error('Invalid data type!. Not defined for non-matrix objects.');
 
         return;
 
     endif;
 
-    % Matrix values must be of numerical type
+    % Check if we are dealing with 2D matrix.
+    dim = size(size(data))(2);
+    if(2 ~= dim)
+        error('Invalid data type!. Not defined for matrices with more than 2 dimensions.');
+
+        return;
+
+    endif;
+
+    % Matrix values must be of numerical type ...
     if(not(isnumeric(data)))
-        error("Invalid data type!. Parameter 'data' must be a numerical matrix, not '%s'.", ...
-            class(data) ...
-            );
+        error('Invalid data type!. Not defined for non-numerical matrices.');
 
         return;
 
     endif;
 
-    if(not(ischar(data_title)))
-        error("Invalid data type! Parameter 'data_title' must be of type 'char', not '%s'.", ...
-            class(data_title) ...
-            );
-
-        return;
-
-    endif;
-
+    % so must number of bins.
     if(not(isnumeric(num_bins)))
-        error("Invalid data type! Parameter 'num_bins' must be of numeric type, not '%s'.", ...
-            class(num_bins) ...
-            );
+        error('Invalid data type! Number of bins must be a numerical value.');
 
         return;
+
+    endif;
+
+    % Data title must be a character string.
+    if(not(ischar(data_title)))
+        error('Invalid data type! Data title must be a character string.');
+
+        return;
+
+    endif;
+
+    % If integer data check if we are dealing with supported bit depths (i.e.
+    % int8, uint8, int16, uint16.
+    if(isinteger(data))
+        int_class = class(data);
+        switch(int_class)
+            case {'int32' 'uint32' 'int64' 'uint64'}
+                % We are dealing with unsupported bit depths.
+                error('Invalid data type! Not defined for more than 16 bits per sample.');
+
+                return;
+
+        endswitch;
 
     endif;
 
     % All is fine, proceed with execution. Calculate and normalize
     % data histogram
     [data_hist, data_hist_bins] ...
-        = rct_gui_fast_hist(data, num_bins, 'RCT Histogram Plot');
+        = rct_fast_hist_2D(data, num_bins, 'GUI');
     data_hist = data_hist / max(data_hist);
     x_min = min(data_hist_bins);
     x_max = max(data_hist_bins);
