@@ -21,7 +21,7 @@
 %
 %      See also: rct_gui_hist_plot.
 
-function [dist, bin_centers] = rct_fast_hist_2D(data, num_bins, feedback='none')
+function [dist, bin_centers] = rct_fast_hist_2D(data, num_bins=1024, feedback='none')
 
     % Initialize return variables
     num_el = NaN;  % Store array od number of elements for each bin (data distribution).
@@ -119,10 +119,10 @@ function [dist, bin_centers] = rct_fast_hist_2D(data, num_bins, feedback='none')
     % display
     progress_window = NaN;
     switch(feedback)
-        case 'CLI'
+        case {'CLI'}
             utl_cli_progress_indicator(0);
 
-        case 'GUI'
+        case {'GUI'}
             progress_window = waitbar( ...
                 0.0, ...
                 'Calculating histogram ...', ...
@@ -146,10 +146,10 @@ function [dist, bin_centers] = rct_fast_hist_2D(data, num_bins, feedback='none')
 
         % Update progress indicator
         switch(feedback)
-            case 'CLI'
+            case {'CLI'}
                 utl_cli_progress_indicator(index/num_bins);
 
-            case 'GUI'
+            case {'GUI'}
                 waitbar(index/num_bins, progress_window);
 
         endswitch;

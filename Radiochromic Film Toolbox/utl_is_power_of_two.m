@@ -1,12 +1,12 @@
-% 'utl_ispoweroftwo' is a function from the package: 'Utility Toolbox'
+% 'utl_is_power_of_two' is a function from the package: 'Utility Toolbox'
 %
-%  -- result = utl_ispoweroftwo (X)
+%  -- result = utl_is_power_of_two (X)
 %      Return 'true' (1) if X is power of two, i.e. X=2^{n} where n is some
 %      integer number, otherwise return 'false' (0).
 %
 %      See also: 
 
-function result = utl_ispoweroftwo(X)
+function result = utl_is_power_of_two(X)
 
     % Initialize return variable
     result = 0;  % Set to 'false'
