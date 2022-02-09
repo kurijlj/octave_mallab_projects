@@ -5,14 +5,14 @@
 %
 %      See also: rct_gui_hist_plot.
 
-function [window, level] = rct_gui_window_level(data, num_bins=1024)
+function rct_gui_window_level(data, num_bins=1024)
 
     % Intialize return variables to false
     window = -1;
     level = -1;
 
     % Calculate and normalize data distribution
-    data_hist = rct_fast_hist_2D(data, num_bins, 'GUI');
+    [data_hist, data_bins] = rct_fast_hist_2D(data, num_bins, 'GUI');
     data_hist = data_hist / max(data_hist);
 
     % Determine data dynamic range
@@ -64,11 +64,17 @@ function [window, level] = rct_gui_window_level(data, num_bins=1024)
     endif;
 
     % Calculate default values and value ranges for the Window/Level
+
+    % NOTE: The actual slider step size is scaled by the range:
+    %   ActualStep = SliderStep * (Max - Min)
     window_min = 0;
     window = window_max = depth;
     level_min = min_val + window/2;
     level_max = max_val - window/2;
-    level = level_min + ((level_max - level_min)/2);
+    level = (level_max + level_min)/2;  % i.e. level_min + ((level_max - level_min)/2)
+    % Calculate Window/Level frame
+    frame_left = level - (window/2);
+    frame_right = level + (window/2);
 
     % Initialize GUI elements
     graphics_toolkit qt;
@@ -123,7 +129,7 @@ function [window, level] = rct_gui_window_level(data, num_bins=1024)
         'box', 'on', ...
         'position', gui_element_position ...
         );
-    imshow(data, [window_min window_max], 'parent', image_view);
+    imshow(data, [frame_left frame_right], 'parent', image_view);
 
     % Set GUI elements for row #7
     gui_row = 7;
@@ -141,14 +147,14 @@ function [window, level] = rct_gui_window_level(data, num_bins=1024)
         );
     hist_plot = plot( ...
         'parent', hist_view, ...
-        [1:length(data_hist)] * (max(max(data))/length(data_hist)), data_hist, 'b', ...
-        [window_min window_max], [0 0], 'r', ...
-        [window_max window_max], [0 1], 'r', ...
-        [window_min window_max], [1 1], 'r', ...
-        [window_min window_min], [1 0], 'r' ...
+        data_bins, data_hist, 'b', ...
+        [frame_left frame_right], [0 0], 'r', ...
+        [frame_right frame_right], [0 1], 'r', ...
+        [frame_left frame_right], [1 1], 'r', ...
+        [frame_left frame_left], [0 1], 'r' ...
         );
-    set(hist_view, 'xlim', [window_min window_max]);
-    set(hist_view, 'xtick', [window_min window_max]);
+    set(hist_view, 'xlim', [min(data_bins) max(data_bins)]);
+    set(hist_view, 'xtick', [min(data_bins) max(data_bins)]);
     set(hist_view, 'xticklabel', {});
     set(hist_view, 'ylim', [0 1]);
     set(hist_view, 'ytick', [0 1]);
@@ -318,9 +324,10 @@ function [window, level] = rct_gui_window_level(data, num_bins=1024)
     h = guihandles(main_figure);
     h.min_val = min_val;
     h.max_val = max_val;
-    h.depth = depth;
+    % h.depth = depth;
     h.data = data;
     h.data_hist = data_hist;
+    h.data_bins = data_bins;
     h.main_figure = main_figure;
     h.image_view = image_view;
     h.hist_view = hist_view;
@@ -347,28 +354,26 @@ function rct_update_window_level(obj)
         case {h.level_selector}
             % Read selected values from GUI controls
             window = get(h.window_selector, 'value');
-            window_min = 0;
-            window_max = h.depth;
             level = get(h.level_selector, 'value');
 
             % Update label indicating level value
             set(h.level_label, 'string', sprintf('Level: %d', level));
 
-            % Re-calculate selection frame size, position and replot data
-            % histogram.
+            % Re-calculate Window/Level frame, position and replot
+            % data histogram.
             frame_left = level - (window/2);
             frame_right = level + (window/2);
             imshow(h.data, [frame_left frame_right], 'parent', h.image_view);
             h.hist_plot = plot( ...
                 'parent', h.hist_view, ...
-                [1:length(h.data_hist)] * (max(max(h.data))/length(h.data_hist)), h.data_hist, 'b', ...
+                h.data_bins, h.data_hist, 'b', ...
                 [frame_left frame_right], [0 0], 'r', ...
                 [frame_right frame_right], [0 1], 'r', ...
                 [frame_left frame_right], [1 1], 'r', ...
                 [frame_left frame_left], [0 1], 'r' ...
                 );
-            set(h.hist_view, 'xlim', [window_min window_max]);
-            set(h.hist_view, 'xtick', [window_min window_max]);
+            set(h.hist_view, 'xlim', [min(h.data_bins) max(h.data_bins)]);
+            set(h.hist_view, 'xtick', [min(h.data_bins) max(h.data_bins)]);
             set(h.hist_view, 'xticklabel', {});
             set(h.hist_view, 'ylim', [0 1]);
             set(h.hist_view, 'ytick', [0 1]);
@@ -377,11 +382,9 @@ function rct_update_window_level(obj)
         case {h.window_selector}
             % Read selected values from GUI controls
             window = get(h.window_selector, 'value');
-            window_min = 0;
-            window_max = h.max_val - h.min_val;
             level = get(h.level_selector, 'value');
-            level_min = window + (window/2);
-            level_max = window - (window/2);
+            level_min = h.min_val + (window/2);
+            level_max = h.max_val - (window/2);
 
             % Update level selection control
             set(h.level_selector, 'min', level_min);
@@ -413,21 +416,21 @@ function rct_update_window_level(obj)
 
             endif;
 
-            % Re-calculate selection frame size, position and replot data
-            % histogram.
+            % Re-calculate Window/Level frame, position and replot
+            % data histogram.
             frame_left = level - (window/2);
             frame_right = level + (window/2);
             imshow(h.data, [frame_left frame_right], 'parent', h.image_view);
             h.hist_plot = plot( ...
                 'parent', h.hist_view, ...
-                [1:length(h.data_hist)] * (max(max(h.data))/length(h.data_hist)), h.data_hist, 'b', ...
+                h.data_bins, h.data_hist, 'b', ...
                 [frame_left frame_right], [0 0], 'r', ...
                 [frame_right frame_right], [0 1], 'r', ...
                 [frame_left frame_right], [1 1], 'r', ...
                 [frame_left frame_left], [0 1], 'r' ...
                 );
-            set(h.hist_view, 'xlim', [window_min window_max]);
-            set(h.hist_view, 'xtick', [window_min window_max]);
+            set(h.hist_view, 'xlim', [min(h.data_bins) max(h.data_bins)]);
+            set(h.hist_view, 'xtick', [min(h.data_bins) max(h.data_bins)]);
             set(h.hist_view, 'xticklabel', {});
             set(h.hist_view, 'ylim', [0 1]);
             set(h.hist_view, 'ytick', [0 1]);
