@@ -115,8 +115,8 @@ function H = rct_filled_stairs_plot(varargin)
     endif;
 
     % If passed, pop plot limits properties and values
-    [props, xlim] = pop_param('xlim', [min(X) max(X)], props);
-    [props, ylim] = pop_param('ylim', [min(Y) max(Y)], props);
+    [props, xlim] = pop_param('xlim', [], props);
+    [props, ylim] = pop_param('ylim', [], props);
     [props, name] = pop_param('name', 'RCT Step Plot', props);
     [props, units] = pop_param('units', 'points', props);
 
@@ -165,8 +165,14 @@ function H = rct_filled_stairs_plot(varargin)
     % x = [addX, repelem(X(2:end), 2)];
     % y = [repelem(Y(1:end - 1), 2), Y(end)];
     x = [addX, repelem(X, 2)];
+    if(isempty(xlim))
+        xlim = [min(x) max(x)];
+    endif;
     y = [repelem(Y, 2), addY];
-    bottom = ones(size(y)).*xlim(1);
+    if(isempty(ylim))
+       yxlim = [min(y) max(y)];
+    endif;
+    bottom = ones(size(y)).*ylim(1);
 
     % Paint region
     patch( ...
