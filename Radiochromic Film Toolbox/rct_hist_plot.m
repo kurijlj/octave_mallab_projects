@@ -1,19 +1,19 @@
-% 'rct_filled_stairs_plot' is a function from the package: 'Radiochromic Film Toolbox'
+% 'rct_hist_plot' is a function from the package: 'Radiochromic Film Toolbox'
 %
-%  -- rct_filled_stairs_plot (Y)
-%  -- rct_filled_stairs_plot (X, Y)
-%  -- rct_filled_stairs_plot (HAX, ...)
-%  -- H = rct_filled_stairs_plot (...)
+%  -- rct_hist_plot (F)
+%  -- rct_hist_plot (BC, F)
+%  -- rct_hist_plot (HAX, ...)
+%  -- H = rct_hist_plot (...)
 %
 
-function H = rct_filled_stairs_plot(varargin)
+function H = rct_hist_plot(varargin)
 
     % Initialize return value to default value NaN
     H = HAX = NaN;
 
     % Iitialize data arrays to default values
-    X = [];
-    Y = [];
+    BC = [];  % Bin centers array
+    F = [];   % Fequencies array
 
     % Parse and store imput arguments
     [pstnl, props] = parseparams (varargin);
@@ -30,7 +30,7 @@ function H = rct_filled_stairs_plot(varargin)
     % Get number of passed positional arguments
     npstnl = length(pstnl);
 
-    % Function takes up to three positional arguments (i.e. HAX, X, Y). Check if
+    % Function takes up to three positional arguments (i.e. HAX, BC, F). Check if
     % we are deling with correct number of positional arguments
     if(3 < npstnl)
         % Too many positional arguments. Invalid call to function
@@ -40,31 +40,31 @@ function H = rct_filled_stairs_plot(varargin)
 
     elseif(3 == npstnl)
         % Three positional arguments passed. Supposedly we have handle to
-        % drawing axes, vector of abscissa values and vector of ordinate values
+        % drawing axes, vector of bin centers and vector of frequencies
         HAX = pstnl{1};
-        X = pstnl{2};
-        Y = pstnl{3};
+        BC = pstnl{2};
+        F = pstnl{3};
 
     elseif(2 == npstnl)
         % Two positional arguments passed. Two cases are possible. Supposedly we
-        % have handle to drawing axes, and vector of ordinate values. Or,we have
-        % vector of abscissa values and vector of ordinate values
+        % have handle to drawing axes, and vector of frequencies. Or,we have
+        % vector ofbin centers and vector of frequencies
         if(isaxes(pstnl{1}))
             % We have the first case
             HAX = pstnl{1};
-            X = pstnl{2};
+            BC = pstnl{2};
 
         else
             % We have the second case
-            X = pstnl{1};
-            Y = pstnl{2};
+            BC = pstnl{1};
+            F = pstnl{2};
 
         endif;
 
     else
         % Only one positional argument passed so we guess it is a vector of
-        % ordinate values
-        X = pstnl{1};
+        % frequencies
+        BC = pstnl{1};
 
     endif;
 
@@ -78,7 +78,7 @@ function H = rct_filled_stairs_plot(varargin)
     endif;
 
     % Check if first data vector is a one dimensional numerical matrix
-    if(not(is_1d_num_matrix(X)))
+    if(not(is_1d_num_matrix(BC)))
         error('Invalid call to rct_filled_stairs_plot. See help for correct usage.');
 
         return;
@@ -87,7 +87,7 @@ function H = rct_filled_stairs_plot(varargin)
 
     % Check if second data vector is not NaN and is a matrix, because we allow
     % for second vector to be empty vector
-    if(isnan(Y) || not(ismatrix(Y)))
+    if(isnan(F) || not(ismatrix(F)))
         error('Invalid call to rct_filled_stairs_plot. See help for correct usage.');
 
         return;
@@ -97,10 +97,10 @@ function H = rct_filled_stairs_plot(varargin)
     % Check if second vector is empty vector. If empty, user supplied only
     % ordinate values so generate abscissa values from inedx values of ordinate
     % values
-    if(not(isempty(Y)))
+    if(not(isempty(F)))
         % Second vector is not empty so do a full check if we have a one
         % dimensional numerical matrix
-        if(not(is_1d_num_matrix(X)) || length(X) ~= length(Y))
+        if(not(is_1d_num_matrix(BC)) || length(BC) ~= length(F))
             error('Invalid call to rct_filled_stairs_plot. See help for correct usage.');
 
             return;
@@ -109,15 +109,14 @@ function H = rct_filled_stairs_plot(varargin)
 
     else
         % Do reordering and generate abscissa values
-        Y = X;
-        X = [1:length(Y)];
+        F = BC;
+        BC = [1:length(F)];
 
     endif;
 
-    % If passed, pop plot limits properties and values
-    [props, xlim] = pop_param('xlim', [], props);
-    [props, ylim] = pop_param('ylim', [], props);
-    [props, name] = pop_param('name', 'RCT Step Plot', props);
+    % If passed, pop plot properties and values
+    [props, name] = pop_param('name', 'RCT Histogram Plot', props);
+    [props, title] = pop_param('title', 'Histogram', props);
     [props, units] = pop_param('units', 'points', props);
 
     % Check if face color is supplied with arguments
@@ -157,22 +156,19 @@ function H = rct_filled_stairs_plot(varargin)
     % last data point). So we are using algortihm that linearly extrapolates
     % dataset for one point to be able to plot the complete dataset. This is
     % definitely the point for future improvements
-    addX = interp1([1:length(X)], X, 0, 'extrap', 'linear');
-    endX = interp1([1:length(X)], X, length(X) + 1, 'extrap', 'linear');
-    addY = interp1(X, Y, endX, 'extrap', 'linear');
-    % X = [X, interp1([1:length(X)], X, length(X) + 1, 'extrap', 'linear')];
-    % Y = [Y, interp1(X(1:end - 1), Y, X(end), 'extrap', 'linear')];
-    % x = [addX, repelem(X(2:end), 2)];
-    % y = [repelem(Y(1:end - 1), 2), Y(end)];
-    x = [addX, repelem(X, 2)];
-    if(isempty(xlim))
-        xlim = [min(x) max(x)];
-    endif;
-    y = [repelem(Y, 2), addY];
-    if(isempty(ylim))
-       yxlim = [min(y) max(y)];
-    endif;
-    bottom = ones(size(y)).*ylim(1);
+    % addX = interp1([1:length(BC)], BC, 0, 'extrap', 'linear');
+    % endX = interp1([1:length(BC)], BC, length(BC) + 1, 'extrap', 'linear');
+    % addY = interp1(BC, F, endX, 'extrap', 'linear');
+    % x = [addX, repelem(BC, 2)];
+    % Calculate bin width
+    bin_width = BC(2) - BC(1);
+    % Calculate bin edges
+    bin_edges = [BC(1) - bin_width/2, BC + bin_width/2];
+    x = [bin_edges(1) repelem(bin_edges(2:end), 2)];
+    xlim = [bin_edges(1) bin_edges(end)];
+    y = [repelem(F, 2), F(end)];
+    ylim = [0 max(y)];
+    bottom = zeros(size(y));
 
     % Paint region
     patch( ...
@@ -184,7 +180,10 @@ function H = rct_filled_stairs_plot(varargin)
 
     % Set plot limits
     set(H, 'xlim', xlim);
+    set(H, 'xlabel', 'Bin centers');
     set(H, 'ylim', ylim);
+    set(H, 'ylabel', 'Distribution');
+    set(H, 'title', title);
 
 endfunction;
 
