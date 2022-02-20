@@ -1,4 +1,4 @@
-% 'rct_cross_plot' is a function from the package: 'Radiochromic Film Toolbox'
+% 'rct_gui_cross_plot' is a function from the package: 'Radiochromic Film Toolbox'
 %
 %  -- rct_cross_plot ()
 %       img, imgtitle,
@@ -6,7 +6,7 @@
 %       'inline', 'on'/'off',
 %       'crossline', 'on'/'off'
 
-function rct_cross_plot(varargin)
+function rct_gui_cross_plot(varargin)
 
     % Store function name into variable for easier management of error messages
     fname = 'rct_cross_plot';
@@ -251,6 +251,15 @@ function rct_cross_plot(varargin)
 
     endwhile;
 
+    % Determine abscissa units and scale
+    rescalef = 1.0;
+    unit_str = 'pixels';
+    if(not(isnan(keyvalues{1})))
+        rescalef = 25.4 / keyvalues{1};
+        unit_str = 'mm';
+
+    endif;
+
     % Initialize GUI elements
     hax = [];
     hfig = figure('name', 'RCT Cross Plot', 'units', 'points');
@@ -284,22 +293,11 @@ function rct_cross_plot(varargin)
         % Plot inline profile
         if(keyvalues{2})
             phandle = hax(1);
-            x = NaN;
-            if(isnan(keyvalues{1}))
-                % No dpi value set so plot scale in pixels
-                x = [1:height(index)] .- in_cntr;
-
-            else
-                % User set dpi value so plot scale in milimeters
-                mm = 25.4 / keyvalues{1};
-                x = ([1:height(index)] .- in_cntr).*mm;
-
-            endif;
 
             hold(phandle, 'on');
             plot( ...
                 'parent', phandle, ...
-                x, ...
+                ([1:height(index)] .- in_cntr).*rescalef, ...
                 double(varargin{imgs(index)}(:, cross_cntr)) ...
                 );
             hold(phandle, 'off');
@@ -314,22 +312,10 @@ function rct_cross_plot(varargin)
 
             endif;
 
-            x = NaN;
-            if(isnan(keyvalues{1}))
-                % No dpi value set so plot scale in pixels
-                x = [1:width(index)] - cross_cntr;
-
-            else
-                % User set dpi value so plot scale in milimeters
-                mm = 25.4 / keyvalues{1};
-                x = ([1:width(index)] - cross_cntr)*mm;
-
-            endif;
-
             hold(phandle, 'on');
             plot( ...
                 'parent', phandle, ...
-                x, ...
+                ([1:width(index)] .- cross_cntr).*rescalef, ...
                 double(varargin{imgs(index)}(in_cntr, :)) ...
                 );
             hold(phandle, 'off');
@@ -344,15 +330,6 @@ function rct_cross_plot(varargin)
     % position
     in_cntr = round(max(height)/2);
     cross_cntr = round(max(width)/2);
-
-    % Determine abscissa units and scale
-    rescalef = 1.0;
-    unit_str = 'pixels';
-    if(not(isnan(keyvalues{1})))
-        rescalef = 25.4 / keyvalues{1};
-        unit_str = 'mm';
-
-    endif;
 
     if(keyvalues{2})
         phandle = hax(1);
