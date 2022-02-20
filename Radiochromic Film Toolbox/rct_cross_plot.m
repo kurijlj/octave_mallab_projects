@@ -63,7 +63,7 @@ function rct_cross_plot(varargin)
                         % did not pass image title for the current image.
                         % Generate default image title
                         i = length(imgs);  % Get image index
-                        imgtitles = {imgtitles{:} sprintf("IMG #%d", i)};
+                        imgtitles = {imgtitles{:} sprintf('Dataset #%d', i)};
 
                     endif;
 
@@ -76,7 +76,7 @@ function rct_cross_plot(varargin)
                     % Next argument is an image matrix, so generate default
                     % image title
                     i = length(imgs);  % Get image index
-                    imgtitles = {imgtitles{:} sprintf("IMG #%d", i)};
+                    imgtitles = {imgtitles{:} sprintf('Dataset #%d', i)};
 
                 else
                     % An invalid call to function occured
@@ -94,7 +94,7 @@ function rct_cross_plot(varargin)
                 % There is no another function argument following this one, so
                 % assign default image title to an image with current index
                 i = length(imgs);  % Get image index
-                imgtitles = {imgtitles{:} sprintf("IMG #%d", i)};
+                imgtitles = {imgtitles{:} sprintf('Dataset #%d', i)};
 
             endif;
 
@@ -244,85 +244,147 @@ function rct_cross_plot(varargin)
     while(length(imgs) >= index)
         height = [height size(varargin{imgs(index)})(1)];
         width = [width size(varargin{imgs(index)})(2)];
-        minval = [minval min(min(varargin{imgs(index)}))];
-        maxval = [maxval max(max(varargin{imgs(index)}))];
+        minval = [minval double(min(min(varargin{imgs(index)})))];
+        maxval = [maxval double(max(max(varargin{imgs(index)})))];
 
         index = index + 1;
 
     endwhile;
 
-    % Calculate center of plot
-    in_cntr = round(max(height) / 2);
-    cross_cntr = round(max(width) / 2);
-    ord_cntr = round(min(minval) + (max(maxval) - min(minval))/2);
-
     % Initialize GUI elements
+    hax = [];
     hfig = figure('name', 'RCT Cross Plot', 'units', 'points');
-    hax = axes('parent', hfig, 'units', 'points');
+    if(keyvalues{2} && keyvalues{3})
+        hax = [0 0];
+        hax(1) = axes( ...
+            'parent', hfig, ...
+            'position', [0.05, 0.05, 0.9, 0.4] ...
+            );
+        hax(2) = axes( ...
+            'parent', hfig, ...
+            'position', [0.05, 0.55, 0.9, 0.4] ...
+            );
 
-    % Start plotting
+    else
+        hax = [0];
+        hax(1) = axes( ...
+            'parent', hfig, ...
+            'position', [0.05, 0.05, 0.9, 0.9] ...
+            );
+
+    endif;
+
+    % Start to plot
     index = 1;
     while(length(imgs) >= index)
+        % Calculate plot center position
+        in_cntr = round(height(index)/2);
+        cross_cntr = round(width(index)/2);
+
         % Plot inline profile
         if(keyvalues{2})
-            if(keyvalues{3})
-                % We also have to plot crossline
-                subplot(2, 1, 1);
-
-            endif;
-
+            phandle = hax(1);
+            x = NaN;
             if(isnan(keyvalues{1}))
-                % Plot positions in milimeters
-                mm = 25.4 / keyvalues{1};
-                plot( ...
-                    ([1:max(width)] - cross_cntr) * mm, ...
-                    varargin{imgs(index)}(in_cntr, :) ...
-                    );
-                xlabel("Position [mm]");
+                % No dpi value set so plot scale in pixels
+                x = [1:height(index)] .- in_cntr;
 
             else
-                % Plot positions in pixels
-                plot( ...
-                    ([1:max(width)] - cross_cntr), ...
-                    varargsin{imgs(index)}(in_cntr, :) ...
-                    );
-                xlabel("Position [pixels]");
+                % User set dpi value so plot scale in milimeters
+                mm = 25.4 / keyvalues{1};
+                x = ([1:height(index)] .- in_cntr).*mm;
 
             endif;
+
+            hold(phandle, 'on');
+            plot( ...
+                'parent', phandle, ...
+                x, ...
+                double(varargin{imgs(index)}(:, cross_cntr)) ...
+                );
+            hold(phandle, 'off');
 
         endif;
 
         % Plot crossline profile
         if(keyvalues{3})
+            phandle = hax(1);
             if(keyvalues{2})
-                % We also have to plot crossline
-                subplot(2, 1, 2);
+                phandle = hax(2);
 
             endif;
 
+            x = NaN;
             if(isnan(keyvalues{1}))
-                % Plot positions in milimeters
-                mm = 25.4 / keyvalues{1};
-                plot( ...
-                    ([1:max(height)] - in_cntr) * mm, ...
-                    varargin{imgs(index)}(cross_cntr, :) ...
-                    );
-                xlabel("Position [mm]");
+                % No dpi value set so plot scale in pixels
+                x = [1:width(index)] - cross_cntr;
 
             else
-                % Plot positions in pixels
-                plot( ...
-                    ([1:max(height)] - in_cntr), ...
-                    varargsin{imgs(index)}(cross_cntr, :) ...
-                    );
-                xlabel("Position [pixels]");
+                % User set dpi value so plot scale in milimeters
+                mm = 25.4 / keyvalues{1};
+                x = ([1:width(index)] - cross_cntr)*mm;
 
             endif;
+
+            hold(phandle, 'on');
+            plot( ...
+                'parent', phandle, ...
+                x, ...
+                double(varargin{imgs(index)}(in_cntr, :)) ...
+                );
+            hold(phandle, 'off');
 
         endif;
 
         index = index + 1;
 
     endwhile;
+
+    % Set plot and axes titles, and legend. First calculate common plot center
+    % position
+    in_cntr = round(max(height)/2);
+    cross_cntr = round(max(width)/2);
+
+    % Determine abscissa units and scale
+    rescalef = 1.0;
+    unit_str = 'pixels';
+    if(not(isnan(keyvalues{1})))
+        rescalef = 25.4 / keyvalues{1};
+        unit_str = 'mm';
+
+    endif;
+
+    if(keyvalues{2})
+        phandle = hax(1);
+        hold(phandle, 'on');
+        xlim(phandle, [0.0 - in_cntr 0.0 + in_cntr].*rescalef);
+        xlabel(phandle, sprintf('Longitudinal position [%s]', unit_str));
+        ylim(phandle, [min(minval) max(maxval)]);
+        ylabel(phandle, 'Intensity');
+        grid(phandle, 'on');
+        legend(phandle, imgtitles);
+        title(phandle, 'Inline Profile');
+        hold(phandle, 'off');
+
+    endif;
+
+    if(keyvalues{3})
+        phandle = hax(1);
+        if(keyvalues{2})
+            phandle = hax(2);
+
+        endif;
+
+        hold(phandle, 'on');
+        xlim(phandle, [0.0 - cross_cntr 0.0 + cross_cntr].*rescalef);
+        xlabel(phandle, sprintf('Transversal position [%s]', unit_str));
+        ylim(phandle, [min(minval) max(maxval)]);
+        ylabel(phandle, 'Intensity');
+        grid(phandle, 'on');
+        legend(phandle, imgtitles);
+        title(phandle, 'Crossline Profile');
+        hold(phandle, 'off');
+
+    endif;
 
 endfunction;
