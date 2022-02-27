@@ -18,7 +18,7 @@ function H = rct_hist_plot(varargin)
     % Parse and store imput arguments
     [pstnl, props] = parseparams (varargin);
 
-    % Check if eny of positional arguments is passed
+    % Check if any of positional arguments is passed
     if(isempty(pstnl))
         % No positional arguments passed
         error('Invalid call to rct_filled_stairs_plot. See help for correct usage.');
