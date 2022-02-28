@@ -2,27 +2,25 @@
 %
 %  -- [pixel_mean, pixel_std] = rct_read_scanset (varargin)
 %      F1, F2, F3, ...,
+%      'title', 'string describing scanset'
 %      'colorchannel', {'fullcolor', 'red', 'green', 'blue'},
-%      'filter', {'none', median, 'wiener'},
-%      'saveresult', {'true', 'false'},
 %      'progress', {'none', 'CLI', 'GUI'}
 %
 %      TODO: Put function description here
 
-function [pixel_mean, pixel_std] = rct_read_scanset(varargin)
+function [scanset, sctitle] = rct_read_scanset(varargin)
 
     % Store function name into variable for easier management of error messages
     fname = 'rct_read_scanset';
 
     % Initialize return variables to default values
-    pixel_src = {};
-    pixel_mean = [];
-    pixel_std = [];
+    scanset = {};
+    sctitle = {};
 
     % Initialize structures for holding property values and initialize them
     % to default
     fpath = {};
-    keyval = {0, 3, 0, 1};  % {colorchannel, filter, progress}
+    keyval = {'Unknown Scanset', 0, 1};  % {title, colorchannel, progress}
 
     % Check if any argument is passed
     if(0 == nargin)
@@ -37,7 +35,7 @@ function [pixel_mean, pixel_std] = rct_read_scanset(varargin)
     [pos, prop] = parseparams(varargin);
 
     % If any positional argument detected we have an invalid call to function
-    if(~isempty(fpath))
+    if(~isempty(pos))
         % No file path supplied
         error('Invalid call to %s. See help for correct usage.', fname);
 
@@ -47,105 +45,105 @@ function [pixel_mean, pixel_std] = rct_read_scanset(varargin)
 
     % Process key-value arguments
     index = 1;
-    while(length(prop) >= index)
+    nprop = length(prop);
+    while(nprop >= index)
         switch(prop{index})
+            case 'title'
+                if(nprop > index)
+                    % There is at least one parameter after call to property.
+                    % Assume property value
+                    if(~ischar(prop{index + 1}))
+                        % Must be a char array (string)
+                        error( ...
+                            '%s: Invalid call to function parameter \"title\". See help for correct usage', ...
+                            fname ...
+                            );
+
+                        return;
+
+                    endif;
+
+                    % Value is a string. Assign it to the propery, and move
+                    % pointer index to next property
+                    keyval{1} = prop{index + 1};
+                    index = index + 1;
+
+                endif;
+
+                % Property called but no value supplied. Use default value
+
             case 'colorchannel'
-                switch(prop{index + 1})
-                    case 'fullcolor'
-                        keyval{1} = 0;
+                if(nprop > index)
+                    % There is at least one parameter after call to property.
+                    % Assume property value
+                    switch(prop{index + 1})
+                        case 'fullcolor'
+                            keyval{2} = 0;
 
-                    case 'red'
-                        keyval{1} = 1;
+                        case 'red'
+                            keyval{2} = 1;
 
-                    case 'green'
-                        keyval{1} = 2;
+                        case 'green'
+                            keyval{2} = 2;
 
-                    case 'blue'
-                        keyval{1} = 3;
+                        case 'blue'
+                            keyval{2} = 3;
 
-                    otherwise
-                        error( ...
-                            '%s: Invalid call to function parameter \"colorchannel\". See help for correct usage', ...
-                            fname ...
-                            );
+                        otherwise
+                            % Given value does not match set of
+                            % acceptable values
+                            error( ...
+                                '%s: Invalid call to function parameter \"colorchannel\". See help for correct usage', ...
+                                fname ...
+                                );
 
-                        return;
+                            return;
 
-                endswitch;
+                    endswitch;
 
-                index = index + 1;
+                    % Mkove pointer index to next property
+                    index = index + 1;
 
-            case 'filter'
-                switch(prop{index + 1})
-                    case 'none'
-                        keyval{2} = 1;
+                endif;
 
-                    case 'median'
-                        keyval{2} = 2;
-
-                    case 'wiener'
-                        keyval{2} = 3;
-
-                    otherwise
-                        error( ...
-                            '%s: Invalid call to function parameter \"filter\". See help for correct usage', ...
-                            fname ...
-                            );
-
-                        return;
-
-                endswitch;
-
-                index = index + 1;
-
-            case 'saveresult'
-                switch(prop{index + 1})
-                    case 'false'
-                        keyval{3} = 0;
-
-                    case 'true'
-                        keyval{3} = 1;
-
-                    otherwise
-                        error( ...
-                            '%s: Invalid call to function parameter \"saveresult\". See help for correct usage', ...
-                            fname ...
-                            );
-
-                        return;
-
-                endswitch;
-
-                index = index + 1;
+                % Property called but no value supplied. Use default value
 
             case 'progress'
-                switch(prop{index + 1})
-                    case 'none'
-                        keyval{4} = 1;
+                if(nprop > index)
+                    % There is at least one parameter after call to property.
+                    % Assume property value
+                    switch(prop{index + 1})
+                        case 'none'
+                            keyval{3} = 1;
 
-                    case 'CLI'
-                        keyval{4} = 2;
+                        case 'CLI'
+                            keyval{3} = 2;
 
-                    case 'GUI'
-                        keyval{4} = 3;
+                        case 'GUI'
+                            keyval{3} = 3;
 
-                    otherwise
-                        error( ...
-                            '%s: Invalid call to function parameter \"progress\". See help for correct usage', ...
-                            fname ...
-                            );
+                        otherwise
+                            error( ...
+                                '%s: Invalid call to function parameter \"progress\". See help for correct usage', ...
+                                fname ...
+                                );
 
-                        return;
+                            return;
 
-                endswitch;
+                    endswitch;
 
-                index = index + 1;
+                    % Mkove pointer index to next property
+                    index = index + 1;
+
+                endif;
+
+                % Property called but no value supplied. Use default value
 
             otherwise
                 % Assume file path
                 if(~isfile(prop{index}))
                     error( ...
-                        '%s: F%d must be a path to a regular file', ...
+                        '%s: varargin{%d} must be a path to a regular file', ...
                         fname, ...
                         index ...
                         );
@@ -179,8 +177,9 @@ function [pixel_mean, pixel_std] = rct_read_scanset(varargin)
 
         endif;
 
+        % Read image data
         image = imread(fpath{index});
-        pixel_src = {pixel_src{:} image};
+        imsize = size(image);
 
         % Check if image complies with required bits per pixel
         if(~isequal('uint16', class(image)))
@@ -191,7 +190,6 @@ function [pixel_mean, pixel_std] = rct_read_scanset(varargin)
         endif;
 
         % Check if we have an RGB image
-        imsize = size(image);
         if(3 ~= imsize(3))
             error( ...
                 '%s: Image %s is not an RGB image', ...
@@ -206,17 +204,6 @@ function [pixel_mean, pixel_std] = rct_read_scanset(varargin)
         % Check if all given images have the same size
         if(1 == index)
             ref_size = imsize;
-            if(0 == keyval{1})
-                % User selected reading of all color channels
-                pixel_mean = zeros(imsize);
-                pixel_std = zeros(imsize);
-
-            else
-                % User selected reading of only one color channel
-                pixel_mean = zeros(imsize(1), imsize(2));
-                pixel_std = zeros(imsize(1), imsize(2));
-
-            endif;
 
         elseif(~isequal(ref_size, imsize))
             error( ...
@@ -229,85 +216,31 @@ function [pixel_mean, pixel_std] = rct_read_scanset(varargin)
 
         endif;
 
-        switch(keyval{1})
+        % Add image to scanset
+        switch(keyval{2})
             case 0
                 % User selected reading of all color channels
-                pixel_mean = pixel_mean .+ (double(image) ./ nfpath);
+                scanset = {scanset{:} image};
 
             case 1
                 % User selected reading of only red color channel
-                pixel_mean = pixel_mean .+ (double(image(:, :, 1)) ./ nfpath);
+                scanset = {scanset{:} image(:, :, 1)};
 
             case 2
                 % User selected reading of only green color channel
-                pixel_mean = pixel_mean .+ (double(image(:, :, 2)) ./ nfpath);
+                scanset = {scanset{:} image(:, :, 2)};
 
             otherwise
                 % User selected reading of only blue color channel
-                pixel_mean = pixel_mean .+ (double(image(:, :, 3)) ./ nfpath);
+                scanset = {scanset{:} image(:, :, 3)};
 
         endswitch;
+
+        % Format scan title and add it to scanset titles
+        sctitle = {sctitle{:} sprintf('%s - Scan #%d', keyval{1}, index)};
 
         index = index + 1;
 
     endwhile;
-
-    % Apply noise removal if requested by user
-    if(2 == keyval{2})
-        % Apply median filter
-        pkg load image;
-        if(0 == keyval{1})
-            pixel_mean(:, :, 1) = medfilt2(pixel_mean(:, :, 1), [7 7]);
-            pixel_mean(:, :, 2) = medfilt2(pixel_mean(:, :, 2), [7 7]);
-            pixel_mean(:, :, 3) = medfilt2(pixel_mean(:, :, 3), [7 7]);
-
-        else
-            pixel_mean = medfilt2(pixel_mean, [7 7]);
-
-        endif;
-
-    elseif(3 == keyval{2})
-        % Apply wiener filter
-        pkg load image;
-        if(0 == keyval{1})
-            pixel_mean(:, :, 1) = wiener2(pixel_mean(:, :, 1), [7 7]);
-            pixel_mean(:, :, 2) = wiener2(pixel_mean(:, :, 2), [7 7]);
-            pixel_mean(:, :, 3) = wiener2(pixel_mean(:, :, 3), [7 7]);
-
-        else
-            pixel_mean = wiener2(pixel_mean, [7 7]);
-
-        endif;
-
-    endif;
-
-    % Calculate pixelwise standard deviation
-    index = 1;
-    while(nfpath >= index)
-        switch(keyval{1})
-            case 0
-                pixel_std = pixel_std .+ (pixel_src{index} .- pixel_mean).^2;
-
-            case 1
-                pixel_std = pixel_std .+ (pixel_src{index}(:, :, 1) .- pixel_mean).^2;
-
-            case 2
-                pixel_std = pixel_std .+ (pixel_src{index}(:, :, 2) .- pixel_mean).^2;
-
-            otherwise
-                pixel_std = pixel_std .+ (pixel_src{index}(:, :, 2) .- pixel_mean).^2;
-
-        endswitch;
-
-        index = index + 1;
-
-    endwhile;
-
-    if(1 < nfpath)
-        pixel_std = pixel_std ./ (nfpath - 1);
-
-    endif;
-
-    pixel_std = pixel_std.^0.5;
 
 endfunction;
