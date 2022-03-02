@@ -2,10 +2,9 @@
 %
 %  -- [pixel_mean, pixel_std] = rct_read_scanset (varargin)
 %      F1, F2, F3, ...,
-%      'colorchannel', {'fullcolor', 'red', 'green', 'blue'},
 %      'filter', {'none', median, 'wiener'},
-%      'saveresult', {'true', 'false'},
 %      'progress', {'none', 'CLI', 'GUI'}
+%      'saveresult', {'true', 'false'},
 %
 %      TODO: Put function description here
 
@@ -15,14 +14,12 @@ function [pixel_mean, pixel_std] = rct_read_scanset(varargin)
     fname = 'rct_read_scanset';
 
     % Initialize return variables to default values
-    pixel_src = {};
     pixel_mean = [];
     pixel_std = [];
 
     % Initialize structures for holding property values and initialize them
-    % to default
-    fpath = {};
-    keyval = {0, 3, 0, 1};  % {colorchannel, filter, progress}
+    % to default values
+    keyval = {1, 1, 0};  % {filter, progress, severesult}
 
     % Check if any argument is passed
     if(0 == nargin)
@@ -33,11 +30,18 @@ function [pixel_mean, pixel_std] = rct_read_scanset(varargin)
 
     endif;
 
-    % Parse and store imput arguments
-    [pos, prop] = parseparams(varargin);
+    % Check if we have enough number of samples (images) for good
+    % statistical anlysis (N > 5). If not, display warning message
+    if(5 > length(img))
+        printf('%s: WARNING: Number of scan samples <5\n', fname);
 
-    % If any positional argument detected we have an invalid call to function
-    if(~isempty(fpath))
+    endif;
+
+    % Parse and store imput arguments
+    [img, prop] = parseparams(varargin);
+
+    % If no positional arguments we have an invalid call to function
+    if(isempty(img))
         % No file path supplied
         error('Invalid call to %s. See help for correct usage.', fname);
 
@@ -49,23 +53,20 @@ function [pixel_mean, pixel_std] = rct_read_scanset(varargin)
     index = 1;
     while(length(prop) >= index)
         switch(prop{index})
-            case 'colorchannel'
+            case 'filter'
                 switch(prop{index + 1})
-                    case 'fullcolor'
-                        keyval{1} = 0;
-
-                    case 'red'
+                    case 'none'
                         keyval{1} = 1;
 
-                    case 'green'
+                    case 'median'
                         keyval{1} = 2;
 
-                    case 'blue'
+                    case 'wiener'
                         keyval{1} = 3;
 
                     otherwise
                         error( ...
-                            '%s: Invalid call to function parameter \"colorchannel\". See help for correct usage', ...
+                            '%s: Invalid call to function parameter \"filter\". See help for correct usage', ...
                             fname ...
                             );
 
@@ -75,20 +76,20 @@ function [pixel_mean, pixel_std] = rct_read_scanset(varargin)
 
                 index = index + 1;
 
-            case 'filter'
+            case 'progress'
                 switch(prop{index + 1})
                     case 'none'
                         keyval{2} = 1;
 
-                    case 'median'
+                    case 'CLI'
                         keyval{2} = 2;
 
-                    case 'wiener'
+                    case 'GUI'
                         keyval{2} = 3;
 
                     otherwise
                         error( ...
-                            '%s: Invalid call to function parameter \"filter\". See help for correct usage', ...
+                            '%s: Invalid call to function parameter \"progress\". See help for correct usage', ...
                             fname ...
                             );
 
@@ -118,42 +119,15 @@ function [pixel_mean, pixel_std] = rct_read_scanset(varargin)
 
                 index = index + 1;
 
-            case 'progress'
-                switch(prop{index + 1})
-                    case 'none'
-                        keyval{4} = 1;
-
-                    case 'CLI'
-                        keyval{4} = 2;
-
-                    case 'GUI'
-                        keyval{4} = 3;
-
-                    otherwise
-                        error( ...
-                            '%s: Invalid call to function parameter \"progress\". See help for correct usage', ...
-                            fname ...
-                            );
-
-                        return;
-
-                endswitch;
-
-                index = index + 1;
-
             otherwise
-                % Assume file path
-                if(~isfile(prop{index}))
-                    error( ...
-                        '%s: F%d must be a path to a regular file', ...
-                        fname, ...
-                        index ...
-                        );
+                % A call to not undefined property
+                error( ...
+                    '%s: Parameter \"%s\" not implemented. See help for correct usage', ...
+                    fname, ...
+                    prop{index} ...
+                    );
 
-                endif;
-
-                % It is a valide file path
-                fpath = {fpath{:} prop{index}};
+                return;
 
         endswitch;
 
@@ -161,42 +135,28 @@ function [pixel_mean, pixel_std] = rct_read_scanset(varargin)
 
     endwhile;
 
-    % Start reading images
-
-    % Initialize variables for keeping reference image size
+    % Initialize variable for keeping reference image size
     ref_size = [];
 
+    % Validate passed images and calulcate pixelwise average image
     index = 1;
-    nfpath = length(fpath);
-    while(nfpath >= index)
-        if(isequal('CLI', keyval{3}))
-            printf('%s: Reading image: %s\n', fname, fpath{index});
-
-        elseif(isequal('GUI', keyval{3}))
-            error('%s: GUI progress feedback not yet implemented', fname);
-
-            return;
-
-        endif;
-
-        image = imread(fpath{index});
-        pixel_src = {pixel_src{:} image};
-
+    while(length(img) >= index)
         % Check if image complies with required bits per pixel
-        if(~isequal('uint16', class(image)))
-            error('%s: Image %s is not a 48 bit image', fname, fpath{index});
+        if(~isequal('uint16', class(img{index})))
+            error('%s: I%d is not a 48 bit image', fname, index);
 
             return;
 
         endif;
 
-        % Check if we have an RGB image
-        imsize = size(image);
-        if(3 ~= imsize(3))
+        imsize = size(img{index});
+
+        % We support single channel or RGB images
+        if(1 ~= imsize(3) && 3 ~= imsize(3))
             error( ...
-                '%s: Image %s is not an RGB image', ...
+                '%s: I%d is not a single channel image nor a RGB image', ...
                 fname, ...
-                fpath{index} ...
+                index ...
                 );
 
             return;
@@ -206,57 +166,32 @@ function [pixel_mean, pixel_std] = rct_read_scanset(varargin)
         % Check if all given images have the same size
         if(1 == index)
             ref_size = imsize;
-            if(0 == keyval{1})
-                % User selected reading of all color channels
-                pixel_mean = zeros(imsize);
-                pixel_std = zeros(imsize);
-
-            else
-                % User selected reading of only one color channel
-                pixel_mean = zeros(imsize(1), imsize(2));
-                pixel_std = zeros(imsize(1), imsize(2));
-
-            endif;
+            pixel_mean = zeros(imsize);
+            pixel_std = zeros(imsize);
 
         elseif(~isequal(ref_size, imsize))
             error( ...
-                '%s: Image %s is not of same size as F1', ...
+                '%s: I%d size does not comply to F1 size', ...
                 fname, ...
-                fpath{index} ...
+                index ...
                 );
 
             return;
 
         endif;
 
-        switch(keyval{1})
-            case 0
-                % User selected reading of all color channels
-                pixel_mean = pixel_mean .+ (double(image) ./ nfpath);
-
-            case 1
-                % User selected reading of only red color channel
-                pixel_mean = pixel_mean .+ (double(image(:, :, 1)) ./ nfpath);
-
-            case 2
-                % User selected reading of only green color channel
-                pixel_mean = pixel_mean .+ (double(image(:, :, 2)) ./ nfpath);
-
-            otherwise
-                % User selected reading of only blue color channel
-                pixel_mean = pixel_mean .+ (double(image(:, :, 3)) ./ nfpath);
-
-        endswitch;
+        % Caluclate average pixel value
+        pixel_mean = pixel_mean .+ (double(img{index}) ./ length(img));
 
         index = index + 1;
 
     endwhile;
 
     % Apply noise removal if requested by user
-    if(2 == keyval{2})
+    if(3 == keyval{1})
         % Apply median filter
         pkg load image;
-        if(0 == keyval{1})
+        if(3 == ref_size(3))
             pixel_mean(:, :, 1) = medfilt2(pixel_mean(:, :, 1), [7 7]);
             pixel_mean(:, :, 2) = medfilt2(pixel_mean(:, :, 2), [7 7]);
             pixel_mean(:, :, 3) = medfilt2(pixel_mean(:, :, 3), [7 7]);
@@ -266,10 +201,10 @@ function [pixel_mean, pixel_std] = rct_read_scanset(varargin)
 
         endif;
 
-    elseif(3 == keyval{2})
+    elseif(3 == keyval{1})
         % Apply wiener filter
         pkg load image;
-        if(0 == keyval{1})
+        if(3 == ref_size(3))
             pixel_mean(:, :, 1) = wiener2(pixel_mean(:, :, 1), [7 7]);
             pixel_mean(:, :, 2) = wiener2(pixel_mean(:, :, 2), [7 7]);
             pixel_mean(:, :, 3) = wiener2(pixel_mean(:, :, 3), [7 7]);
@@ -283,31 +218,22 @@ function [pixel_mean, pixel_std] = rct_read_scanset(varargin)
 
     % Calculate pixelwise standard deviation
     index = 1;
-    while(nfpath >= index)
-        switch(keyval{1})
-            case 0
-                pixel_std = pixel_std .+ (pixel_src{index} .- pixel_mean).^2;
 
-            case 1
-                pixel_std = pixel_std .+ (pixel_src{index}(:, :, 1) .- pixel_mean).^2;
-
-            case 2
-                pixel_std = pixel_std .+ (pixel_src{index}(:, :, 2) .- pixel_mean).^2;
-
-            otherwise
-                pixel_std = pixel_std .+ (pixel_src{index}(:, :, 2) .- pixel_mean).^2;
-
-        endswitch;
-
+    % Calculate sum of squared differences from average pixel value
+    while(length(img) >= index)
+        pixel_std = pixel_std .+ (pixel_src{index} .- pixel_mean).^2;
         index = index + 1;
 
     endwhile;
 
-    if(1 < nfpath)
-        pixel_std = pixel_std ./ (nfpath - 1);
+    % If dealing with only one sample (image) don't divede by N - 1
+    if(1 < length(img))
+        pixel_std = pixel_std ./ (length(img) - 1);
 
     endif;
 
+    % Calculate square root of squared differences diveded by number of smples
+    % minus one
     pixel_std = pixel_std.^0.5;
 
 endfunction;
