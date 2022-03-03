@@ -1,12 +1,54 @@
 % 'rct_read_scanset' is a function from the package: 'Radiochromic Film Toolbox'
 %
-%  -- [pixel_mean, pixel_std] = rct_read_scanset (varargin)
-%      F1, F2, F3, ...,
-%      'title', 'string describing scanset'
-%      'colorchannel', {'fullcolor', 'red', 'green', 'blue'},
-%      'progress', {'none', 'CLI', 'GUI'}
+%  -- [scanset, sctitle] = rct_read_scanset (FP)
+%  -- [scanset, sctitle] = rct_read_scanset (FP1, FP2, FP3, ...)
+%  -- [scanset, sctitle] = rct_read_scanset (..., PROPERTY, VALUE, ...)
 %
-%      TODO: Put function description here
+%      Take a full path to radiochromic film scan/scanset and load image data
+%      into the memory. It support only 16 bits per sample RGB images.
+%
+%      Many different combinations of arguments are possible. The simplest form
+%      is:
+%          scanset = rct_read_scanset(FP)
+%
+%      where the argument is taken as the fullpath to a image of the scanned
+%      radiochromic film.
+%
+%      If more than one argument is given, they are interpreted as:
+%          [scanset, sctitle] = plot (FP, PROPERTY, VALUE, ...)
+%
+%      or
+%          [scanset, sctitle] = plot (FP1, FP2, FP3, ..., PROPERTY, VALUE, ...)
+%
+%     and so on. Any number of argument sets may appear.
+%
+%     Multiple property-value pairs may be specified, but they must appear in
+%     pairs. So far supported properties are:
+%
+%     'title' - string defining a common scanset name.
+%
+%     'colorchannel' - set which color channel to read from image data.
+%
+%     'colorchannel' arguments:
+%
+%          'fullcolor' - read all three color channels (RGB)
+%          'red'       - read only red color channel
+%          'green'     - read only green color channel
+%          'blue'      - read only blue color channel
+%
+%     'progress' - set what kind of feedback to use on displaying
+%                  data reading process
+%
+%     'progress' arguments:
+%
+%          'none' - don't display any information on data reading process
+%          'CLI'  - show information on the data reading progress in
+%                   the 'Command Window'
+%          'GUI'  - use GUI progress bar to display information on the
+%                   data reading progress
+%
+%     See also: rct_average_scanset
+
 
 function [scanset, sctitle] = rct_read_scanset(varargin)
 

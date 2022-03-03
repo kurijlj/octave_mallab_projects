@@ -1,14 +1,66 @@
-% 'rct_read_scanset' is a function from the package: 'Radiochromic Film Toolbox'
+% 'rct_average_scanset' is a function from the package: 'Radiochromic Film Toolbox'
 %
-%  -- [pixel_mean, pixel_std] = rct_read_scanset (varargin)
-%      F1, F2, F3, ...,
-%      'filter', {'none', median, 'wiener'},
-%      'progress', {'none', 'CLI', 'GUI'}
-%      'saveresult', {'true', 'false'},
+%  -- [pixel_mean, pixel_std, dstitle] = rct_average_scanset (I1, I2, I3, ...)
+%  -- [pixel_mean, pixel_std, dstitle] = rct_average_scanset (..., PROPERTY, VALUE, ...)
 %
-%      TODO: Put function description here
+%      Take a set of scanned radiochromic film images and perform pixelwise
+%      average and standard deviation calculation and user selected noise
+%      removal.
+%
+%      Many different combinations of arguments are possible. The simplest form
+%      is:
+%          pixel_mean = rct_average_scanset (I1, I2, I3, ...)
+%
+%      where the arguments are taken as the matrices containing pixel data.
+%
+%      If more than one argument is given, they are interpreted as:
+%          [pixel_mean, pixel_std, dstitle] = rct_average_scanset (I1, I2, I3, PROPERTY, VALUE, ...)
+%
+%     and so on. Any number of argument sets may appear.
+%
+%     Multiple property-value pairs may be specified, but they must appear in
+%     pairs. So far supported properties are:
+%
+%     'title' - string defining a name of the averaged dataset.
+%
+%     'filter' - set noise removal filter to be used for data smoothing 
+%
+%     'filter' arguments:
+%
+%          'none'   - don't use any data smoothing
+%          'median' - use 2D median filter with 7 by 7 wide neighborhood matrix
+%                     for data smoothing
+%          'wiener' - use zero-phase wiener filter with 7 by 7 neighborhood
+%                     matrix for data smoothing
+%          'haar'   - not implemented yet. Use 'Haar' wavelet to reconstruct
+%                     signal and remove noise.
+%
+%     'progress' - set what kind of feedback to use on displaying
+%                  data reading process
+%
+%     'progress' arguments:
+%
+%          'none' - don't display any information on data reading process
+%          'CLI'  - show information on the data reading progress in
+%                   the 'Command Window'
+%          'GUI'  - use GUI progress bar to display information on the
+%                   data reading progress
+%
+%     'saveresult' - wether or not to save result of calculation as CSV files.
+%                    Resulting filename is deduced as string value supplied to
+%                    title parameter followed by underscore and 'average' or
+%                    'std', e.g.:
+%                        title_average.csv
+%                    or
+%                        title_std.csv
+%
+%                    If no string value is supplied for 'title' function uses
+%                    default value 'dataset'.
+%
+%     See also: rct_read_scanset
 
-function [pixel_mean, pixel_std] = rct_read_scanset(varargin)
+
+function [pixel_mean, pixel_std, dstitle] = rct_average_scanset(varargin)
 
     % Store function name into variable for easier management of error messages
     fname = 'rct_read_scanset';
@@ -120,7 +172,7 @@ function [pixel_mean, pixel_std] = rct_read_scanset(varargin)
                 index = index + 1;
 
             otherwise
-                % A call to not undefined property
+                % A call to undefined property
                 error( ...
                     '%s: Parameter \"%s\" not implemented. See help for correct usage', ...
                     fname, ...
