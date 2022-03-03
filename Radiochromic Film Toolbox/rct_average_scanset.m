@@ -46,7 +46,7 @@
 %          'GUI'  - use GUI progress bar to display information on the
 %                   data reading progress
 %
-%     'saveresult' - wether or not to save result of calculation as CSV files.
+%     'saveresult' - whether or not to save result of calculation as CSV files.
 %                    Resulting filename is deduced as string value supplied to
 %                    title parameter followed by underscore and 'average' or
 %                    'std', e.g.:
@@ -55,7 +55,7 @@
 %                        title_std.csv
 %
 %                    If no string value is supplied for 'title' function uses
-%                    default value 'dataset'.
+%                    default value 'Dataset'.
 %
 %     See also: rct_read_scanset
 
@@ -71,7 +71,7 @@ function [pixel_mean, pixel_std, dstitle] = rct_average_scanset(varargin)
 
     % Initialize structures for holding property values and initialize them
     % to default values
-    keyval = {1, 1, 0};  % {filter, progress, severesult}
+    keyval = {'Dataset', 1, 1, 0};  % {filter, progress, severesult}
 
     % Check if any argument is passed
     if(0 == nargin)
@@ -79,13 +79,6 @@ function [pixel_mean, pixel_std, dstitle] = rct_average_scanset(varargin)
         error('Invalid call to %s. See help for correct usage.', fname);
 
         return;
-
-    endif;
-
-    % Check if we have enough number of samples (images) for good
-    % statistical anlysis (N > 5). If not, display warning message
-    if(5 > length(img))
-        printf('%s: WARNING: Number of scan samples <5\n', fname);
 
     endif;
 
@@ -101,75 +94,122 @@ function [pixel_mean, pixel_std, dstitle] = rct_average_scanset(varargin)
 
     endif;
 
+    % Check if we have enough number of samples (images) for good
+    % statistical anlysis (N > 5). If not, display warning message
+    if(5 > length(img))
+        printf('%s: WARNING: Number of scan samples <5\n', fname);
+
+    endif;
+
     % Process key-value arguments
     index = 1;
-    while(length(prop) >= index)
+    nprop = length(prop);
+    while(nprop >= index)
         switch(prop{index})
-            case 'filter'
-                switch(prop{index + 1})
-                    case 'none'
-                        keyval{1} = 1;
-
-                    case 'median'
-                        keyval{1} = 2;
-
-                    case 'wiener'
-                        keyval{1} = 3;
-
-                    otherwise
+            case 'title'
+                if(nprop > index)
+                    % There is at least one parameter after call to property.
+                    % Assume property value
+                    if(~ischar(prop{index + 1}))
+                        % Must be a char array (string)
                         error( ...
-                            '%s: Invalid call to function parameter \"filter\". See help for correct usage', ...
+                            '%s: Invalid call to function parameter \"title\". See help for correct usage', ...
                             fname ...
                             );
 
                         return;
 
-                endswitch;
+                    endif;
 
-                index = index + 1;
+                    % Value is a string. Assign it to the propery, and move
+                    % pointer index to next property
+                    keyval{1} = prop{index + 1};
+                    index = index + 1;
+
+                endif;
+
+                % Property called but no value supplied. Use default value
+
+            case 'filter'
+                if(nprop > index)
+                    switch(prop{index + 1})
+                        case 'none'
+                            keyval{2} = 1;
+
+                        case 'median'
+                            keyval{2} = 2;
+
+                        case 'wiener'
+                            keyval{2} = 3;
+
+                        otherwise
+                            error( ...
+                                '%s: Invalid call to function parameter \"filter\". See help for correct usage', ...
+                                fname ...
+                                );
+
+                            return;
+
+                    endswitch;
+
+                    index = index + 1;
+
+                endif;
+
+                % Property called but no value supplied. Use default value
 
             case 'progress'
-                switch(prop{index + 1})
-                    case 'none'
-                        keyval{2} = 1;
+                if(nprop > index)
+                    switch(prop{index + 1})
+                        case 'none'
+                            keyval{3} = 1;
 
-                    case 'CLI'
-                        keyval{2} = 2;
+                        case 'CLI'
+                            keyval{3} = 2;
 
-                    case 'GUI'
-                        keyval{2} = 3;
+                        case 'GUI'
+                            keyval{3} = 3;
 
-                    otherwise
-                        error( ...
-                            '%s: Invalid call to function parameter \"progress\". See help for correct usage', ...
-                            fname ...
-                            );
+                        otherwise
+                            error( ...
+                                '%s: Invalid call to function parameter \"progress\". See help for correct usage', ...
+                                fname ...
+                                );
 
-                        return;
+                            return;
 
-                endswitch;
+                    endswitch;
 
-                index = index + 1;
+                    index = index + 1;
+
+                endif;
+
+                % Property called but no value supplied. Use default value
 
             case 'saveresult'
-                switch(prop{index + 1})
-                    case 'false'
-                        keyval{3} = 0;
+                if(nprop > index)
+                    switch(prop{index + 1})
+                        case 'false'
+                            keyval{4} = 0;
 
-                    case 'true'
-                        keyval{3} = 1;
+                        case 'true'
+                            keyval{4} = 1;
 
-                    otherwise
-                        error( ...
-                            '%s: Invalid call to function parameter \"saveresult\". See help for correct usage', ...
-                            fname ...
-                            );
+                        otherwise
+                            error( ...
+                                '%s: Invalid call to function parameter \"saveresult\". See help for correct usage', ...
+                                fname ...
+                                );
 
-                        return;
+                            return;
 
-                endswitch;
+                    endswitch;
 
-                index = index + 1;
+                    index = index + 1;
+
+                endif;
+
+                % Property called but no value supplied. Use default value
 
             otherwise
                 % A call to undefined property
@@ -189,6 +229,17 @@ function [pixel_mean, pixel_std, dstitle] = rct_average_scanset(varargin)
 
     % Initialize variable for keeping reference image size
     ref_size = [];
+
+    % If requested, start initialize progress feedback engine
+    if(isequal('CLI', keyval{3}))
+        utl_cli_progress_indicator(0);
+
+    elseif(isequal('GUI', keyval{3}))
+        printf('%s: GUI progress feedback not yet implemented.\n', fname);
+
+        return;
+
+    endif;
 
     % Validate passed images and calulcate pixelwise average image
     index = 1;
@@ -235,12 +286,23 @@ function [pixel_mean, pixel_std, dstitle] = rct_average_scanset(varargin)
         % Caluclate average pixel value
         pixel_mean = pixel_mean .+ (double(img{index}) ./ length(img));
 
+        % Update progress indicator
+        if(isequal('CLI', keyval{3}))
+            utl_cli_progress_indicator(index/length(img));
+
+        elseif(isequal('GUI', keyval{3}))
+            printf('%s: GUI progress feedback not yet implemented.\n', fname);
+
+            return;
+
+        endif;
+
         index = index + 1;
 
     endwhile;
 
     % Apply noise removal if requested by user
-    if(3 == keyval{1})
+    if(3 == keyval{2})
         % Apply median filter
         pkg load image;
         if(3 == ref_size(3))
@@ -253,7 +315,7 @@ function [pixel_mean, pixel_std, dstitle] = rct_average_scanset(varargin)
 
         endif;
 
-    elseif(3 == keyval{1})
+    elseif(3 == keyval{2})
         % Apply wiener filter
         pkg load image;
         if(3 == ref_size(3))
@@ -273,7 +335,7 @@ function [pixel_mean, pixel_std, dstitle] = rct_average_scanset(varargin)
 
     % Calculate sum of squared differences from average pixel value
     while(length(img) >= index)
-        pixel_std = pixel_std .+ (pixel_src{index} .- pixel_mean).^2;
+        pixel_std = pixel_std .+ (double(img{index}) .- pixel_mean).^2;
         index = index + 1;
 
     endwhile;
@@ -287,5 +349,11 @@ function [pixel_mean, pixel_std, dstitle] = rct_average_scanset(varargin)
     % Calculate square root of squared differences diveded by number of smples
     % minus one
     pixel_std = pixel_std.^0.5;
+
+    % Format title for the averaged data matrix
+    dstitle = { ...
+        sprintf('%s - Averaged pixels', keyval{1}), ...
+        sprintf('%s - Pixelwise stdev', keyval{1}), ...
+        };
 
 endfunction;

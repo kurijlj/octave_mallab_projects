@@ -143,7 +143,7 @@ function [scanset, sctitle] = rct_read_scanset(varargin)
 
                     endswitch;
 
-                    % Mkove pointer index to next property
+                    % Move pointer index to next property
                     index = index + 1;
 
                 endif;
@@ -213,7 +213,7 @@ function [scanset, sctitle] = rct_read_scanset(varargin)
             printf('%s: Reading image: %s\n', fname, fpath{index});
 
         elseif(isequal('GUI', keyval{3}))
-            error('%s: GUI progress feedback not yet implemented', fname);
+            printf('%s: GUI progress feedback not yet implemented.\n', fname);
 
             return;
 
@@ -278,7 +278,7 @@ function [scanset, sctitle] = rct_read_scanset(varargin)
 
         endswitch;
 
-        % Format scan title and add it to scanset titles
+        % Format scan title and add it to the scanset titles
         sctitle = {sctitle{:} sprintf('%s - Scan #%d', keyval{1}, index)};
 
         index = index + 1;
