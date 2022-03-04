@@ -209,10 +209,10 @@ function [scanset, sctitle] = rct_read_scanset(varargin)
     index = 1;
     nfpath = length(fpath);
     while(nfpath >= index)
-        if(isequal('CLI', keyval{3}))
+        if(isequal(2, keyval{3}))
             printf('%s: Reading image: %s\n', fname, fpath{index});
 
-        elseif(isequal('GUI', keyval{3}))
+        elseif(isequal(3, keyval{3}))
             printf('%s: GUI progress feedback not yet implemented.\n', fname);
 
             return;

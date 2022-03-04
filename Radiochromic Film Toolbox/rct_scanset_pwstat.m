@@ -1,20 +1,20 @@
-% 'rct_average_scanset' is a function from the package: 'Radiochromic Film Toolbox'
+% 'rct_scanset_pwstat' is a function from the package: 'Radiochromic Film Toolbox'
 %
-%  -- [pixel_mean, pixel_std, dstitle] = rct_average_scanset (I1, I2, I3, ...)
-%  -- [pixel_mean, pixel_std, dstitle] = rct_average_scanset (..., PROPERTY, VALUE, ...)
+%  -- [pwstat, pwstat_title] = rct_scanset_pwstat (I1, I2, I3, ...)
+%  -- [pwstat, pwstat_title] = rct_scanset_pwstat (..., PROPERTY, VALUE, ...)
 %
-%      Take a set of scanned radiochromic film images and perform pixelwise
-%      average and standard deviation calculation and user selected noise
-%      removal.
+%      Take a set of scanned radiochromic film images, perform pixelwise
+%      averaging and data smoothing using preselcted filter and calculate
+%      standard deviation regarding smoothed pixel value.
 %
 %      Many different combinations of arguments are possible. The simplest form
 %      is:
-%          pixel_mean = rct_average_scanset (I1, I2, I3, ...)
+%          pwmean = rct_scanset_pwstat (I1, I2, I3, ...)
 %
 %      where the arguments are taken as the matrices containing pixel data.
 %
 %      If more than one argument is given, they are interpreted as:
-%          [pixel_mean, pixel_std, dstitle] = rct_average_scanset (I1, I2, I3, PROPERTY, VALUE, ...)
+%          [pwmean, pwstd, dstitle] = rct_scanset_pwstat (I1, I2, I3, PROPERTY, VALUE, ...)
 %
 %     and so on. Any number of argument sets may appear.
 %
@@ -60,18 +60,20 @@
 %     See also: rct_read_scanset
 
 
-function [pixel_mean, pixel_std, dstitle] = rct_average_scanset(varargin)
+function [pwstat, pwstat_title] = rct_scanset_pwstat(varargin)
 
     % Store function name into variable for easier management of error messages
     fname = 'rct_read_scanset';
 
     % Initialize return variables to default values
-    pixel_mean = [];
-    pixel_std = [];
+    pwstat = {};
+    pwstat_title = {};
+    pwmean = [];
+    pwstd = [];
 
     % Initialize structures for holding property values and initialize them
     % to default values
-    keyval = {'Dataset', 1, 1, 0};  % {filter, progress, severesult}
+    keyval = {'Dataset', 1, 1, 0};  % {title, filter, progress, severesult}
 
     % Check if any argument is passed
     if(0 == nargin)
@@ -231,10 +233,10 @@ function [pixel_mean, pixel_std, dstitle] = rct_average_scanset(varargin)
     ref_size = [];
 
     % If requested, start initialize progress feedback engine
-    if(isequal('CLI', keyval{3}))
+    if(isequal(2, keyval{3}))
         utl_cli_progress_indicator(0);
 
-    elseif(isequal('GUI', keyval{3}))
+    elseif(isequal(3, keyval{3}))
         printf('%s: GUI progress feedback not yet implemented.\n', fname);
 
         return;
@@ -269,8 +271,8 @@ function [pixel_mean, pixel_std, dstitle] = rct_average_scanset(varargin)
         % Check if all given images have the same size
         if(1 == index)
             ref_size = imsize;
-            pixel_mean = zeros(imsize);
-            pixel_std = zeros(imsize);
+            pwmean = zeros(imsize);
+            pwstd = zeros(imsize);
 
         elseif(~isequal(ref_size, imsize))
             error( ...
@@ -284,16 +286,14 @@ function [pixel_mean, pixel_std, dstitle] = rct_average_scanset(varargin)
         endif;
 
         % Caluclate average pixel value
-        pixel_mean = pixel_mean .+ (double(img{index}) ./ length(img));
+        pwmean = pwmean .+ (double(img{index}) ./ length(img));
 
         % Update progress indicator
-        if(isequal('CLI', keyval{3}))
+        if(isequal(2, keyval{3}))
             utl_cli_progress_indicator(index/length(img));
 
-        elseif(isequal('GUI', keyval{3}))
-            printf('%s: GUI progress feedback not yet implemented.\n', fname);
-
-            return;
+        elseif(isequal(3, keyval{3}))
+            % Not yet implemented
 
         endif;
 
@@ -306,12 +306,12 @@ function [pixel_mean, pixel_std, dstitle] = rct_average_scanset(varargin)
         % Apply median filter
         pkg load image;
         if(3 == ref_size(3))
-            pixel_mean(:, :, 1) = medfilt2(pixel_mean(:, :, 1), [7 7]);
-            pixel_mean(:, :, 2) = medfilt2(pixel_mean(:, :, 2), [7 7]);
-            pixel_mean(:, :, 3) = medfilt2(pixel_mean(:, :, 3), [7 7]);
+            pwmean(:, :, 1) = medfilt2(pwmean(:, :, 1), [7 7]);
+            pwmean(:, :, 2) = medfilt2(pwmean(:, :, 2), [7 7]);
+            pwmean(:, :, 3) = medfilt2(pwmean(:, :, 3), [7 7]);
 
         else
-            pixel_mean = medfilt2(pixel_mean, [7 7]);
+            pwmean = medfilt2(pwmean, [7 7]);
 
         endif;
 
@@ -319,12 +319,12 @@ function [pixel_mean, pixel_std, dstitle] = rct_average_scanset(varargin)
         % Apply wiener filter
         pkg load image;
         if(3 == ref_size(3))
-            pixel_mean(:, :, 1) = wiener2(pixel_mean(:, :, 1), [7 7]);
-            pixel_mean(:, :, 2) = wiener2(pixel_mean(:, :, 2), [7 7]);
-            pixel_mean(:, :, 3) = wiener2(pixel_mean(:, :, 3), [7 7]);
+            pwmean(:, :, 1) = wiener2(pwmean(:, :, 1), [7 7]);
+            pwmean(:, :, 2) = wiener2(pwmean(:, :, 2), [7 7]);
+            pwmean(:, :, 3) = wiener2(pwmean(:, :, 3), [7 7]);
 
         else
-            pixel_mean = wiener2(pixel_mean, [7 7]);
+            pwmean = wiener2(pwmean, [7 7]);
 
         endif;
 
@@ -335,25 +335,33 @@ function [pixel_mean, pixel_std, dstitle] = rct_average_scanset(varargin)
 
     % Calculate sum of squared differences from average pixel value
     while(length(img) >= index)
-        pixel_std = pixel_std .+ (double(img{index}) .- pixel_mean).^2;
+        pwstd = pwstd .+ (double(img{index}) .- pwmean).^2;
         index = index + 1;
 
     endwhile;
 
     % If dealing with only one sample (image) don't divede by N - 1
     if(1 < length(img))
-        pixel_std = pixel_std ./ (length(img) - 1);
+        pwstd = pwstd ./ (length(img) - 1);
 
     endif;
 
     % Calculate square root of squared differences diveded by number of smples
     % minus one
-    pixel_std = pixel_std.^0.5;
+    pwstd = pwstd.^0.5;
 
-    % Format title for the averaged data matrix
-    dstitle = { ...
+    % Populate the return data structure with computed data
+    pwstat = { ...
+        pwstat{:}, ...
+        pwmean, ...
+        pwstd ...
+        };
+
+    % Format titles for the computed data and populate reaturn data structure
+    pwstat_title = { ...
+        pwstat{:}, ...
         sprintf('%s - Averaged pixels', keyval{1}), ...
-        sprintf('%s - Pixelwise stdev', keyval{1}), ...
+        sprintf('%s - Pixelwise stdev', keyval{1}) ...
         };
 
 endfunction;
