@@ -8,11 +8,11 @@ function dcm_view_series()
     % feedback management
     fname = 'dcm_view_series';
 
-    series_dir = uigetdir('title', 'DICOM Series View');
-
     % Load required modules
     graphics_toolkit qt;
     pkg load dicom;
+
+    series_dir = uigetdir('title', 'DICOM Series View');
 
     if(0 == series_dir(1))
         printf('%s: No directory selected.\n', fname);
