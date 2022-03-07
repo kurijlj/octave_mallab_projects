@@ -235,10 +235,16 @@ function dcm_reset ()
             if(isfield(info, 'Rows'))
                 instinfo.Rows = info.Rows;
 
+            else
+                instinfo.Rows = size(img)(1);
+
             endif;
 
             if(isfield(info, 'Columns'))
                 instinfo.Columns = info.Columns;
+
+            else
+                instinfo.Rows = size(img)(2);
 
             endif;
 
@@ -269,6 +275,9 @@ function dcm_reset ()
 
             if(isfield(info, 'PhotometricInterpretation'))
                 instinfo.PhotometricInterpretation = info.PhotometricInterpretation;
+
+            else
+                instinfo.PhotometricInterpretation = 'MONOCHROME2';
 
             endif;
 

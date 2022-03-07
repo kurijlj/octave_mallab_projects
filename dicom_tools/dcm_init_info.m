@@ -10,6 +10,7 @@ function dcm_info = dcm_init_info()
 
     dcm_info.PatientName = 'Doe^John';
     dcm_info.PatientID = '123456';
+    dcm_info.PatientSex = 'M';
     dcm_info.StudyInstanceUID = dicomuid();
     dcm_info.FrameOfReferenceUID = dicomuid();
     dcm_info.SeriesInstanceUID = dicomuid();
