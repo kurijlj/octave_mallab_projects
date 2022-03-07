@@ -3,11 +3,10 @@
 %  -- dcm_reset ()
 %      TODO: Put function description here
 
-function dcm_reset ()
+function dcm_reset(varargin)
     % Store function name into variable for easier lgo reporting and user
     % feedback management
     fname = 'dcm_reset';
-
 
     % Load DICOM package
     graphics_toolkit qt;
@@ -16,6 +15,74 @@ function dcm_reset ()
     % Initialize function variables to default values
     fplist = {};
     destdir = '';
+    userparams = {'PatientName', 'PatientID', 'PatientSex'};
+    useroptions = {NaN, NaN, NaN};  % {PatientName, PatientID, PatientSex}
+
+    % Parse and store imput arguments
+    [pstnl, props] = parseparams (varargin);
+
+    % Check if any of positional arguments is passed
+    if(~isempty(pstnl))
+        % No positional arguments passed
+        error('Invalid call to function %s. See help for correct usage', fname);
+
+        return;
+
+    endif;
+
+    % Process property arguments
+    if(~isempty(props))
+        nprops = length(props);
+        i = 1;
+        while(nprops >= i)
+            switch(props{1})
+            case 'PatientName'
+                if(nprops > 1)
+                    % Most probably a string containing patient name
+                    useroptions{1} = props{i + 1};
+
+                endif;
+
+            case 'PatientID'
+                if(nprops > 1)
+                    % Most probably a string containing patient name
+                    useroptions{2} = props{i + 1};
+
+                endif;
+
+            case 'PatientSex'
+                if(nprops > 1)
+                    % Most probably a string containing patient name
+                    useroptions{3} = props{i + 1};
+
+                endif;
+
+            otherwise
+                error('Invalid call to function %s. See help for correct usage', fname);
+
+                return;
+
+            endswitch;
+
+            i = i + 1;
+
+        endwhile;
+
+    endif;
+
+    % Validate user supplied properties
+    i = 1;
+    while(length(useroptions) >= i)
+        if(~isnan(useroptions{i}) && ~ischar(useroptions{i}))
+            error('Invalid call to function parameter %s. See help for correct usage', userparams{i});
+
+            return;
+
+        endif;
+
+        i = i + 1;
+
+    endwhile;
 
     % Get input files
     [file, srcdir] = uigetfile( ...
@@ -191,6 +258,33 @@ function dcm_reset ()
             instinfo.MediaStorageSOPInstanceUID = dcmnewinst{sdix};
             destfn = sprintf('%s%04d.dcm', destfn, instindex(sdix));  % Destination file name
             instindex(sdix) = instindex(sdix) + 1;
+
+            if(~isnan(useroptions{1}))
+                % Use user supplied patient name
+                instinfo.PatientName = useroptions{1};
+
+            endif;
+
+            if(~isnan(useroptions{2}))
+                % Use user supplied patient ID
+                instinfo.PatientID = useroptions{2};
+
+            endif;
+
+            if(~isnan(useroptions{3}))
+                % Use user supplied patient sex
+                instinfo.PatientSex = useroptions{2};
+
+            elseif(isfield(info, 'PatientSex'))
+                % or copy field value from original data
+                instinfo.PatientSex = info.PatientSex;
+                if(isequal('F', strtrim(info.PatientSex)) && isnan(useroptions{1}))
+                    % If female patient assaign a generic female name
+                    instinfo.PatientName = 'Doe^Jane';
+
+                endif;
+
+            endif;
 
             if(isfield(info, 'MediaStorageSOPClassUID'))
                 instinfo.MediaStorageSOPClassUID = info.MediaStorageSOPClassUID;

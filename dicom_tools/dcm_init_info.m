@@ -9,7 +9,7 @@ function dcm_info = dcm_init_info()
     pkg load dicom;
 
     dcm_info.PatientName = 'Doe^John';
-    dcm_info.PatientID = '123456';
+    dcm_info.PatientID = strftime('GN%Y%m%d%S%M%H', localtime(time()));
     dcm_info.PatientSex = 'M';
     dcm_info.StudyInstanceUID = dicomuid();
     dcm_info.FrameOfReferenceUID = dicomuid();
