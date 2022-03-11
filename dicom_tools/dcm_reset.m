@@ -223,7 +223,8 @@ function dcm_reset(varargin)
 
     if(~isempty(dcmfplist))
         printf('%s: Writting data ...\n', fname);
-        fnbase = datestr(date(), 'YYYYMMDD');  % File name base
+        % Format filename base
+        fnbase = strftime('IMG%Y%m%d%H%M%S', localtime(time()));
         instindex = ones(length(dcmnewinst), 1);  % Keeps track of series instance index
         i = 1;
         while(length(dcmfplist) >= i)
@@ -239,12 +240,14 @@ function dcm_reset(varargin)
             instinfo.StudyID = sprintf(' %04d', sdix);
             instinfo.StudyDescription = sprintf('Study #%04d', sdix);
             instinfo.FrameOfReferenceUID = dcmnewfor{sdix};
-            destfn = sprintf('%s%02d', fnbase, sdix);  % Destination file name
+            % Add study index to destination filename
+            destfn = sprintf('%s%02d', fnbase, sdix);
 
             % Get Series ID index, and set new Series ID and Instance ID
             [tf, sdix] = ismember(info.SeriesInstanceUID, dcmoldseries);
             instinfo.SeriesInstanceUID = dcmnewseries{sdix};
             instinfo.SeriesNumber = sdix;
+            % Add series index to destination filename
             destfn = sprintf('%s%04d', destfn, sdix);  % Destination file name
 
             if(1 ~= instindex(sdix))
@@ -256,6 +259,7 @@ function dcm_reset(varargin)
 
             endif;
             instinfo.MediaStorageSOPInstanceUID = dcmnewinst{sdix};
+            % Add instance index to destination filename
             destfn = sprintf('%s%04d.dcm', destfn, instindex(sdix));  % Destination file name
             instindex(sdix) = instindex(sdix) + 1;
 
@@ -387,6 +391,21 @@ function dcm_reset(varargin)
 
             if(isfield(info, 'WindowWidth'))
                 instinfo.WindowWidth = info.WindowWidth;
+
+            endif;
+
+            if(isfield(info, 'RescaleType'))
+                instinfo.RescaleType = info.RescaleType;
+
+            endif;
+
+            if(isfield(info, 'RescaleIntercept'))
+                instinfo.RescaleIntercept = info.RescaleIntercept;
+
+            endif;
+
+            if(isfield(info, 'RescaleSlope'))
+                instinfo.RescaleSlope = info.RescaleSlope;
 
             endif;
 
