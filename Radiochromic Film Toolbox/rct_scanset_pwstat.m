@@ -14,50 +14,55 @@
 %      where the arguments are taken as the matrices containing pixel data.
 %
 %      If more than one argument is given, they are interpreted as:
+%
 %          [pwmean, pwstd, dstitle] = rct_scanset_pwstat (I1, I2, I3, PROPERTY, VALUE, ...)
 %
-%     and so on. Any number of argument sets may appear.
+%      and so on. Any number of argument sets may appear.
 %
-%     Multiple property-value pairs may be specified, but they must appear in
-%     pairs. So far supported properties are:
+%      Multiple property-value pairs may be specified, but they must appear in
+%      pairs. So far supported properties are:
 %
-%     'title' - string defining a name of the averaged dataset.
+%          'title'      - string defining a name of the averaged dataset
 %
-%     'filter' - set noise removal filter to be used for data smoothing 
+%          'filter'     - set noise removal filter to be used for data smoothing
 %
-%     'filter' arguments:
+%          'filter' arguments:
 %
-%          'none'   - don't use any data smoothing
-%          'median' - use 2D median filter with 7 by 7 wide neighborhood matrix
-%                     for data smoothing
-%          'wiener' - use zero-phase wiener filter with 7 by 7 neighborhood
-%                     matrix for data smoothing
-%          'haar'   - not implemented yet. Use 'Haar' wavelet to reconstruct
-%                     signal and remove noise.
+%              'none'       - don't use any data smoothing
+%              'median'     - use 2D median filter with 7 by 7 wide
+%                             neighborhood matrix for data smoothing
+%              'wiener'     - use zero-phase wiener filter with 7 by 7
+%                             neighborhood matrix for data smoothing
+%              'haar'       - not implemented yet. Use 'Haar' wavelet to
+%                             reconstruct signal and remove noise.
 %
-%     'progress' - set what kind of feedback to use on displaying
-%                  data reading process
+%          'progress'   - set what kind of feedback to use on displaying data
+%                         reading process
 %
-%     'progress' arguments:
+%          'progress' arguments:
 %
-%          'none' - don't display any information on data reading process
-%          'CLI'  - show information on the data reading progress in
-%                   the 'Command Window'
-%          'GUI'  - use GUI progress bar to display information on the
-%                   data reading progress
+%              'none'       - don't display any information on data reading
+%                             progress
+%              'CLI'        - show information on the data reading progress
+%                             in the 'Command Window'
+%              'GUI'        - use GUI progress bar to display information
+%                             on the data reading progress
 %
-%     'saveresult' - whether or not to save result of calculation as CSV files.
-%                    Resulting filename is deduced as string value supplied to
-%                    title parameter followed by underscore and 'average' or
-%                    'std', e.g.:
-%                        title_average.csv
-%                    or
-%                        title_std.csv
+%          'saveresult' - whether or not to save result of calculation as CSV
+%                         files. Resulting filename is deduced as string value
+%                         supplied to title parameter followed by the
+%                         underscore and 'average' or 'std', e.g.:
 %
-%                    If no string value is supplied for 'title' function uses
-%                    default value 'Dataset'.
+%                             title_average.csv
 %
-%     See also: rct_read_scanset
+%                         or
+%
+%                             title_std.csv
+%
+%      If no string value is supplied for 'title' function uses the default
+%      value 'Dataset'.
+%
+%      See also: rct_read_scanset
 
 
 function [pwstat, pwstat_title] = rct_scanset_pwstat(varargin)
@@ -359,7 +364,7 @@ function [pwstat, pwstat_title] = rct_scanset_pwstat(varargin)
 
     % Format titles for the computed data and populate reaturn data structure
     pwstat_title = { ...
-        pwstat{:}, ...
+        pwstat_title{:}, ...
         sprintf('%s - Averaged pixels', keyval{1}), ...
         sprintf('%s - Pixelwise stdev', keyval{1}) ...
         };

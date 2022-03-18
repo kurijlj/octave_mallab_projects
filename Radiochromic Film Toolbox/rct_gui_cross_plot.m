@@ -5,6 +5,7 @@
 %       'dpi', dpi,
 %       'inline', 'on'/'off',
 %       'crossline', 'on'/'off'
+%       'highlight', []
 
 function rct_gui_cross_plot(varargin)
 
@@ -12,12 +13,12 @@ function rct_gui_cross_plot(varargin)
     fname = 'rct_cross_plot';
 
     % Supported properties
-    keys = {'dpi', 'inline', 'crossline'};
+    keys = {'dpi', 'inline', 'crossline', 'highlight'};
 
     % Initialize structures for keeping data type indexes and values
     imgs = [];
     imgtitles = {};
-    keyvalues = {NaN, NaN, NaN};
+    keyvalues = {NaN, NaN, NaN, []};
 
     % Check if any argument is passed
     if(0 == nargin)
@@ -29,60 +30,60 @@ function rct_gui_cross_plot(varargin)
     endif;
 
     % Start processing arguments
-    index = 1;
-    while(nargin >= index)
+    i = 1;
+    while(nargin >= i)
 
         if( ...
-                ismatrix(varargin{index}) ...
-                && isnumeric(varargin{index}) ...
-                && 2 == length(size(varargin{index})) ...
-                && 1 < min(size(varargin{index})) ...
+                ismatrix(varargin{i}) ...
+                && isnumeric(varargin{i}) ...
+                && 2 == length(size(varargin{i})) ...
+                && 1 < min(size(varargin{i})) ...
                 )
             % We have an image matrix
-            imgs = [imgs index];
+            imgs = [imgs i];
 
             % Check if following argument is image title. First check if next
             % argument exist at all
-            if(nargin >= index + 1)
+            if(nargin >= i + 1)
                 % There is another function argument following this one. Lets
                 % see if it holds an image title. First the only rgument type
                 % that can follow image matrix is an image title or an function
                 % parameter of which both are chars, so only data type that can
                 % follow must be a char
-                if(ischar(varargin{index + 1}))
-                    if(not(ismember(varargin{index + 1}, keys)))
+                if(ischar(varargin{i + 1}))
+                    if(not(ismember(varargin{i + 1}, keys)))
                         % It is not one of function propertis so we can safely
                         % assume it is an image title
-                        imgtitles = {imgtitles{:} varargin(index + 1){:}};
+                        imgtitles = {imgtitles{:} varargin(i + 1){:}};
 
                         % Skip to next unprocessed argument
-                        index = index + 1;
+                        i = i + 1;
 
                     else
                         % Next argument is call to function parameter, so user
                         % did not pass image title for the current image.
                         % Generate default image title
-                        i = length(imgs);  % Get image index
-                        imgtitles = {imgtitles{:} sprintf('Dataset #%d', i)};
+                        dsi = length(imgs);  % Get image index
+                        imgtitles = {imgtitles{:} sprintf('Dataset #%d', dsi)};
 
                     endif;
 
                 elseif( ...
-                        ismatrix(varargin{index}) ...
-                        && isnumeric(varargin{index}) ...
-                        && 2 == length(size(varargin{index})) ...
-                        && 1 < min(size(varargin{index})) ...
+                        ismatrix(varargin{i}) ...
+                        && isnumeric(varargin{i}) ...
+                        && 2 == length(size(varargin{i})) ...
+                        && 1 < min(size(varargin{i})) ...
                         )
                     % Next argument is an image matrix, so generate default
                     % image title
-                    i = length(imgs);  % Get image index
-                    imgtitles = {imgtitles{:} sprintf('Dataset #%d', i)};
+                    dsi = length(imgs);  % Get image index
+                    imgtitles = {imgtitles{:} sprintf('Dataset #%d', dsi)};
 
                 else
                     % An invalid call to function occured
                     error( ...
                         'varargin(%d): Invalid call to %s. See help for correct usage.', ...
-                        index + 1,
+                        i + 1,
                         fname ...
                         );
 
@@ -93,17 +94,17 @@ function rct_gui_cross_plot(varargin)
             else
                 % There is no another function argument following this one, so
                 % assign default image title to an image with current index
-                i = length(imgs);  % Get image index
-                imgtitles = {imgtitles{:} sprintf('Dataset #%d', i)};
+                dsi = length(imgs);  % Get image index
+                imgtitles = {imgtitles{:} sprintf('Dataset #%d', dsi)};
 
             endif;
 
-        elseif(ischar(varargin{index}))
-            if(1 == index)
+        elseif(ischar(varargin{i}))
+            if(1 == i)
                 % First argument to a function call can not be a string
                 error( ...
                     'varargin(%d): Invalid call to %s. See help for correct usage.', ...
-                    index,
+                    i,
                     fname ...
                     );
 
@@ -113,25 +114,25 @@ function rct_gui_cross_plot(varargin)
 
             % The only string we should encounter must be a call to a function
             % property. Otherwise invalid call to function occured
-            [iskey, keyindex] = ismember(varargin{index}, keys);
+            [iskey, keyindex] = ismember(varargin{i}, keys);
             if(iskey)
                 % Argument is an call to function property. Lest see if user
                 % supplied a value
-                if(nargin >= index + 1)
+                if(nargin >= i + 1)
                     % It seems that there is a prameter value, so assign it to
                     % coresponding paramter
                     % conforms to a valid one
-                    keyvalues{keyindex} = varargin{index + 1};
+                    keyvalues{keyindex} = varargin{i + 1};
 
                     % Skip to next unprocessed argument
-                    index = index + 1;
+                    i = i + 1;
 
                 else
                     % Thera are no more arguments following a property call, so
                     % we treat it as invalid call to function
                     error( ...
                         'varargin(%d): Invalid call to %s. See help for correct usage.', ...
-                        index + 1,
+                        i + 1,
                         fname ...
                         );
 
@@ -142,7 +143,7 @@ function rct_gui_cross_plot(varargin)
             else  % We have an invalid call to function
                 error( ...
                     'varargin(%d): Invalid call to %s. See help for correct usage.', ...
-                    index,
+                    i,
                     fname ...
                     );
 
@@ -155,7 +156,7 @@ function rct_gui_cross_plot(varargin)
             % property, so we have an invalid call to function
             error( ...
                 'varargin(%d): Invalid call to %s. See help for correct usage.', ...
-                index,
+                i,
                 fname ...
                 );
 
@@ -163,7 +164,7 @@ function rct_gui_cross_plot(varargin)
 
         endif;
 
-        index = index + 1;
+        i = i + 1;
 
     endwhile;
 
@@ -235,19 +236,53 @@ function rct_gui_cross_plot(varargin)
 
     endif;
 
+    % Validate highlight parameter values
+    if(~isempty(keyvalues{4}))
+        % It seems that user supplied arguments for the 'highlight' parameter
+        if(~isnan(keyvalues{4}) && isnumeric(keyvalues{4}))
+            i = 1;
+            while(length(keyvalues{4}) >= i)
+                % Traverse array to see if supplied image index values match
+                % actual ones
+                val = keyvalues{4}(i);
+                if(1 > val || length(imgs) < val)
+                    % Highlight profile index out of bound
+                    error( ...
+                        'Highlight index out of bound.' ...
+                        );
+
+                endif;
+
+                i = i + 1;
+
+            endwhile;
+
+        else
+            % Invalid call to function parameter
+            error( ...
+                'Invalid call to function parameter \"%s\". See help for correct usage.', ...
+                keys{3} ...
+                );
+
+            return;
+
+        endif;
+
+    endif;
+
     % Determine maximum extents of the plot
     height = [];
     width = [];
     minval = [];
     maxval = [];
-    index = 1;
-    while(length(imgs) >= index)
-        height = [height size(varargin{imgs(index)})(1)];
-        width = [width size(varargin{imgs(index)})(2)];
-        minval = [minval double(min(min(varargin{imgs(index)})))];
-        maxval = [maxval double(max(max(varargin{imgs(index)})))];
+    i = 1;
+    while(length(imgs) >= i)
+        height = [height size(varargin{imgs(i)})(1)];
+        width = [width size(varargin{imgs(i)})(2)];
+        minval = [minval double(min(min(varargin{imgs(i)})))];
+        maxval = [maxval double(max(max(varargin{imgs(i)})))];
 
-        index = index + 1;
+        i = i + 1;
 
     endwhile;
 
@@ -284,22 +319,34 @@ function rct_gui_cross_plot(varargin)
     endif;
 
     % Start to plot
-    index = 1;
-    while(length(imgs) >= index)
+    i = 1;
+    while(length(imgs) >= i)
         % Calculate plot center position
-        in_cntr = round(height(index)/2);
-        cross_cntr = round(width(index)/2);
+        in_cntr = round(height(i)/2);
+        cross_cntr = round(width(i)/2);
 
         % Plot inline profile
         if(keyvalues{2})
             phandle = hax(1);
 
             hold(phandle, 'on');
-            plot( ...
-                'parent', phandle, ...
-                ([1:height(index)] .- in_cntr).*rescalef, ...
-                double(varargin{imgs(index)}(:, cross_cntr)) ...
-                );
+            if(ismember(i, keyvalues{4}))
+                plot( ...
+                    'parent', phandle, ...
+                    ([1:height(i)] .- in_cntr).*rescalef, ...
+                    double(varargin{imgs(i)}(:, cross_cntr)), ...
+                    'linewidth', 2.5 ...
+                    );
+
+            else
+                plot( ...
+                    'parent', phandle, ...
+                    ([1:height(i)] .- in_cntr).*rescalef, ...
+                    double(varargin{imgs(i)}(:, cross_cntr)) ...
+                    );
+
+            endif;
+
             hold(phandle, 'off');
 
         endif;
@@ -313,16 +360,28 @@ function rct_gui_cross_plot(varargin)
             endif;
 
             hold(phandle, 'on');
-            plot( ...
-                'parent', phandle, ...
-                ([1:width(index)] .- cross_cntr).*rescalef, ...
-                double(varargin{imgs(index)}(in_cntr, :)) ...
-                );
+            if(ismember(i, keyvalues{4}))
+                plot( ...
+                    'parent', phandle, ...
+                    ([1:width(i)] .- cross_cntr).*rescalef, ...
+                    double(varargin{imgs(i)}(in_cntr, :)), ...
+                    'linewidth', 2.5 ...
+                    );
+
+            else
+                plot( ...
+                    'parent', phandle, ...
+                    ([1:width(i)] .- cross_cntr).*rescalef, ...
+                    double(varargin{imgs(i)}(in_cntr, :)) ...
+                    );
+
+            endif;
+
             hold(phandle, 'off');
 
         endif;
 
-        index = index + 1;
+        i = i + 1;
 
     endwhile;
 
