@@ -37,21 +37,21 @@ function dcm_reset(varargin)
         while(nprops >= i)
             switch(props{1})
             case 'PatientName'
-                if(nprops > 1)
+                if(nprops > i)
                     % Most probably a string containing patient name
                     useroptions{1} = props{i + 1};
 
                 endif;
 
             case 'PatientID'
-                if(nprops > 1)
+                if(nprops > i)
                     % Most probably a string containing patient name
                     useroptions{2} = props{i + 1};
 
                 endif;
 
             case 'PatientSex'
-                if(nprops > 1)
+                if(nprops > i)
                     % Most probably a string containing patient name
                     useroptions{3} = props{i + 1};
 
