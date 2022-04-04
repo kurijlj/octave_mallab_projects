@@ -262,7 +262,7 @@ function [pwstat, pwstat_title] = rct_scanset_pwstat(varargin)
         imsize = size(img{index});
 
         % We support single channel or RGB images
-        if(1 ~= imsize(3) && 3 ~= imsize(3))
+        if(2 ~= length(imsize) && 3 ~= length(imsize))
             error( ...
                 '%s: I%d is not a single channel image nor a RGB image', ...
                 fname, ...
@@ -310,7 +310,7 @@ function [pwstat, pwstat_title] = rct_scanset_pwstat(varargin)
     if(3 == keyval{2})
         % Apply median filter
         pkg load image;
-        if(3 == ref_size(3))
+        if(3 == length(ref_size))
             pwmean(:, :, 1) = medfilt2(pwmean(:, :, 1), [7 7]);
             pwmean(:, :, 2) = medfilt2(pwmean(:, :, 2), [7 7]);
             pwmean(:, :, 3) = medfilt2(pwmean(:, :, 3), [7 7]);
