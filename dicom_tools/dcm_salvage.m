@@ -1,12 +1,12 @@
-% 'dcm_reset' is a function from the package: 'DICOM Toolbox'
+% 'dcm_salvage' is a function from the package: 'DICOM Toolbox'
 %
-%  -- dcm_reset ()
+%  -- dcm_salvage ()
 %      TODO: Put function description here
 
-function dcm_reset(varargin)
+function dcm_salvage(varargin)
     % Store function name into variable for easier lgo reporting and user
     % feedback management
-    fname = 'dcm_reset';
+    fname = 'dcm_salvage';
 
     % Load DICOM package
     graphics_toolkit qt;
@@ -15,74 +15,18 @@ function dcm_reset(varargin)
     % Initialize function variables to default values
     fplist = {};
     destdir = '';
-    userparams = {'PatientName', 'PatientID', 'PatientSex'};
-    useroptions = {NaN, NaN, NaN};  % {PatientName, PatientID, PatientSex}
 
     % Parse and store imput arguments
     [pstnl, props] = parseparams (varargin);
 
     % Check if any of positional arguments is passed
-    if(~isempty(pstnl))
+    if(~isempty(pstnl) || ~isempty(props))
         % No positional arguments passed
         error('Invalid call to function %s. See help for correct usage', fname);
 
         return;
 
     endif;
-
-    % Process property arguments
-    if(~isempty(props))
-        nprops = length(props);
-        i = 1;
-        while(nprops >= i)
-            switch(props{1})
-            case 'PatientName'
-                if(nprops > i)
-                    % Most probably a string containing patient name
-                    useroptions{1} = props{i + 1};
-
-                endif;
-
-            case 'PatientID'
-                if(nprops > i)
-                    % Most probably a string containing patient ID
-                    useroptions{2} = props{i + 1};
-
-                endif;
-
-            case 'PatientSex'
-                if(nprops > i)
-                    % Most probably a string containing patient sex
-                    useroptions{3} = props{i + 1};
-
-                endif;
-
-            otherwise
-                error('Invalid call to function %s. See help for correct usage', fname);
-
-                return;
-
-            endswitch;
-
-            i = i + 1;
-
-        endwhile;
-
-    endif;
-
-    % Validate user supplied properties
-    i = 1;
-    while(length(useroptions) >= i)
-        if(~isnan(useroptions{i}) && ~ischar(useroptions{i}))
-            error('Invalid call to function parameter %s. See help for correct usage', userparams{i});
-
-            return;
-
-        endif;
-
-        i = i + 1;
-
-    endwhile;
 
     % Get input files
     [file, srcdir] = uigetfile( ...
@@ -128,16 +72,6 @@ function dcm_reset(varargin)
 
     endif;
 
-    % printf('%s: Source directory: %s\n', fname, srcdir);
-    % printf('%s: Destination directory: %s\n', fname, destdir);
-    % i = 1;
-    % while(length(fplist) >= i)
-    %     printf('%s: File #%d: %s\n', fname, i, fplist{i});
-
-    %     i = i + 1;
-
-    % endwhile;
-
     % Initialize dicom data structures
     dcminfo = dcm_init_info();
     dcmfplist = {};
@@ -156,6 +90,18 @@ function dcm_reset(varargin)
 
         if(isdicom(fplist{i}))
             info = dicominfo(fplist{i});
+
+            % Check if file has an patient name
+            if(isfield(info, 'PatientName'))
+                dcmoldstudies = {dcmoldstudies{:} getfield(info, 'PatientName')};
+
+            else
+                % No patient name, skip file and go to next one
+                printf('FAILED. No patient name\n');
+                i = i + 1;
+                continue;
+
+            endif;
 
             % Check if file has an Study ID
             if(isfield(info, 'StudyInstanceUID'))
@@ -233,6 +179,24 @@ function dcm_reset(varargin)
 
             % Copy DICOM header data
             instinfo = dcminfo;
+
+            % Copy patient specific data
+            if(isfield(info, 'PatientSex'))
+                instinfo.PatientSex = info.PatientSex;
+
+            else
+                instinfo.PatientSex = 'O';
+
+            endif;
+
+            instinfo.PatientName = info.PatientName;
+            if(isfield(info, 'PatientID'))
+                instinfo.PatientID = info.PatientID;
+
+            else
+                instinfo.PatientID = strftime('GN-%d%m-%Y', localtime(time()));
+
+            endif;
 
             % Get Study ID index, and set new Study ID and Frame of Reference ID
             [tf, sdix] = ismember(info.StudyInstanceUID, dcmoldstudies);
