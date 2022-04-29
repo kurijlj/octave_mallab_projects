@@ -105,10 +105,7 @@ function dcm_reset(varargin)
 
         endif;
 
-    endif;
-
-    % Check if user selected anything
-    if(isempty(fplist))
+    else
         % Nothing selected
         printf('%s: No file selected.\n', fname);
 

@@ -1,6 +1,6 @@
 % 'dcm_salvage' is a function from the package: 'DICOM Toolbox'
 %
-%  -- dcm_salvage ()
+%  -- salvage ()
 %      TODO: Put function description here
 
 function dcm_salvage(varargin)
@@ -15,12 +15,14 @@ function dcm_salvage(varargin)
     % Initialize function variables to default values
     fplist = {};
     destdir = '';
+    userparams = {'PatientName', 'PatientID', 'PatientSex'};
+    useroptions = {NaN, NaN, NaN};  % {PatientName, PatientID, PatientSex}
 
     % Parse and store imput arguments
     [pstnl, props] = parseparams (varargin);
 
     % Check if any of positional arguments is passed
-    if(~isempty(pstnl) || ~isempty(props))
+    if(~isempty(pstnl))
         % No positional arguments passed
         error('Invalid call to function %s. See help for correct usage', fname);
 
@@ -28,10 +30,64 @@ function dcm_salvage(varargin)
 
     endif;
 
+    % Process property arguments
+    if(~isempty(props))
+        nprops = length(props);
+        i = 1;
+        while(nprops >= i)
+            switch(props{1})
+            case 'PatientName'
+                if(nprops > i)
+                    % Most probably a string containing patient name
+                    useroptions{1} = props{i + 1};
+
+                endif;
+
+            case 'PatientID'
+                if(nprops > i)
+                    % Most probably a string containing patient ID
+                    useroptions{2} = props{i + 1};
+
+                endif;
+
+            case 'PatientSex'
+                if(nprops > i)
+                    % Most probably a string containing patient sex
+                    useroptions{3} = props{i + 1};
+
+                endif;
+
+            otherwise
+                error('Invalid call to function %s. See help for correct usage', fname);
+
+                return;
+
+            endswitch;
+
+            i = i + 1;
+
+        endwhile;
+
+    endif;
+
+    % Validate user supplied properties
+    i = 1;
+    while(length(useroptions) >= i)
+        if(~isnan(useroptions{i}) && ~ischar(useroptions{i}))
+            error('Invalid call to function parameter %s. See help for correct usage', userparams{i});
+
+            return;
+
+        endif;
+
+        i = i + 1;
+
+    endwhile;
+
     % Get input files
     [file, srcdir] = uigetfile( ...
         {"*;*.dcm;*.DCM", "DICOM File"}, ...
-        'DICOM Toolbox - Reset Series: Select DICOM files', ...
+        'DICOM Toolbox - Salvage Data: Select DICOM files', ...
         'MultiSelect', 'on' ...
         );
 
@@ -49,10 +105,7 @@ function dcm_salvage(varargin)
 
         endif;
 
-    endif;
-
-    % Check if user selected anything
-    if(isempty(fplist))
+    else
         % Nothing selected
         printf('%s: No file selected.\n', fname);
 
@@ -62,7 +115,7 @@ function dcm_salvage(varargin)
 
     destdir = uigetdir( ...
         srcdir, ...
-        'DICOM Toolbox - Reset Series: Select destination directory' ...
+        'DICOM Toolbox - Salvage Data: Select destination directory' ...
         );
 
     % Check of user selected a destination dir
@@ -90,18 +143,6 @@ function dcm_salvage(varargin)
 
         if(isdicom(fplist{i}))
             info = dicominfo(fplist{i});
-
-            % Check if file has an patient name
-            if(isfield(info, 'PatientName'))
-                dcmoldstudies = {dcmoldstudies{:} getfield(info, 'PatientName')};
-
-            else
-                % No patient name, skip file and go to next one
-                printf('FAILED. No patient name\n');
-                i = i + 1;
-                continue;
-
-            endif;
 
             % Check if file has an Study ID
             if(isfield(info, 'StudyInstanceUID'))
@@ -180,24 +221,6 @@ function dcm_salvage(varargin)
             % Copy DICOM header data
             instinfo = dcminfo;
 
-            % Copy patient specific data
-            if(isfield(info, 'PatientSex'))
-                instinfo.PatientSex = info.PatientSex;
-
-            else
-                instinfo.PatientSex = 'O';
-
-            endif;
-
-            instinfo.PatientName = info.PatientName;
-            if(isfield(info, 'PatientID'))
-                instinfo.PatientID = info.PatientID;
-
-            else
-                instinfo.PatientID = strftime('GN-%d%m-%Y', localtime(time()));
-
-            endif;
-
             % Get Study ID index, and set new Study ID and Frame of Reference ID
             [tf, sdix] = ismember(info.StudyInstanceUID, dcmoldstudies);
             instinfo.StudyInstanceUID = dcmnewstudies{sdix};
@@ -251,6 +274,22 @@ function dcm_salvage(varargin)
                     instinfo.PatientName = 'Doe^Jane';
 
                 endif;
+
+            endif;
+
+            if(isfield(info, 'StudyDate'))
+                instinfo.StudyDate = info.StudyDate;
+
+            else
+                instinfo.StudyDate = strftime('%Y%m%d', localtime(time()));
+
+            endif;
+
+            if(isfield(info, 'SeriesDate'))
+                instinfo.SeriesDate = info.SeriesDate;
+
+            else
+                instinfo.SeriesDate = strftime('%Y%m%d', localtime(time()));
 
             endif;
 
