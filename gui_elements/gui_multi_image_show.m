@@ -11,7 +11,7 @@ function gui_multi_image_show(varargin)
     % TODO: Complete input data validation lines here
 
     % Validate nuber of input arguments.
-    narginchk(1, Inf);
+    narginchk(1, 20);
 
     % Validate input data type. All input data must be either 3D or 2D matrices
     % (RGB or monochrome)
@@ -30,7 +30,7 @@ function gui_multi_image_show(varargin)
         endif;
 
         % All input images must be of the same dimensions
-        if(refsz ~= size(varargin{idx}))
+        if(~isequal(refsz, size(varargin{idx})))
             error( ...
                 'varargin(%d): Invalid call to %s: UNCONFORMANT IMAGE SIZE. See help for correct usage.', ...
                 idx, ...
@@ -43,105 +43,75 @@ function gui_multi_image_show(varargin)
 
     endwhile;
 
-    % Determine how to layout GUI elements. If image width is greater than image
-    % height, use vertical layout. Otherwise use horizontal layout.
-    hlayout = false;
-    if(refsz(1) > refsz(2))
-        hlayout = true;
-
-    endif;
+    display(refsz);
 
     % Initialize GUI elements
     graphics_toolkit qt;
 
-    % Define general padding value for GUI elements in pixels
-   pix_pad = 6;
-
-    % Spawn GUI elements
+    % Spawn main figure
     main_figure = figure( ...
         'name', 'GUI Multi Image Show', ...
-        'sizechangedfcn', @update_main_figure ...
+        'menubar', 'none' ...
         );
 
-    main_panel = uipanel( ...
-        'parent', main_figure ...
-        );
+    % Get handle for the main figure
+    h = guihandles(main_figure);
+    h.main_figure = main_figure;
 
-    % Get main panel draw area extents in pixels
-    mps = getpixelposition(main_panel);
+    % Store number of passed images
+    h.nimgs = nargin;
 
-    % Calculate image panel extents
-    img_pnls = {};
-    elpos = [0, 0, 1, 1];
-    if(hlayout)
-        elpos = [0, 0, 1/nargin, 1];
-
-    else
-        elpos = [0, 0, 1, 1/nargin];
+    % Determine how to layout GUI elements. If image width is greater than image
+    % height, use vertical layout. Otherwise use horizontal layout.
+    h.hlayout = false;
+    if(refsz(1) >= refsz(2))
+        h.hlayout = true;
 
     endif;
 
-    img_pnls = {img_pnls{:}, uipanel('parent', main_panel, 'position', elpos)};
-    mps = getpixelposition(img_pnls{1});
-
-    % Calculate axes extents
-    rel_hpad = pix_pad/(mps(3) - mps(1));
-    rel_vpad = pix_pad/(mps(4) - mps(2));
-
-    % Calculate postion for the left panel within main panel
-    elpos = [ ...
-        rel_hpad, ...
-        rel_vpad, ...
-        1 - 2*rel_hpad, ...
-        1 - 2*rel_vpad ...
-        ];
-
-    % Initialize axes for image display
-    image_view = axes( ...
-        'parent', img_pnls{1}, ...
-        'position', elpos ...
+    % Spawn main panel
+    h.main_panel = uipanel( ...
+        'parent', main_figure, ...
+        'bordertype', 'none' ...
         );
-    image(varargin{1}, 'parent', image_view);
 
-    % Generate structure to store and pass to callbacks user data and GUI
-    % elements handles
-    h = guihandles(main_figure);
-    h.pix_pad = pix_pad;
-    h.hlayout = hlayout;
-    h.main_figure = main_figure;
-    h.main_panel = main_panel;
-    h.image_view = image_view;
+    % Set storage for GUI element handlers
+    h.img_pnls = {};
+    h.img_viws = {};
+
+    % Calculate image panel extents
+    idx = 1;
+    while(h.nimgs >= idx)
+        elpos = [0, 0, 1, 1];
+        if(h.hlayout)
+            elpos = [(idx - 1)/nargin, 0, 1/nargin, 1];
+
+        else
+            elpos = [0, 1 - idx/nargin, 1, 1/nargin];
+
+        endif;
+
+        % Spawn image panel
+        h.img_pnls = {h.img_pnls{:}, uipanel('parent', h.main_panel, 'position', elpos)};
+
+        % Initialize axes for image display
+        h.img_viws{idx} = axes( ...
+            'parent', h.img_pnls{idx}, ...
+            'position', [0, 0, 1, 1] ...
+            );
+
+        % Show image on axes
+        himage = image(varargin{idx}, 'parent', h.img_viws{idx});
+
+        % Turn of axes ticks and set title
+        axis(h.img_viws{idx}, 'off');
+        text(10, 30, sprintf('Image #%d', idx));
+
+        idx = idx + 1;
+
+    endwhile;
 
     % Save data and GUI handles
     guidata(main_figure, h);
-
-endfunction;
-
-
-function update_main_figure(hsrc, evt)
-    if(hsrc == gcbf())
-        h = guidata(hsrc);
-        switch(gcbo())
-            case {h.main_figure}
-
-                % Get main panel draw area extents in pixels
-                mps = getpixelposition(h.main_panel);
-
-                % Calculate left and right panel extents
-                rel_hpad = h.pix_pad/(mps(3) - mps(1));
-                rel_vpad = h.pix_pad/(mps(4) - mps(2));
-
-                % Calculate and set new position for the display axes
-                elpos = [ ...
-                    rel_hpad, ...
-                    rel_vpad, ...
-                    1 - 2*rel_hpad, ...
-                    1 - 2*rel_vpad ...
-                    ];
-                set(h.image_view, 'position', elpos);
-
-        endswitch;
-
-    endif;
 
 endfunction;
