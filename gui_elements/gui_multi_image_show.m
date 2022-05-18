@@ -5,7 +5,51 @@
 
 function gui_multi_image_show(varargin)
 
-    % TODO: Put input data validation lines here
+    % Store function name into variable for easier management of error messages
+    fname = 'gui_multi_image_show';
+
+    % TODO: Complete input data validation lines here
+
+    % Validate nuber of input arguments.
+    narginchk(1, Inf);
+
+    % Validate input data type. All input data must be either 3D or 2D matrices
+    % (RGB or monochrome)
+    idx = 1;
+    refsz = [0, 0, 3];
+    while(nargin >= idx)
+        validateattributes( ...
+            varargin{idx}, ...
+            {'numeric'}, ...
+            {'finite', 'nonempty', 'nonnan', '3d'} ...
+            );
+        if(1 == idx)
+            refsz(1) = size(varargin{idx}, 1);
+            refsz(2) = size(varargin{idx}, 2);
+
+        endif;
+
+        % All input images must be of the same dimensions
+        if(refsz ~= size(varargin{idx}))
+            error( ...
+                'varargin(%d): Invalid call to %s: UNCONFORMANT IMAGE SIZE. See help for correct usage.', ...
+                idx, ...
+                fname ...
+                );
+
+        endif;
+
+        idx = idx + 1;
+
+    endwhile;
+
+    % Determine how to layout GUI elements. If image width is greater than image
+    % height, use vertical layout. Otherwise use horizontal layout.
+    hlayout = false;
+    if(refsz(1) > refsz(2))
+        hlayout = true;
+
+    endif;
 
     % Initialize GUI elements
     graphics_toolkit qt;
@@ -15,7 +59,7 @@ function gui_multi_image_show(varargin)
 
     % Spawn GUI elements
     main_figure = figure( ...
-        'name', 'GUI Image Show', ...
+        'name', 'GUI Multi Image Show', ...
         'sizechangedfcn', @update_main_figure ...
         );
 
@@ -43,7 +87,7 @@ function gui_multi_image_show(varargin)
         'parent', main_panel, ...
         'position', elpos ...
         );
-    imshow(I, 'parent', image_view);
+    imshow(varargin{1}, 'parent', image_view);
 
     % Generate structure to store and pass to callbacks user data and GUI
     % elements handles
