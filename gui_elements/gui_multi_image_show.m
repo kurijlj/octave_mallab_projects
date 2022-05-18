@@ -70,6 +70,20 @@ function gui_multi_image_show(varargin)
     % Get main panel draw area extents in pixels
     mps = getpixelposition(main_panel);
 
+    % Calculate image panel extents
+    img_pnls = {};
+    elpos = [0, 0, 1, 1];
+    if(hlayout)
+        elpos = [0, 0, 1/nargin, 1];
+
+    else
+        elpos = [0, 0, 1, 1/nargin];
+
+    endif;
+
+    img_pnls = {img_pnls{:}, uipanel('parent', main_panel, 'position', elpos)};
+    mps = getpixelposition(img_pnls{1});
+
     % Calculate axes extents
     rel_hpad = pix_pad/(mps(3) - mps(1));
     rel_vpad = pix_pad/(mps(4) - mps(2));
@@ -84,15 +98,16 @@ function gui_multi_image_show(varargin)
 
     % Initialize axes for image display
     image_view = axes( ...
-        'parent', main_panel, ...
+        'parent', img_pnls{1}, ...
         'position', elpos ...
         );
-    imshow(varargin{1}, 'parent', image_view);
+    image(varargin{1}, 'parent', image_view);
 
     % Generate structure to store and pass to callbacks user data and GUI
     % elements handles
     h = guihandles(main_figure);
     h.pix_pad = pix_pad;
+    h.hlayout = hlayout;
     h.main_figure = main_figure;
     h.main_panel = main_panel;
     h.image_view = image_view;
