@@ -101,7 +101,7 @@ function rct_gui_read_data_points(varargin)
 
     % Spawn main figure
     main_figure = figure( ...
-        'name', 'GUI Multi Image Show', ...
+        'name', 'Radiochromic Film Toolbox: Read Data Points', ...
         'menubar', 'none' ...
         );
 
@@ -109,11 +109,13 @@ function rct_gui_read_data_points(varargin)
     h = guihandles(main_figure);
     h.main_figure = main_figure;
 
-    % Store dpi and number of passed images
+    % Save app data
     h.dpi = dpi;
     h.scan = scan;
     h.nscans = nscans;
     h.title = title;
+    h.point = [];
+    h.pixval = [];
 
     % Determine how to layout GUI elements. If image width is greater than image
     % height, use vertical layout. Otherwise use horizontal layout.
@@ -161,11 +163,59 @@ function rct_gui_read_data_points(varargin)
         axis(h.img_viws{idx}, 'off');
         text(10, 30, h.title{idx});
 
+        % Specify the callback function
+        set( ...
+            himage, ...
+            'ButtonDownFcn', ...
+            @(s, e)image_click(h.img_viws{idx}, h.scan{idx}) ...
+            )
+
         idx = idx + 1;
 
     endwhile;
 
     % Save data and GUI handles
     guidata(main_figure, h);
+
+endfunction;
+
+
+function image_click(hax, img)
+
+    % Get the location of the mouse click
+    select = get(hax, 'CurrentPoint');
+    select = round(select(1, 1:2));
+
+    % Save selected point into points array
+    h = guidata(gcbf());
+    h.point = [h.point; select(1), select(2)];
+
+    R = img(sub2ind( ...
+        size(img), ...
+        select(2), ...
+        select(1), ...
+        1 ...
+        ));
+    G = img(sub2ind( ...
+        size(img), ...
+        select(2), ...
+        select(1), ...
+        2 ...
+        ));
+    B = img(sub2ind( ...
+        size(img), ...
+        select(2), ...
+        select(1), ...
+        3 ...
+        ));
+
+    % Save intensity values to the intensities array
+    h.pixval = [h.pixval; R, G, B];
+
+    % TODO: Delete this in the release
+    display(h.pixval);
+
+    % Save data
+    guidata(h.main_figure, h);
 
 endfunction;
