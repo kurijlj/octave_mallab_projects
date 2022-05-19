@@ -77,10 +77,10 @@ function [corr_scan, corr_scan_title] = rct_gui_corr_scan(varargin)
         endif;
 
         % Check if key-value arguments are passed
-        if(~isempty(props))
+        if(~isempty(prop))
             % Key-value arguments passed so let's process them
             idx = 1;
-            npropss = length(props);
+            nprops = length(prop);
             while(nprops >= idx)
                 switch(prop{idx})
                     case 'title'
