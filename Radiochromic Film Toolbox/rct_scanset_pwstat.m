@@ -9,13 +9,13 @@
 %
 %      Many different combinations of arguments are possible. The simplest form
 %      is:
-%          pwmean = rct_scanset_pwstat (I1, I2, I3, ...)
+%          pwstat = rct_scanset_pwstat (I1, I2, I3, ...)
 %
 %      where the arguments are taken as the matrices containing pixel data.
 %
 %      If more than one argument is given, they are interpreted as:
 %
-%          [pwmean, pwstd, dstitle] = rct_scanset_pwstat (I1, I2, I3, PROPERTY, VALUE, ...)
+%          [pwstat, pwstat_title] = rct_scanset_pwstat (I1, I2, I3, PROPERTY, VALUE, ...)
 %
 %      and so on. Any number of argument sets may appear.
 %
@@ -75,6 +75,7 @@ function [pwstat, pwstat_title] = rct_scanset_pwstat(varargin)
     pwstat_title = {};
     pwmean = [];
     pwstd = [];
+    dpmask = [];
 
     % Initialize structures for holding property values and initialize them
     % to default values
@@ -278,6 +279,7 @@ function [pwstat, pwstat_title] = rct_scanset_pwstat(varargin)
             ref_size = imsize;
             pwmean = zeros(imsize);
             pwstd = zeros(imsize);
+            dpmask = ones(size(img{index}));
 
         elseif(~isequal(ref_size, imsize))
             error( ...
@@ -291,7 +293,10 @@ function [pwstat, pwstat_title] = rct_scanset_pwstat(varargin)
         endif;
 
         % Caluclate average pixel value
-        pwmean = pwmean .+ (double(img{index}) ./ length(img));
+        pwmean = pwmean + (double(img{index}) ./ length(img));
+
+        % Ecaluate dead pixels
+        dpmask = dpmask .* (img{index} > (intmax('uint16') - 1)*0.95);
 
         % Update progress indicator
         if(isequal(2, keyval{3}))
@@ -340,7 +345,7 @@ function [pwstat, pwstat_title] = rct_scanset_pwstat(varargin)
 
     % Calculate sum of squared differences from average pixel value
     while(length(img) >= index)
-        pwstd = pwstd .+ (double(img{index}) .- pwmean).^2;
+        pwstd = pwstd + (double(img{index}) - pwmean).^2;
         index = index + 1;
 
     endwhile;
@@ -359,14 +364,16 @@ function [pwstat, pwstat_title] = rct_scanset_pwstat(varargin)
     pwstat = { ...
         pwstat{:}, ...
         pwmean, ...
-        pwstd ...
+        pwstd, ...
+        dpmask ...
         };
 
     % Format titles for the computed data and populate reaturn data structure
     pwstat_title = { ...
         pwstat_title{:}, ...
         sprintf('%s - Averaged pixels', keyval{1}), ...
-        sprintf('%s - Pixelwise stdev', keyval{1}) ...
+        sprintf('%s - Pixelwise stdev', keyval{1}), ...
+        sprintf('%s - Dead Pixels Mask', keyval{1}) ...
         };
 
 endfunction;

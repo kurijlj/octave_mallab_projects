@@ -5,22 +5,16 @@
 
 function gui_image_select_point(I)
 
+    % Store function name into variable for easier management of error messages
+    fname = 'gui_select_point';
+
     % Input validation section
-    if(~isnumeric(I))
-        error('Invalid data type!. Not defined for non-numerical data matrices.');
-
-        return;
-
-    elseif( ...
-            1 == size(I, 1) ...
-            || 1 == size(I, 2) ...
-            || (1 ~= size(I, 3) && 3 ~= size(I, 3)) ...
-            )
-        error('Invalid data type!. Not a grayscale nor a RGB image.');
-
-        return;
-
-    endif;
+    narginchk(1, 1);
+    validateattributes( ...
+        I, ...
+        {'numeric'}, ...
+        {'finite', 'nonempty', 'nonnan', '3d', '>=', 0} ...
+        );
 
     % Set GUI toolkit to Qt
     graphics_toolkit qt;
@@ -122,8 +116,14 @@ function gui_image_select_point(I)
         );
 
 
+    % Specify the callback function on figure delete
+    set(h.main_figure, 'deletefcn', @(s, e)on_fig_del)
+
     % Save data and GUI handles
     guidata(main_figure, h);
+
+    % Wait for user to close the figure
+    uiwait(h.main_figure);
 
 endfunction;
 
@@ -168,6 +168,9 @@ endfunction;
 
 function image_click(hax, img)
 
+    % Get main figure data handle
+    h = guidata(gcbf());
+
     % Get the location of the current mouse click
     current_point = get(hax, 'CurrentPoint');
     current_point = round(current_point(1,1:2));
@@ -180,6 +183,9 @@ function image_click(hax, img)
             current_point(2), ...
             current_point(1) ...
             ));
+
+        % Store selected point intensities into the return variable
+        h.S = [h.S, data];
 
         % Print the data to the command window.
         printf( ...
@@ -210,6 +216,9 @@ function image_click(hax, img)
             3 ...
             ));
 
+        % Store selected point intensities into the return variable
+        h.S = [R, G, B];
+
         % Print the data to the command window.
         printf( ...
             'x: %0.2f, y: %0.2f, pixel: (%0.2f, %0.2f, %0.2f)\n', ...
@@ -220,8 +229,23 @@ function image_click(hax, img)
 
     endif;
 
+    % Save the data
+    guidata(h.main_figure, h);
+
 endfunction;
 
 
 function undo_push(hsrc, evt)
+endfunction;
+
+
+function on_fig_del(s, e)
+
+    % Get main figure data handle
+    h = guidata(gcbf());
+
+    % display(h.S);
+    assignin('base', 'S', h.S);
+    % S = h.S;
+
 endfunction;
