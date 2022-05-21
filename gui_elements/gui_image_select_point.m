@@ -3,7 +3,7 @@
 %  -- gui_image_select_point(I)
 %       Small GuI app that creates a new figure to show passed image
 
-function gui_image_select_point(I)
+function R = gui_image_select_point(I)
 
     % Store function name into variable for easier management of error messages
     fname = 'gui_select_point';
@@ -15,6 +15,8 @@ function gui_image_select_point(I)
         {'numeric'}, ...
         {'finite', 'nonempty', 'nonnan', '3d', '>=', 0} ...
         );
+
+    R = [];
 
     % Set GUI toolkit to Qt
     graphics_toolkit qt;
@@ -117,13 +119,15 @@ function gui_image_select_point(I)
 
 
     % Specify the callback function on figure delete
-    set(h.main_figure, 'deletefcn', @(s, e)on_fig_del)
+    set(h.main_figure, 'deletefcn', @(s, e)on_fig_del(s, e))
+    h.S = [];
 
     % Save data and GUI handles
     guidata(main_figure, h);
 
     % Wait for user to close the figure
     uiwait(h.main_figure);
+    display(h.S);
 
 endfunction;
 
@@ -217,7 +221,7 @@ function image_click(hax, img)
             ));
 
         % Store selected point intensities into the return variable
-        h.S = [R, G, B];
+        h.S = [h.S; R, G, B];
 
         % Print the data to the command window.
         printf( ...
