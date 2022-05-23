@@ -18,10 +18,14 @@ function rctGUIAnalyzeFilm()
     % Initialize GUI toolkit
     graphics_toolkit qt;
 
+    % Initialize structure for keeping app data
     app = struct();
     app.result = NaN;
     app = buildGUI(app);
     guidata(gcf(), app);
+
+    % Update display
+    refresh(gcf());
 
     % Wait for user to close the figure and then continue
     uiwait(app.gui.main_figure);
@@ -44,20 +48,19 @@ endfunction;
 % -----------------------------------------------------------------------------
 function [app] = buildGUI(app)
 
-    % Allocate structure for storing gui elemnents
+    % Allocate structure for storing gui elemnents ----------------------------
     gui = struct();
 
-    % Create main figure -------------------------------------------------------
+    % Create main figure ------------------------------------------------------
     gui.main_figure = figure( ...
         'name', 'RCT Analyze Film', ...
         'tag', 'main_figure', ...
         'menubar', 'none', ...
-        % 'sizechangedfcn', @uiResize, ...
-        % 'deletefcn', @ui_destroy, ...
+        'sizechangedfcn', @uiResize, ...
         'position', uiCalculateInitialPosition(get(0, 'ScreenSize')) ...
         );
 
-    % Create custom menu bar ---------------------------------------------------
+    % Create custom menu bar --------------------------------------------------
 
     % Create file menu and file menu entries
     gui.file_menu = uimenu( ...
@@ -136,7 +139,7 @@ function [app] = buildGUI(app)
         'callback', @uiAppAbout ...
         );
 
-    % Create main panel --------------------------------------------------------
+    % Create main panel -------------------------------------------------------
     gui.main_panel = uipanel( ...
         'parent', gui.main_figure, ...
         'tag', 'main_panel', ...
@@ -146,12 +149,12 @@ function [app] = buildGUI(app)
 
     % % Define dimensions for panel elements with fixed size
     gui.padding = 5;
-    gui.control_panel_width = 350;
+    gui.control_panel_width = 300;
 
     % Calculate normalized position of main panel elements
     position = uiMainPanelElementsPosition(gui);
 
-    % Create main panel elements -----------------------------------------------
+    % Create main panel elements ----------------------------------------------
 
     % ROI panel
     gui.roi_panel = uipanel( ...
@@ -177,7 +180,7 @@ function [app] = buildGUI(app)
         'position', position(3, :) ...
         );
 
-    % Create ROI panel elements ------------------------------------------------
+    % Create ROI panel elements -----------------------------------------------
 
     % Divide ROI panel into two panels: one for table view, and other for ROI
     % selection control ('Undo' button)
@@ -200,7 +203,7 @@ function [app] = buildGUI(app)
         'position', position(2, :) ...
         );
 
-    % Create ROI data panel elements -------------------------------------------
+    % Create ROI data panel elements ------------------------------------------
     gui.roi_data_view = uitable( ...
         'parent', gui.roi_data_panel, ...
         'ColumnName', {'ROI Center [px]', 'ROI Center [mm]', 'Intensity (R, G, B)'}, ...
@@ -208,7 +211,7 @@ function [app] = buildGUI(app)
         'position', [0, 0, 1, 1] ...
         );
 
-    % Create ROI control panel elements ----------------------------------------
+    % Create ROI control panel elements ---------------------------------------
     gui.roi_control_undo_height = 30;
     position = uiROIControlPanelElementsPosition(gui);
     gui.roi_control_undo = uicontrol( ...
@@ -222,7 +225,7 @@ function [app] = buildGUI(app)
         'position', position(1, :) ...
         );
 
-    % Create scans view elements -----------------------------------------------
+    % Create scans view elements ----------------------------------------------
     gui.scans_landscape_view = false;
     position = uiScansPanelElementsPosition(gui);
 
@@ -330,13 +333,10 @@ function [app] = buildGUI(app)
         );
     axis(gui.scans_opticaldensity_view, 'off');
 
-    % Create control panel elements --------------------------------------------
+    % Create control panel elements -------------------------------------------
 
-    % Save gui data
+    % Save gui data -----------------------------------------------------------
     app.gui = gui;
-
-    % Refresh displpay
-    refresh(gui.main_figure);
 
 endfunction;
 
@@ -361,6 +361,129 @@ function ui_position = uiCalculateInitialPosition(screen_size)
 
 endfunction;
 
+% -----------------------------------------------------------------------------
+%
+% Function 'uiMainPanelElementsPosition'
+%
+% -----------------------------------------------------------------------------
+function position = uiMainPanelElementsPosition(gui_handle)
+
+    % Init return value
+    position = [];
+
+    % Calculate elements position
+    mainpanel_extents = getpixelposition(gui_handle.main_panel);
+    width  = mainpanel_extents(3) - mainpanel_extents(1);
+    height = mainpanel_extents(4) - mainpanel_extents(2);
+    rel_control_panel_width = gui_handle.control_panel_width/width;
+    roi_view = [0, 0, 1 - rel_control_panel_width, 0.25];
+    scan_view = [0, roi_view(4), roi_view(3), 1 - roi_view(4)];
+    control_view = [roi_view(3), 0, 1 - roi_view(3), 1];
+
+    % Update return variable
+    position = [position; roi_view; scan_view; control_view];
+
+endfunction;
+
+% -----------------------------------------------------------------------------
+%
+% Function 'uiROIPanelElementsPosition'
+%
+% -----------------------------------------------------------------------------
+function position = uiROIPanelElementsPosition(gui_handle)
+
+    % Init return value
+    position = zeros(2, 4);
+
+    % Calculate elements position
+    roi_panel_extents = getpixelposition(gui_handle.roi_panel);
+    width  = roi_panel_extents(3) - roi_panel_extents(1);
+    height = roi_panel_extents(4) - roi_panel_extents(2);
+    rel_hpadding = gui_handle.padding/width;
+    rel_vpadding = gui_handle.padding/height;
+    data_view = [0, 0, 0.75 - rel_hpadding, 1];
+    control_view = [ ...
+        data_view(3) + rel_hpadding, ...
+        rel_vpadding, ...
+        1 - data_view(3) - 2*rel_hpadding, ...
+        1 - 2*rel_vpadding ...
+        ];
+
+    % Update return variable
+    position(1, 1) = data_view(1);
+    position(1, 2) = data_view(2);
+    position(1, 3) = data_view(3);
+    position(1, 4) = data_view(4);
+    position(2, 1) = control_view(1);
+    position(2, 2) = control_view(2);
+    position(2, 3) = control_view(3);
+    position(2, 4) = control_view(4);
+
+endfunction;
+
+% -----------------------------------------------------------------------------
+%
+% Function 'uiROIControlPanelElementsPosition'
+%
+% -----------------------------------------------------------------------------
+function position = uiROIControlPanelElementsPosition(gui_handle);
+
+    % Init return value
+    position = zeros(1, 4);
+
+    % Calculate elements position
+    roi_controlpanel_extents = getpixelposition(gui_handle.roi_control_panel);
+    width  = roi_controlpanel_extents(3) - roi_controlpanel_extents(1);
+    height = roi_controlpanel_extents(4) - roi_controlpanel_extents(2);
+    undo_rel_height = gui_handle.roi_control_undo_height/height;
+    undo_push = [0, 1 - undo_rel_height, 1, undo_rel_height];
+
+    % Update return variable
+    position(1, 1) = undo_push(1);
+    position(1, 2) = undo_push(2);
+    position(1, 3) = undo_push(3);
+    position(1, 4) = undo_push(4);
+
+endfunction;
+
+% -----------------------------------------------------------------------------
+%
+% Function 'uiScansPanelElementsPosition'
+%
+% -----------------------------------------------------------------------------
+function position = uiScansPanelElementsPosition(gui_handle)
+
+    % Init return value
+    position = [];
+
+    % Calculate elements position based on scan orientation
+    if(gui_handle.scans_landscape_view)
+        background      = [0, 1 - 1*0.2, 1, 0.2];
+        irradiated      = [0, 1 - 2*0.2, 1, 0.2];
+        zerolight       = [0, 1 - 3*0.2, 1, 0.2];
+        deadpixels      = [0, 1 - 4*0.2, 1, 0.2];
+        opticaldensity  = [0, 1 - 5*0.2, 1, 0.2];
+
+    else
+        background      = [0*0.2, 0, 0.2, 1];
+        irradiated      = [1*0.2, 0, 0.2, 1];
+        zerolight       = [2*0.2, 0, 0.2, 1];
+        deadpixels      = [3*0.2, 0, 0.2, 1];
+        opticaldensity  = [4*0.2, 0, 0.2, 1];
+
+    endif;
+
+    % Update return variable
+    position = [ ...
+        position; ...
+        background; ...
+        irradiated; ...
+        zerolight; ...
+        deadpixels; ...
+        opticaldensity ...
+        ];
+
+endfunction;
 
 
 
@@ -407,26 +530,6 @@ endfunction;
 % Main Panel Callbacks Section
 %
 % -----------------------------------------------------------------------------
-function position = uiMainPanelElementsPosition(gui_handle)
-
-    % Init return value
-    position = [];
-
-    % Calculate elements position
-    mainpanel_extents = getpixelposition(gui_handle.main_panel);
-    width  = mainpanel_extents(3) - mainpanel_extents(1);
-    height = mainpanel_extents(4) - mainpanel_extents(2);
-    rel_control_panel_width = gui_handle.control_panel_width/width;
-    roi_view = [0, 0, 1 - rel_control_panel_width, 0.25];
-    scan_view = [0, roi_view(4), roi_view(3), 1 - roi_view(4)];
-    control_view = [roi_view(3), 0, 1 - roi_view(3), 1];
-
-    % Update return variable
-    position = [position; roi_view; scan_view; control_view];
-
-endfunction;
-
-
 function uiResize(src, evt)
 
     % Retrieve handle to app data
@@ -436,7 +539,7 @@ function uiResize(src, evt)
     position = uiMainPanelElementsPosition(app.gui);
     set(app.gui.roi_panel, 'position', position(1, :));
     set(app.gui.scans_panel, 'position', position(2, :));
-    set(app.gui.control_panel, 'position', position(2, :));
+    set(app.gui.control_panel, 'position', position(3, :));
 
     % Recalculate GUI elements position inside ROI panel
     position = uiROIPanelElementsPosition(app.gui);
@@ -447,6 +550,14 @@ function uiResize(src, evt)
     position = uiROIControlPanelElementsPosition(app.gui);
     set(app.gui.roi_control_undo, 'position', position(1, :));
 
+    % Recalculate GUI elements position inside Scans panel
+    % position = uiScansPanelElementsPosition(app.gui);
+    % set(app.gui.scans_background_panel, 'position', position(1, :));
+    % set(app.gui.scans_irradiated_panel, 'position', position(2, :));
+    % set(app.gui.scans_zerolight_panel, 'position', position(3, :));
+    % set(app.gui.scans_deadpixels_panel, 'position', position(4, :));
+    % set(app.gui.scans_opticaldensity_panel, 'position', position(5, :));
+
 endfunction;
 
 
@@ -455,57 +566,6 @@ endfunction;
 % ROI Panel Callbacks Section
 %
 % -----------------------------------------------------------------------------
-function position = uiROIPanelElementsPosition(gui_handle)
-
-    % Init return value
-    position = zeros(2, 4);
-
-    % Calculate elements position
-    roi_panel_extents = getpixelposition(gui_handle.roi_panel);
-    width  = roi_panel_extents(3) - roi_panel_extents(1);
-    height = roi_panel_extents(4) - roi_panel_extents(2);
-    rel_hpadding = gui_handle.padding/width;
-    rel_vpadding = gui_handle.padding/height;
-    data_view = [0, 0, 0.75 - rel_hpadding, 1];
-    control_view = [ ...
-        data_view(3) + rel_hpadding, ...
-        rel_vpadding, ...
-        1 - data_view(3) - 2*rel_hpadding, ...
-        1 - 2*rel_vpadding ...
-        ];
-
-    % Update return variable
-    position(1, 1) = data_view(1);
-    position(1, 2) = data_view(2);
-    position(1, 3) = data_view(3);
-    position(1, 4) = data_view(4);
-    position(2, 1) = control_view(1);
-    position(2, 2) = control_view(2);
-    position(2, 3) = control_view(3);
-    position(2, 4) = control_view(4);
-
-endfunction;
-
-function position = uiROIControlPanelElementsPosition(gui_handle);
-
-    % Init return value
-    position = zeros(1, 4);
-
-    % Calculate elements position
-    roi_controlpanel_extents = getpixelposition(gui_handle.roi_control_panel);
-    width  = roi_controlpanel_extents(3) - roi_controlpanel_extents(1);
-    height = roi_controlpanel_extents(4) - roi_controlpanel_extents(2);
-    undo_rel_height = gui_handle.roi_control_undo_height/height;
-    undo_push = [0, 1 - undo_rel_height, 1, undo_rel_height];
-
-    % Update return variable
-    position(1, 1) = undo_push(1);
-    position(1, 2) = undo_push(2);
-    position(1, 3) = undo_push(3);
-    position(1, 4) = undo_push(4);
-
-endfunction;
-
 function uiUndoROISelection(src, evt)
     % TODO: Add function implementation here
 
@@ -517,36 +577,3 @@ endfunction;
 % Scans Panel Callbacks Section
 %
 % -----------------------------------------------------------------------------
-function position = uiScansPanelElementsPosition(gui_handle)
-
-    % Init return value
-    position = [];
-
-    % Calculate elements position based on scan orientation
-    if(gui_handle.scans_landscape_view)
-        background      = [0, 1 - 1*0.2, 1, 0.2];
-        irradiated      = [0, 1 - 2*0.2, 1, 0.2];
-        zerolight       = [0, 1 - 3*0.2, 1, 0.2];
-        deadpixels      = [0, 1 - 4*0.2, 1, 0.2];
-        opticaldensity  = [0, 1 - 5*0.2, 1, 0.2];
-
-    else
-        background      = [0*0.2, 0, 0.2, 1];
-        irradiated      = [1*0.2, 0, 0.2, 1];
-        zerolight       = [2*0.2, 0, 0.2, 1];
-        deadpixels      = [3*0.2, 0, 0.2, 1];
-        opticaldensity  = [4*0.2, 0, 0.2, 1];
-
-    endif;
-
-    % Update return variable
-    position = [ ...
-        position; ...
-        background; ...
-        irradiated; ...
-        zerolight; ...
-        deadpixels; ...
-        opticaldensity ...
-        ];
-
-endfunction;
