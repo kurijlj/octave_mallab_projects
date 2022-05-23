@@ -10,10 +10,10 @@
 
 % -----------------------------------------------------------------------------
 %
-% Function 'rctGUIAnalyzeFilm'
+% Function 'rct_gui_analyze_film'
 %
 % -----------------------------------------------------------------------------
-function rctGUIAnalyzeFilm()
+function rct_gui_analyze_film()
 
     % Initialize GUI toolkit
     graphics_toolkit qt;
@@ -348,7 +348,7 @@ endfunction;
 function ui_position = uiCalculateInitialPosition(screen_size)
 
     % Init return value to default
-    ui_position = [0 0 400 400];
+    ui_position = [100 100 400 400];
 
     % Make app occupy upt to 80% of the available screen size
     ui_width = round(screen_size(3)*0.80);
@@ -393,7 +393,7 @@ endfunction;
 function position = uiROIPanelElementsPosition(gui_handle)
 
     % Init return value
-    position = zeros(2, 4);
+    position = [];
 
     % Calculate elements position
     roi_panel_extents = getpixelposition(gui_handle.roi_panel);
@@ -410,14 +410,7 @@ function position = uiROIPanelElementsPosition(gui_handle)
         ];
 
     % Update return variable
-    position(1, 1) = data_view(1);
-    position(1, 2) = data_view(2);
-    position(1, 3) = data_view(3);
-    position(1, 4) = data_view(4);
-    position(2, 1) = control_view(1);
-    position(2, 2) = control_view(2);
-    position(2, 3) = control_view(3);
-    position(2, 4) = control_view(4);
+    position = [data_view; control_view];
 
 endfunction;
 
@@ -429,7 +422,7 @@ endfunction;
 function position = uiROIControlPanelElementsPosition(gui_handle);
 
     % Init return value
-    position = zeros(1, 4);
+    position = [];
 
     % Calculate elements position
     roi_controlpanel_extents = getpixelposition(gui_handle.roi_control_panel);
@@ -439,10 +432,7 @@ function position = uiROIControlPanelElementsPosition(gui_handle);
     undo_push = [0, 1 - undo_rel_height, 1, undo_rel_height];
 
     % Update return variable
-    position(1, 1) = undo_push(1);
-    position(1, 2) = undo_push(2);
-    position(1, 3) = undo_push(3);
-    position(1, 4) = undo_push(4);
+    position = [undo_push;];
 
 endfunction;
 
