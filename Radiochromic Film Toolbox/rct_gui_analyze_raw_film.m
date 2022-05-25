@@ -29,7 +29,8 @@ function rcGuiAnalyzeRawFilm()
     app = struct();
 
     % Set apps databases locations
-    app.scannersdb = 'scannersdb.csv';
+    app.scannerdb = 'scannerdb.csv';
+    app.filmdb = 'filmdb.csv';
 
     % display('Creating Measurement structure');
     app.measurement = NaN;
@@ -65,9 +66,9 @@ function [app] = newMeasurement(app)
     measurement = struct();
     measurement.title = 'New Measurement';
     measurement.date = strftime('%d.%m.%Y', localtime(time()));;
-    measurement.scanner_device = newScannerDevice(measurement, app.scannersdb);
-    measurement.film = NaN;
-    measurement.field = NaN;
+    measurement = newScannerDevice(measurement, app.scannerdb);
+    measurement = newFilm(measurement, app.filmdb);
+    measurement = newField(measurement);;
     measurement.irradiated = NaN;
     measurement.background = NaN;
     measurement.zero_light = NaN;
@@ -94,13 +95,13 @@ function measurement = newScannerDevice(measurement, path_to_devicedb)
 
 endfunction;
 
-function devices = loadScannerDatabase(path_to_file)
+function device = loadScannerDatabase(path_to_file)
 
     % Load required packages
     pkg load io;
 
     % Initialize to default values
-    devices = { ...
+    device = { ...
         'Manufacturer', ...
         'Model', ...
         'Serial Number', ...
@@ -130,16 +131,19 @@ function devices = loadScannerDatabase(path_to_file)
 
     % if(~scannerDatabaseIntegrityOk(path_to_file))
     %     errordlg( ...
-    %         'Scanner database integrity check failed. Aborting execution ...', ...
+    %         'Scanner database integrity check failed. Using default values ...', ...
     %         'RCT Analyze Raw Film: Missing Database' ...
     %         );
-
+    %
+    %     % Unload loaded packages
+    %     pkg unload io;
+    %
     %     return;
-
+    %
     % endif;
 
     % Load default device
-    devices = csv2cell(path_to_file);
+    device = csv2cell(path_to_file);
 
     % Unload loaded packages
     pkg unload io;
@@ -155,6 +159,163 @@ function result = scannerDatabaseIntegrityOk(path_to_file)
     % TODO: Add function implementation here
 
 endfunction;
+
+% -----------------------------------------------------------------------------
+%
+% Film Data Structure Routines
+%
+% -----------------------------------------------------------------------------
+function measurement = newFilm(measurement, path_to_filmdb)
+    film = loadFilmDatabase(path_to_filmdb);
+    measurement.film = struct();
+    measurement.film.manufacturer = film{2, 1};
+    measurement.film.model        = film{2, 2};
+    measurement.film.custom_cut   = film{2, 3};
+
+endfunction;
+
+function film = loadFilmDatabase(path_to_file)
+
+    % Load required packages
+    pkg load io;
+
+    % Initialize to default values
+    film = { ...
+        'Manufacturer', ...
+        'Model', ...
+        'Custom Cut'; ...
+        'Unknown', ...
+        'Unknown', ...
+        'Unknown' ...
+        };
+
+    if(~filmDatabaseExists(path_to_file))
+        errordlg( ...
+            'Film database is missing. Using default values ...', ...
+            'RCT Analyze Raw Film: Missing Database' ...
+            );
+
+        % Unload loaded packages
+        pkg unload io;
+
+        return;
+
+    endif;
+
+    % if(~filmDatabaseIntegrityOk(path_to_file))
+    %     errordlg( ...
+    %         'Film database integrity check failed. Using default values ...', ...
+    %         'RCT Analyze Raw Film: Missing Database' ...
+    %         );
+    %
+    %     % Unload loaded packages
+    %     pkg unload io;
+    %
+    %     return;
+    %
+    % endif;
+
+    % Load all known film models
+    film = csv2cell(path_to_file);
+
+    % Unload loaded packages
+    pkg unload io;
+
+endfunction;
+
+function result = filmDatabaseExists(path_to_file)
+    result = isfile(path_to_file);
+
+endfunction;
+
+function result = filmDatabaseIntegrityOk(path_to_file)
+    % TODO: Add function implementation here
+
+endfunction;
+
+% -----------------------------------------------------------------------------
+%
+% Field Data Structure Routines
+%
+% -----------------------------------------------------------------------------
+function measurement = newField(measurement)
+    measurement.field = struct();
+    measurement.field.beam_type   = 'Unknown';
+    measurement.field.beam_energy = 'Unknown';
+    measurement.field.field_shape = 'Unknown';
+    measurement.field.field_size  = 'Unknown';
+
+endfunction;
+
+% -----------------------------------------------------------------------------
+%
+% Irradiated Data Structure Routines
+%
+% -----------------------------------------------------------------------------
+function measurement = loadIrradiatedDataset(measurement, varargin)
+
+    irradiated = struct();
+
+    % Validate input files
+    idx = 1;
+    while(nargin - 1 >= idx)
+        if(~isfile(varargin{idx}))
+            % Show error dialog
+            errordlg( ...
+                sprintf( ...
+                    'Not a regular file \"%s\". Aborting loading operation ...', ...
+                    varargin{idx} ...
+                    ), ...
+                'RCT Analyze Raw Film: Missing Database' ...
+                );
+
+            % also send message to the workspace
+            fprintf( ...
+                stderr(), ...
+                sprintf( ...
+                    'Not a regular file \"%s\". Aborting loading operation ...\n', ...
+                    varargin{idx} ...
+                    ) ...
+                );
+
+            % Abort further execution
+            return;
+
+        endif;
+
+        idx = idx + 1;
+
+    endwhile;
+
+    irradiated.file_list = varargin;
+
+    measurement.irradiated = irradiated;
+
+endfunction;
+
+% -----------------------------------------------------------------------------
+%
+% Background Data Structure Routines
+%
+% -----------------------------------------------------------------------------
+
+% -----------------------------------------------------------------------------
+%
+% Zero Light Data Structure Routines
+%
+% -----------------------------------------------------------------------------
+
+% -----------------------------------------------------------------------------
+%
+% Dead Pixels Data Structure Routines
+%
+% -----------------------------------------------------------------------------
+
+% -----------------------------------------------------------------------------
+%
+% Optical Density Data Structure Routines
+%
+% -----------------------------------------------------------------------------
 
 
 
