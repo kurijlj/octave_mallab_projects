@@ -2,9 +2,12 @@
 %
 %  -- rctGUIAnalyzeFilm()
 
+% TODO: Remove following line when release is complete
+pkg_name = 'Radiochromic Toolbox'
+
 % =============================================================================
 %
-% Main Script Section
+% Main Script Body Section
 %
 % =============================================================================
 
@@ -13,18 +16,30 @@
 % Function 'rct_gui_analyze_film'
 %
 % -----------------------------------------------------------------------------
-function rct_gui_analyze_film()
+% TODO: Rename script's name and function's name to
+% 'rct_gui_analyze_raw_film_v1' when release is complete
+% function rct_gui_analyze_raw_film()
+function rcGuiAnalyzeRawFilm()
 
     % Initialize GUI toolkit
     graphics_toolkit qt;
 
     % Initialize structure for keeping app data
+    % display('Creating App structure');
     app = struct();
-    app.result = NaN;
+
+    % Set apps databases locations
+    app.scannersdb = 'scannersdb.csv';
+
+    % display('Creating Measurement structure');
+    app.measurement = NaN;
+    % display('Creating GUI structure');
     app = buildGUI(app);
+    % display('Saving App data');
     guidata(gcf(), app);
 
     % Update display
+    % display('Refreshing GUI display');
     refresh(gcf());
 
     % Wait for user to close the figure and then continue
@@ -32,6 +47,114 @@ function rct_gui_analyze_film()
 
 endfunction;
 
+
+
+
+% =============================================================================
+%
+% Data Handling Section
+%
+% =============================================================================
+
+% -----------------------------------------------------------------------------
+%
+% Measurement Routines
+%
+% -----------------------------------------------------------------------------
+function [app] = newMeasurement(app)
+    measurement = struct();
+    measurement.title = 'New Measurement';
+    measurement.date = strftime('%d.%m.%Y', localtime(time()));;
+    measurement.scanner_device = newScannerDevice(measurement, app.scannersdb);
+    measurement.film = NaN;
+    measurement.field = NaN;
+    measurement.irradiated = NaN;
+    measurement.background = NaN;
+    measurement.zero_light = NaN;
+    measurement.dead_pixels = NaN;
+    measurement.optical_density = NaN;
+    measurement.roi = NaN;
+
+endfunction;
+
+% -----------------------------------------------------------------------------
+%
+% Scanner Data Structure Routines
+%
+% -----------------------------------------------------------------------------
+function measurement = newScannerDevice(measurement, path_to_devicedb)
+    device = loadScannerDatabase(path_to_devicedb);
+    measurement.scanner_device = struct();
+    measurement.scanner_device.manufacturer        = device{2, 1};
+    measurement.scanner_device.model               = device{2, 2};
+    measurement.scanner_device.serial_number       = device{2, 3};
+    measurement.scanner_device.native_resolution   = device{2, 4};
+    measurement.scanner_device.scanning_mode       = device{2, 5};
+    measurement.scanner_device.scanning_resolution = device{2, 6};
+
+endfunction;
+
+function devices = loadScannerDatabase(path_to_file)
+
+    % Load required packages
+    pkg load io;
+
+    % Initialize to default values
+    devices = { ...
+        'Manufacturer', ...
+        'Model', ...
+        'Serial Number', ...
+        'Native Resolution', ...
+        'Scanning Mode', ...
+        'Scanning Resolution'; ...
+        'Unknown', ...
+        'Unknown', ...
+        'Unknown', ...
+        'Unknown', ...
+        'Unknown', ...
+        'Unknown' ...
+        };
+
+    if(~scannerDatabaseExists(path_to_file))
+        errordlg( ...
+            'Scanner database is missing. Using default values ...', ...
+            'RCT Analyze Raw Film: Missing Database' ...
+            );
+
+        % Unload loaded packages
+        pkg unload io;
+
+        return;
+
+    endif;
+
+    % if(~scannerDatabaseIntegrityOk(path_to_file))
+    %     errordlg( ...
+    %         'Scanner database integrity check failed. Aborting execution ...', ...
+    %         'RCT Analyze Raw Film: Missing Database' ...
+    %         );
+
+    %     return;
+
+    % endif;
+
+    % Load default device
+    devices = csv2cell(path_to_file);
+
+    % Unload loaded packages
+    pkg unload io;
+
+endfunction;
+
+function result = scannerDatabaseExists(path_to_file)
+    result = isfile(path_to_file);
+
+endfunction;
+
+function result = scannerDatabaseIntegrityOk(path_to_file)
+    % TODO: Add function implementation here
+
+endfunction;
 
 
 
