@@ -256,36 +256,194 @@ function measurement = loadIrradiatedDataset(measurement, varargin)
 
     irradiated = struct();
 
-    % Validate input files
+    % Validate input files , check dimensions integrity of the given images,
+    % calculate mean pixel value, pxelwise standard deviation, and pixelwise
+    % stdev RMS
+    ref_size = [];
     idx = 1;
+
+    % Display information on the loading process progress
+    progress_tracker = waitbar( ...
+        0.0, ...
+        'Loading scanset ...', ...
+        'name', 'RCT Analyze Raw Film' ...
+        );
+
     while(nargin - 1 >= idx)
-        if(~isfile(varargin{idx}))
+        img = [];
+
+        try
+            img = imread(varargin{idx});
+
+        catch err
+            % Kill progress tracker
+            if(ishandle(progress_tracker))
+                delete(progress_tracker);
+
+            endif;
+
+            % Format error message string for display to screen
+            errmsg = strrep(varargin{idx}, '\', '\\'); ... % Escape backslashes
+
             % Show error dialog
-            errordlg( ...
-                sprintf( ...
-                    'Not a regular file \"%s\". Aborting loading operation ...', ...
-                    varargin{idx} ...
-                    ), ...
-                'RCT Analyze Raw Film: Missing Database' ...
+            msgbox( ...
+                { ...
+                    strrep(errmsg, '_', '\_'), ... % Escape underscore
+                    'Aborting loading operation ...' ...
+                    }, ...
+                'RCT Analyze Raw Film: Error Reading File', ...
+                'error' ...
+                );
+
+            % also send message to the workspace
+            fprintf( ...
+                stderr(), ...
+                '%s. Aborting loading operation ...\n', ...
+                err.message ...
+                );
+
+            % Abort loading the scanset
+            return;
+
+        end_try_catch;
+
+        % Check if we are dealing with an 48 bit image
+        if(~isequal('uint16', class(img)))
+            % Kill progress tracker
+            if(ishandle(progress_tracker))
+                delete(progress_tracker);
+
+            endif;
+
+            % Format error message string for display to screen
+            errmsg = sprintf( ...
+                'Not an 48 bit image (%s).', ...
+                strrep(varargin{idx}, '\', '\\') ... % Escape backslashes
+                );
+
+            % Show error dialog
+            msgbox( ...
+                { ...
+                    strrep(errmsg, '_', '\_'), ... % Escape underscores
+                    'Aborting loading operation ...' ...
+                    }, ...
+                'RCT Analyze Raw Film: Wrong Bits Per Sample', ...
+                'error' ...
                 );
 
             % also send message to the workspace
             fprintf( ...
                 stderr(), ...
                 sprintf( ...
-                    'Not a regular file \"%s\". Aborting loading operation ...\n', ...
-                    varargin{idx} ...
+                    '%s Aborting loading operation ...\n', ...
+                    errmsg ...
                     ) ...
                 );
 
-            % Abort further execution
+            % Abort loading the scanset
             return;
 
         endif;
 
+        % Check if we have an RGB image
+        if(3 ~= size(img, 3))
+            % Kill progress tracker
+            if(ishandle(progress_tracker))
+                delete(progress_tracker);
+
+            endif;
+
+            % Format error message string for display to screen
+            errmsg = sprintf( ...
+                'Not an RGB image (%s).', ...
+                strrep(varargin{idx}, '\', '\\') ... % Escape backslashes
+                );
+
+            % Image does not have three color channels
+            msgbox( ...
+                { ...
+                    strrep(errmsg, '_', '\_'), ... % Escape underscores
+                    'Aborting loading operation ...' ...
+                    }, ...
+                'RCT Analyze Raw Film: Wrong Number of Samples', ...
+                'error' ...
+                );
+
+            % also send message to the workspace
+            fprintf( ...
+                stderr(), ...
+                sprintf( ...
+                    '%s Aborting loading operation ...\n', ...
+                    errmsg ...
+                    ) ...
+                );
+
+            % Abort loading the scanset
+            return;
+
+        endif;
+
+        sz = size(img);
+
+        % Check if all given images have the same size
+        if(1 == idx)
+            % If this is first red image, set the referense size
+            ref_size = sz;
+
+        elseif(~isequal(sz, ref_size))
+            % Kill progress tracker
+            if(ishandle(progress_tracker))
+                delete(progress_tracker);
+
+            endif;
+
+            % Format error message string for display to screen
+            errmsg = sprintf( ...
+                'Image size does not conform to the size of other images (%s).', ...
+                strrep(varargin{idx}, '\', '\\') ... % Escape backslashes
+                );
+
+            % Image size does not conform to the size of other images
+            msgbox( ...
+                { ...
+                    strrep(errmsg, '_', '\_'), ... % Escape underscores
+                    'Aborting loading operation ...' ...
+                    }, ...
+                'RCT Analyze Raw Film: Non-Conformant Image Size', ...
+                'error' ...
+                );
+
+            % also send message to the workspace
+            fprintf( ...
+                stderr(), ...
+                sprintf( ...
+                    '%s Aborting loading operation ...\n', ...
+                    errmsg ...
+                    ) ...
+                );
+
+            % Clean up GUI
+            if(ishandle(progress_tracker))
+                delete(progress_tracker);
+
+            endif;
+
+            % Abort loading the scanset
+            return;
+
+        endif;
+
+        waitbar(idx/(nargin - 1), progress_tracker);
+
         idx = idx + 1;
 
     endwhile;
+
+    % Clean up GUI
+    if(ishandle(progress_tracker))
+        delete(progress_tracker);
+
+    endif;
 
     irradiated.file_list = varargin;
 
@@ -316,6 +474,17 @@ endfunction;
 % Optical Density Data Structure Routines
 %
 % -----------------------------------------------------------------------------
+
+% -----------------------------------------------------------------------------
+%
+% Function 'rms' - calculate a RMS value for the given array of numbers
+%
+% -----------------------------------------------------------------------------
+function result = rms(X)
+    result = sqrt(sum(sum(X.*X))/numel(X));
+
+endfunction;
+
 
 
 
