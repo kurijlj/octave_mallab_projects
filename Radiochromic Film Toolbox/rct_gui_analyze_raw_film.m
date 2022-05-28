@@ -254,21 +254,27 @@ endfunction;
 % -----------------------------------------------------------------------------
 function measurement = loadIrradiatedDataset(measurement, varargin)
 
-    irradiated = struct();
+    % Load required packages
+    pkg load image;  % Required for 'isrgb'
 
-    % Validate input files , check dimensions integrity of the given images,
-    % calculate mean pixel value, pxelwise standard deviation, and pixelwise
-    % stdev RMS
-    ref_size = [];
+    % Initialize data structures for keeping computation results
+    irradiated = struct();
+    pwmean = [];
+    pwstd  = [];
+
+    % Initialize loop counter
     idx = 1;
 
     % Display information on the loading process progress
     progress_tracker = waitbar( ...
         0.0, ...
         'Loading scanset ...', ...
-        'name', 'RCT Analyze Raw Film' ...
+        'name', 'Loading Irradiated Dataset' ...
         );
 
+    % Validate input files , check dimensions integrity of the given images,
+    % calculate mean pixel value, pxelwise standard deviation, and pixelwise
+    % stdev RMS
     while(nargin - 1 >= idx)
         img = [];
 
@@ -276,19 +282,19 @@ function measurement = loadIrradiatedDataset(measurement, varargin)
             img = imread(varargin{idx});
 
         catch err
-            % Kill progress tracker
+            % Kill image reading progress tracker
             if(ishandle(progress_tracker))
                 delete(progress_tracker);
 
             endif;
 
             % Format error message string for display to screen
-            errmsg = strrep(varargin{idx}, '\', '\\'); ... % Escape backslashes
+            errmsg = strrep(varargin{idx}, '\', '\\'); ...  % Escape backslashes
 
             % Show error dialog
             msgbox( ...
                 { ...
-                    strrep(errmsg, '_', '\_'), ... % Escape underscore
+                    strrep(errmsg, '_', '\_'), ...  % Escape underscore
                     'Aborting loading operation ...' ...
                     }, ...
                 'RCT Analyze Raw Film: Error Reading File', ...
@@ -302,6 +308,9 @@ function measurement = loadIrradiatedDataset(measurement, varargin)
                 err.message ...
                 );
 
+            % Unload loaded packages
+            pkg unload image;
+
             % Abort loading the scanset
             return;
 
@@ -309,7 +318,7 @@ function measurement = loadIrradiatedDataset(measurement, varargin)
 
         % Check if we are dealing with an 48 bit image
         if(~isequal('uint16', class(img)))
-            % Kill progress tracker
+            % Kill image reading progress tracker
             if(ishandle(progress_tracker))
                 delete(progress_tracker);
 
@@ -318,13 +327,13 @@ function measurement = loadIrradiatedDataset(measurement, varargin)
             % Format error message string for display to screen
             errmsg = sprintf( ...
                 'Not an 48 bit image (%s).', ...
-                strrep(varargin{idx}, '\', '\\') ... % Escape backslashes
+                strrep(varargin{idx}, '\', '\\') ...  % Escape backslashes
                 );
 
             % Show error dialog
             msgbox( ...
                 { ...
-                    strrep(errmsg, '_', '\_'), ... % Escape underscores
+                    strrep(errmsg, '_', '\_'), ...  % Escape underscores
                     'Aborting loading operation ...' ...
                     }, ...
                 'RCT Analyze Raw Film: Wrong Bits Per Sample', ...
@@ -340,14 +349,17 @@ function measurement = loadIrradiatedDataset(measurement, varargin)
                     ) ...
                 );
 
+            % Unload loaded packages
+            pkg unload image;
+
             % Abort loading the scanset
             return;
 
         endif;
 
         % Check if we have an RGB image
-        if(3 ~= size(img, 3))
-            % Kill progress tracker
+        if(~isrgb(img))
+            % Kill image reading progress tracker
             if(ishandle(progress_tracker))
                 delete(progress_tracker);
 
@@ -356,13 +368,13 @@ function measurement = loadIrradiatedDataset(measurement, varargin)
             % Format error message string for display to screen
             errmsg = sprintf( ...
                 'Not an RGB image (%s).', ...
-                strrep(varargin{idx}, '\', '\\') ... % Escape backslashes
+                strrep(varargin{idx}, '\', '\\') ...  % Escape backslashes
                 );
 
             % Image does not have three color channels
             msgbox( ...
                 { ...
-                    strrep(errmsg, '_', '\_'), ... % Escape underscores
+                    strrep(errmsg, '_', '\_'), ...  % Escape underscores
                     'Aborting loading operation ...' ...
                     }, ...
                 'RCT Analyze Raw Film: Wrong Number of Samples', ...
@@ -378,20 +390,22 @@ function measurement = loadIrradiatedDataset(measurement, varargin)
                     ) ...
                 );
 
+            % Unload loaded packages
+            pkg unload image;
+
             % Abort loading the scanset
             return;
 
         endif;
 
-        sz = size(img);
-
         % Check if all given images have the same size
         if(1 == idx)
-            % If this is first red image, set the referense size
-            ref_size = sz;
+            % If this is the first image read, allocate space for the
+            % mean pixel values and pixelwise standard deviation
+            pwstd = pwmean = zeros(size(img));
 
-        elseif(~isequal(sz, ref_size))
-            % Kill progress tracker
+        elseif(~isequal(size(img), size(pwmean)))
+            % Kill image reading progress tracker
             if(ishandle(progress_tracker))
                 delete(progress_tracker);
 
@@ -400,13 +414,13 @@ function measurement = loadIrradiatedDataset(measurement, varargin)
             % Format error message string for display to screen
             errmsg = sprintf( ...
                 'Image size does not conform to the size of other images (%s).', ...
-                strrep(varargin{idx}, '\', '\\') ... % Escape backslashes
+                strrep(varargin{idx}, '\', '\\') ...  % Escape backslashes
                 );
 
             % Image size does not conform to the size of other images
             msgbox( ...
                 { ...
-                    strrep(errmsg, '_', '\_'), ... % Escape underscores
+                    strrep(errmsg, '_', '\_'), ...  % Escape underscores
                     'Aborting loading operation ...' ...
                     }, ...
                 'RCT Analyze Raw Film: Non-Conformant Image Size', ...
@@ -428,10 +442,16 @@ function measurement = loadIrradiatedDataset(measurement, varargin)
 
             endif;
 
+            % Unload loaded packages
+            pkg unload image;
+
             % Abort loading the scanset
             return;
 
         endif;
+
+        % Accumulate mean pixel value
+        pwmean = pwmean + (double(img) ./ (nargin - 1));
 
         waitbar(idx/(nargin - 1), progress_tracker);
 
@@ -439,15 +459,59 @@ function measurement = loadIrradiatedDataset(measurement, varargin)
 
     endwhile;
 
-    % Clean up GUI
+    % Kill image reading progress tracker
     if(ishandle(progress_tracker))
         delete(progress_tracker);
 
     endif;
 
+    % Reset counter
+    idx = 1;
+
+    % Display progress information on calculation of standard deviation
+    progress_tracker = waitbar( ...
+        0.0, ...
+        'Calculating standard deviation ...', ...
+        'name', 'Loading Irradiated Dataset' ...
+        );
+
+    % Calculate sum of squared differences from mean pixel value
+    while(nargin - 1 >= idx)
+        pwstd = pwstd + (double(img) - pwmean).^2;
+
+        % Update progress tracker
+        waitbar(idx/(nargin - 1), progress_tracker);
+
+        idx = idx + 1;
+
+    endwhile;
+
+    % Kill stdev progress tracker
+    if(ishandle(progress_tracker))
+        delete(progress_tracker);
+
+    endif;
+
+    % Only divide by N - 1 if we are dealing with more than one image (scan)
+    if(1 < nargin - 1)
+        pwstd = pwstd ./ ((nargin - 1) - 1);
+
+    endif;
+    pwstd = pwstd.^0.5;
+
+    % Calculate overall standard deviation as RMS of pixelwise standard
+    % deviation
+    standard_deviation = rms(pwstd);
+
+    % Fill the return structure with calculated data
     irradiated.file_list = varargin;
+    irradiated.pixel_data = pwmean;
+    irradiated.standard_deviation = standard_deviation;
 
     measurement.irradiated = irradiated;
+
+    % Unload loaded packages
+    pkg unload image;
 
 endfunction;
 
@@ -456,6 +520,334 @@ endfunction;
 % Background Data Structure Routines
 %
 % -----------------------------------------------------------------------------
+function measurement = loadBackgroundDataset(measurement, varargin)
+
+    % Load required packages
+    pkg load image;  % Required for 'isrgb'
+
+    % Initialize data structures for keeping computation results
+    background = struct();
+    pwmean = [];
+    pwstd  = [];
+
+    % Initialize loop counter
+    idx = 1;
+
+    % Check for reference dataset ('irradiated')
+    if( ...
+            ~( ...
+                isfield(measurement, 'irradiated') ...
+                && isfield(measurement.irradiated, 'pixel_data') ...
+                ) ...
+            )
+        % Reference dataset not loaded. Display error messages and abort loading
+        msgbox( ...
+            { ...
+                'Reference dataset not set.', ...
+                'Aborting loading operation ...' ...
+                }, ...
+            'RCT Analyze Raw Film: No Reference Dataset', ...
+            'error' ...
+            );
+
+        % also send message to the workspace
+        fprintf( ...
+            stderr(), ...
+            'Reference dataset not set. Aborting loading operation ...\n' ...
+            );
+
+        % Unload loaded packages
+        pkg unload image;
+
+        % Abort loading the scanset
+        return;
+
+    endif;
+
+    % Check for number of scans in the reference dataset
+    if(numel(measurement.irradiated.file_list) ~= nargin - 1)
+        % Number of images in the dataset does not match number of images in the
+        % reference dataset. Display error mesages and abort loading
+        msgbox( ...
+            { ...
+                'Number of images in the dataset', ...
+                'does not match number of images', ...
+                'in the reference (irradiated) dataset.', ...
+                'Aborting loading operation ...' ...
+                }, ...
+            'RCT Analyze Raw Film: No Reference Dataset', ...
+            'error' ...
+            );
+
+        % also send message to the workspace
+        fprintf( ...
+            stderr(), ...
+            strjoin( ...
+                { ...
+                    'Number of images in the dataset does not match ', ...
+                    'number of images in the reference (irradiated) ', ...
+                    'dataset. Aborting loading operation ...\n' ...
+                    } ...
+                ) ...
+            );
+
+        % Unload loaded packages
+        pkg unload image;
+
+        % Abort loading the scanset
+        return;
+
+    endif;
+
+    % Display information on the loading process progress
+    progress_tracker = waitbar( ...
+        0.0, ...
+        'Loading scanset ...', ...
+        'name', 'Loading Background Dataset' ...
+        );
+
+    % Validate input files , check dimensions integrity of the given images,
+    % calculate mean pixel value, pxelwise standard deviation, and pixelwise
+    % stdev RMS
+    while(nargin - 1 >= idx)
+        img = [];
+
+        try
+            img = imread(varargin{idx});
+
+        catch err
+            % Kill image reading progress tracker
+            if(ishandle(progress_tracker))
+                delete(progress_tracker);
+
+            endif;
+
+            % Format error message string for display to screen
+            errmsg = strrep(varargin{idx}, '\', '\\'); ...  % Escape backslashes
+
+            % Show error dialog
+            msgbox( ...
+                { ...
+                    strrep(errmsg, '_', '\_'), ...  % Escape underscore
+                    'Aborting loading operation ...' ...
+                    }, ...
+                'RCT Analyze Raw Film: Error Reading File', ...
+                'error' ...
+                );
+
+            % also send message to the workspace
+            fprintf( ...
+                stderr(), ...
+                '%s. Aborting loading operation ...\n', ...
+                err.message ...
+                );
+
+            % Unload loaded packages
+            pkg unload image;
+
+            % Abort loading the scanset
+            return;
+
+        end_try_catch;
+
+        % Check if we are dealing with an 48 bit image
+        if(~isequal('uint16', class(img)))
+            % Kill image reading progress tracker
+            if(ishandle(progress_tracker))
+                delete(progress_tracker);
+
+            endif;
+
+            % Format error message string for display to screen
+            errmsg = sprintf( ...
+                'Not an 48 bit image (%s).', ...
+                strrep(varargin{idx}, '\', '\\') ...  % Escape backslashes
+                );
+
+            % Show error dialog
+            msgbox( ...
+                { ...
+                    strrep(errmsg, '_', '\_'), ...  % Escape underscores
+                    'Aborting loading operation ...' ...
+                    }, ...
+                'RCT Analyze Raw Film: Wrong Bits Per Sample', ...
+                'error' ...
+                );
+
+            % also send message to the workspace
+            fprintf( ...
+                stderr(), ...
+                sprintf( ...
+                    '%s Aborting loading operation ...\n', ...
+                    errmsg ...
+                    ) ...
+                );
+
+            % Unload loaded packages
+            pkg unload image;
+
+            % Abort loading the scanset
+            return;
+
+        endif;
+
+        % Check if we have an RGB image
+        if(~isrgb(img))
+            % Kill image reading progress tracker
+            if(ishandle(progress_tracker))
+                delete(progress_tracker);
+
+            endif;
+
+            % Format error message string for display to screen
+            errmsg = sprintf( ...
+                'Not an RGB image (%s).', ...
+                strrep(varargin{idx}, '\', '\\') ...  % Escape backslashes
+                );
+
+            % Image does not have three color channels
+            msgbox( ...
+                { ...
+                    strrep(errmsg, '_', '\_'), ...  % Escape underscores
+                    'Aborting loading operation ...' ...
+                    }, ...
+                'RCT Analyze Raw Film: Wrong Number of Samples', ...
+                'error' ...
+                );
+
+            % also send message to the workspace
+            fprintf( ...
+                stderr(), ...
+                sprintf( ...
+                    '%s Aborting loading operation ...\n', ...
+                    errmsg ...
+                    ) ...
+                );
+
+            % Unload loaded packages
+            pkg unload image;
+
+            % Abort loading the scanset
+            return;
+
+        endif;
+
+        % Check if all given images have the same size
+        if(1 == idx)
+            % If this is the first image read, allocate space for the
+            % mean pixel values and pixelwise standard deviation
+            pwstd = pwmean = zeros(size(img));
+
+        elseif(~isequal(size(img), size(measurement.irradiated.pixel_data)))
+            % Kill image reading progress tracker
+            if(ishandle(progress_tracker))
+                delete(progress_tracker);
+
+            endif;
+
+            % Format error message string for display to screen
+            errmsg = sprintf( ...
+                'Image size does not conform to the size of the reference image (%s).', ...
+                strrep(varargin{idx}, '\', '\\') ...  % Escape backslashes
+                );
+
+            % Image size does not conform to the size of other images
+            msgbox( ...
+                { ...
+                    strrep(errmsg, '_', '\_'), ...  % Escape underscores
+                    'Aborting loading operation ...' ...
+                    }, ...
+                'RCT Analyze Raw Film: Non-Conformant Image Size', ...
+                'error' ...
+                );
+
+            % also send message to the workspace
+            fprintf( ...
+                stderr(), ...
+                sprintf( ...
+                    '%s Aborting loading operation ...\n', ...
+                    errmsg ...
+                    ) ...
+                );
+
+            % Clean up GUI
+            if(ishandle(progress_tracker))
+                delete(progress_tracker);
+
+            endif;
+
+            % Unload loaded packages
+            pkg unload image;
+
+            % Abort loading the scanset
+            return;
+
+        endif;
+
+        % Accumulate mean pixel value
+        pwmean = pwmean + (double(img) ./ (nargin - 1));
+
+        waitbar(idx/(nargin - 1), progress_tracker);
+
+        idx = idx + 1;
+
+    endwhile;
+
+    % Kill image reading progress tracker
+    if(ishandle(progress_tracker))
+        delete(progress_tracker);
+
+    endif;
+
+    % Reset counter
+    idx = 1;
+
+    % Display progress information on calculation of standard deviation
+    progress_tracker = waitbar( ...
+        0.0, ...
+        'Calculating standard deviation ...', ...
+        'name', 'Loading Background Dataset' ...
+        );
+
+    % Calculate sum of squared differences from mean pixel value
+    while(nargin - 1 >= idx)
+        pwstd = pwstd + (double(img) - pwmean).^2;
+
+        % Update progress tracker
+        waitbar(idx/(nargin - 1), progress_tracker);
+
+        idx = idx + 1;
+
+    endwhile;
+
+    % Kill stdev progress tracker
+    if(ishandle(progress_tracker))
+        delete(progress_tracker);
+
+    endif;
+
+    % Only divide by N - 1 if we are dealing with more than one image (scan)
+    if(1 < nargin - 1)
+        pwstd = pwstd ./ ((nargin - 1) - 1);
+
+    endif;
+    pwstd = pwstd.^0.5;
+
+    % Calculate overall standard deviation as RMS of pixelwise standard
+    % deviation
+    standard_deviation = rms(pwstd);
+
+    % Fill the return structure with calculated data
+    background.file_list = varargin;
+    background.pixel_data = pwmean;
+    background.standard_deviation = standard_deviation;
+
+    measurement.background = background;
+
+    % Unload loaded packages
+    pkg unload image;
+
+endfunction;
 
 % -----------------------------------------------------------------------------
 %
@@ -482,6 +874,47 @@ endfunction;
 % -----------------------------------------------------------------------------
 function result = rms(X)
     result = sqrt(sum(sum(X.*X))/numel(X));
+
+endfunction;
+
+% -----------------------------------------------------------------------------
+%
+% Function 'renderImageFrom2DMatrix' - Render 2D matrix data to the data format
+% displayable on the screen
+%
+% -----------------------------------------------------------------------------
+function I = renderImageFromMatrix(M)
+
+    % Load required packages
+    pkg load image;
+
+    I = mat2gray(M);
+
+    % Unload loaded packages
+    pkg unload image;
+
+endfunction;
+
+% -----------------------------------------------------------------------------
+%
+% Function 'renderImageFrom3DMatrix' - Render 3D matrix data to the data format
+% displayable on the screen
+%
+% -----------------------------------------------------------------------------
+function I = renderImageFrom3DMatrix(M)
+
+    % Load required packages
+    pkg load image;
+
+    I = cat( ...
+        3, ...
+        mat2gray(M(:, :, 1)), ...
+        mat2gray(M(:, :, 2)), ...
+        mat2gray(M(:, :, 3)) ...
+        );
+
+    % Unload loaded packages
+    pkg unload image;
 
 endfunction;
 
