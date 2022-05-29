@@ -123,7 +123,7 @@ endfunction;
 % Measurement Data Structure Routines
 %
 % -----------------------------------------------------------------------------
-function measurement = newMeasurement(title=NaN, time=NaN)
+function measurement = newMeasurement(title=NaN, date=NaN)
 
     % Store function name into variable for easier management of error messages
     fname = 'newMeasurement';
@@ -141,14 +141,14 @@ function measurement = newMeasurement(title=NaN, time=NaN)
 
     endif;
 
-    if(~isnan(time) && ~ischar(time))
+    if(~isnan(date) && ~ischar(date))
         error( ...
             strjoin({ ...
-                '%s: Invalid data type for function parameter \"time\".', ...
+                '%s: Invalid data type for function parameter \"date\".', ...
                 'Expected \"NaN\" or \"char\", got \"%s\".' ...
                 }), ...
             fname, ...
-            class(time) ...
+            class(date) ...
             );
 
     endif;
@@ -215,7 +215,7 @@ endfunction;
 function device = newScannerDevice(scannerdb=NaN, item=1)
 
     % Store function name into variable for easier management of error messages
-    fname = 'newMeasurement';
+    fname = 'newScannerDevice';
 
     % Validate input arguments
     if(~isnan(scannerdb) && ~ischar(scannerdb))
@@ -735,18 +735,24 @@ endfunction;
 % Irradiated Data Structure Routines
 %
 % -----------------------------------------------------------------------------
-function irradiated = newIrradiatedDataset(irrdt, scdt, smth, varargin)
+function irradiated = newIrradiatedDataset(msr, irrdt, scdt, varargin)
 
     % Define common window and message strings
     fname = 'newIrradiatedDataset';
     window_title = 'RCT Analyze Raw Film: New Irradiated Dataset';
     progress_tracker_title = 'New Irradiated Dataset';
 
-    % Initialize data structures for keeping computation results
-    pwmean = [];
-    pwstd  = [];
-
     % Validate input arguments
+    if(~isMeasurementDataStruct(msr))
+        error('%s: Invalid data or measurement not set.', fname);
+
+    endif;
+
+    if(~isPixelDataSmoothingStruct(msr.pixel_data_smoothing))
+        error('%s: Invalid data or pixel data smoothing not set.', fname);
+
+    endif;
+
     if(~ischar(irrdt))
         error( ...
             strjoin({ ...
@@ -771,17 +777,10 @@ function irradiated = newIrradiatedDataset(irrdt, scdt, smth, varargin)
 
     endif;
 
-    if(~isPixelDataSmoothingStruct(smth))
-        error( ...
-            strjoin({ ...
-                '%s: Invalid data type for function parameter \"smth\".', ...
-                'Expected \"PixelDataSmoothing structure\", got \"%s\".' ...
-                }), ...
-            fname, ...
-            class(smth) ...
-            );
-
-    endif;
+    % Initialize data structures for keeping computation results
+    irradiated = NaN;
+    pwmean     = [];
+    pwstd      = [];
 
     % Initialize loop counter
     idx = 1;
@@ -810,7 +809,7 @@ function irradiated = newIrradiatedDataset(irrdt, scdt, smth, varargin)
             % Display error and abort execution
             error( ...
                 strjoin({ ...
-                    '%s: Invalid data type for function varargin{%d}.', ...
+                    '%s: Invalid data type for varargin{%d}.', ...
                     'Expected \"char\", got \"%s\".' ...
                     }), ...
                 fname, ...
@@ -993,8 +992,57 @@ function irradiated = newIrradiatedDataset(irrdt, scdt, smth, varargin)
 
         endif;
 
+        % Smooth out pixel data if required
+        smoothed = zeros(size(img));
+        if(isequal('median', msr.pixel_data_smoothing.method))
+            % Load required package
+            pkg load image;
+
+            % Smooth data using median filter
+            smoothed(:, :, 1) = medfilt2( ...
+                img(:, :, 1), ...
+                msr.pixel_data_smoothing.window ...
+                );
+            smoothed(:, :, 2) = medfilt2( ...
+                img(:, :, 2), ...
+                msr.pixel_data_smoothing.window ...
+                );
+            smoothed(:, :, 3) = medfilt2( ...
+                img(:, :, 3), ...
+                msr.pixel_data_smoothing.window ...
+                );
+
+            % Unload loaded package
+            pkg unload image;
+
+        elseif(isequal('wiener', msr.pixel_data_smoothing.method))
+            % Load required package
+            pkg load image;
+
+            % Smooth data using wiener filter
+            smoothed(:, :, 1) = wiener2( ...
+                img(:, :, 1), ...
+                msr.pixel_data_smoothing.window ...
+                );
+            smoothed(:, :, 2) = wiener2( ...
+                img(:, :, 2), ...
+                msr.pixel_data_smoothing.window ...
+                );
+            smoothed(:, :, 3) = wiener2( ...
+                img(:, :, 3), ...
+                msr.pixel_data_smoothing.window ...
+                );
+
+            % Unload loaded package
+            pkg unload image;
+
+        else
+            smoothed = img;
+
+        endif;
+
         % Accumulate mean pixel value
-        pwmean = pwmean + (double(img) ./ (nargin - 3));
+        pwmean = pwmean + (double(smoothed) ./ (nargin - 3));
 
         waitbar(idx/(nargin - 3), progress_tracker);
 
@@ -1020,7 +1068,60 @@ function irradiated = newIrradiatedDataset(irrdt, scdt, smth, varargin)
 
     % Calculate sum of squared differences from mean pixel value
     while(nargin - 3 >= idx)
-        pwstd = pwstd + (double(img) - pwmean).^2;
+        % Read image again
+        img = imread(varargin{idx});
+
+        % Smooth out pixel data again if required
+        smoothed = zeros(size(img));
+        if(isequal('median', msr.pixel_data_smoothing.method))
+            % Load required package
+            pkg load image;
+
+            % Smooth data using median filter
+            smoothed(:, :, 1) = medfilt2( ...
+                img(:, :, 1), ...
+                msr.pixel_data_smoothing.window ...
+                );
+            smoothed(:, :, 2) = medfilt2( ...
+                img(:, :, 2), ...
+                msr.pixel_data_smoothing.window ...
+                );
+            smoothed(:, :, 3) = medfilt2( ...
+                img(:, :, 3), ...
+                msr.pixel_data_smoothing.window ...
+                );
+
+            % Unload loaded package
+            pkg unload image;
+
+        elseif(isequal('wiener', msr.pixel_data_smoothing.method))
+            % Load required package
+            pkg load image;
+
+            % Smooth data using wiener filter
+            smoothed(:, :, 1) = wiener2( ...
+                img(:, :, 1), ...
+                msr.pixel_data_smoothing.window ...
+                );
+            smoothed(:, :, 2) = wiener2( ...
+                img(:, :, 2), ...
+                msr.pixel_data_smoothing.window ...
+                );
+            smoothed(:, :, 3) = wiener2( ...
+                img(:, :, 3), ...
+                msr.pixel_data_smoothing.window ...
+                );
+
+            % Unload loaded package
+            pkg unload image;
+
+        else
+            smoothed = img;
+
+        endif;
+
+        % Accumulate the sum of squared differences
+        pwstd = pwstd + (double(smoothed) - pwmean).^2;
 
         % Update progress tracker
         waitbar(idx/(nargin - 3), progress_tracker);
@@ -1046,44 +1147,13 @@ function irradiated = newIrradiatedDataset(irrdt, scdt, smth, varargin)
     % deviation
     standard_deviation = rms(pwstd);
 
-    % Smooth out pixel data if required
-    pixel_data = zeros(size(pwmean));
-    if(isequal('median', smth.method))
-        % Load required package
-        pkg load image;
-
-        % Smooth data using median filter
-        pixel_data(:, :, 1) = medfilt2(pwmean(:, :, 1), smth.window);
-        pixel_data(:, :, 2) = medfilt2(pwmean(:, :, 2), smth.window);
-        pixel_data(:, :, 3) = medfilt2(pwmean(:, :, 3), smth.window);
-
-        % Unload loaded package
-        pkg unload image;
-
-    elseif(isequal('wiener', smth.method))
-        % Load required package
-        pkg load image;
-
-        % Smooth data using wiener filter
-        pixel_data(:, :, 1) = wiener2(pwmean(:, :, 1), smth.window);
-        pixel_data(:, :, 2) = wiener2(pwmean(:, :, 2), smth.window);
-        pixel_data(:, :, 3) = wiener2(pwmean(:, :, 3), smth.window);
-
-        % Unload loaded package
-        pkg unload image;
-
-    else
-        pixel_data = pwmean;
-
-    endif;
-
     % Fill the return structure with calculated data
     irradiated                    = struct();
     irradiated.irradiation_date   = irrdt;
     irradiated.scan_date          = scdt;
     irradiated.file_list          = varargin;
+    irradiated.pixel_data         = pwmean;
     irradiated.standard_deviation = standard_deviation;
-    irradiated.pixel_data         = pixel_data;
 
 endfunction;
 
@@ -1100,8 +1170,12 @@ function result = isIrradiatedDataStruct(irr)
             && ischar(irr.scan_date) ...
             && iscell(irr.file_list) ...
             && ~isempty(irr.pixel_data) ...
-            && ismatrix(irr.pixel_data) ...
-            && isscalar(irr.standard_deviation) ...
+            && (3 == size(irr.pixel_data, 3)) ...
+            && ismatrix(irr.pixel_data(:, :, 1)) ...
+            && ismatrix(irr.pixel_data(:, :, 2)) ...
+            && ismatrix(irr.pixel_data(:, :, 3)) ...
+            && isvector(irr.standard_deviation) ...
+            && (3 == size(irr.standard_deviation, 1)) ...
             && isfloat(irr.standard_deviation) ...
             )
         result = true;
@@ -1115,76 +1189,41 @@ endfunction;
 % Background Data Structure Routines
 %
 % -----------------------------------------------------------------------------
-function measurement = newBackgroundDataset(measurement)
-    bkg = struct();
-    bkg.scan_date = strftime('%d.%m.%Y', localtime(time()));
-    bkg.file_list = {};
-    bkg.pixel_data = [];
-    bkg.standard_deviation = NaN;
-
-    measurement.background = bkg;
-
-endfunction;
-
-function result = isBackgroundDatasetStruct(bkg)
-    result = false;
-    if( ...
-            isstruct(bkg) ...
-            && isfield(bkg, 'scan_date') ...
-            && isfield(bkg, 'file_list') ...
-            && isfield(bkg, 'pixel_data') ...
-            && isfield(bkg, 'standard_deviation') ...
-            )
-        result = true;
-
-    endif;
-
-endfunction;
-
-function measurement = loadBackgroundDataset(measurement, varargin)
-
-    % Load required packages
-    pkg load image;  % Required for 'isrgb'
+function background = newBackgroundDataset(msr, scdt, varargin)
 
     % Define common window and message strings
-    fname = 'loadBackgroundDataset';
-    window_title = 'RCT Analyze Raw Film: Load Background Dataset';
-    progress_tracker_title = 'Loading Background Dataset';
+    fname = 'newBackgroundDataset';
+    window_title = 'RCT Analyze Raw Film: New Background Dataset';
+    progress_tracker_title = 'New Background Dataset';
 
-    % Initialize data structures for keeping computation results
-    background = struct();
-    pwmean = [];
-    pwstd  = [];
-
-    % Check for reference dataset ('irradiated')
-    if(~isfield(measurement, 'irradiated') || isnan(measurement.irradiated))
-        % Reference dataset not loaded. Display error messages and abort loading
-        msgbox( ...
-            { ...
-                'Mising reference dataset (\"Irradiated\").', ...
-                'Aborting loading operation ...' ...
-                }, ...
-            window_title, ...
-            'error' ...
-            );
-
-        % also send message to the workspace
-        fprintf( ...
-            stderr(), ...
-            '%s: Mising reference dataset (\"Irradiated\"). Aborting loading operation ...\n', ...
-            fname ...
-            );
-
-        % Unload loaded packages
-        pkg unload image;
-
-        % Abort loading the scanset
-        return;
+    % Validate input arguments
+    if(~isMeasurementDataStruct(msr))
+        error('%s: Invalid data or measurement not set.', fname);
 
     endif;
 
+    if(~isIrradiatedDataStruct(msr.irradiated))
+        error('%s: Invalid data or irradiated data set not set.', fname);
+
+    endif;
+
+    if(~ischar(scdt))
+        error( ...
+            strjoin({ ...
+                '%s: Invalid data type for function parameter \"scdt\".', ...
+                'Expected \"char\", got \"%s\".' ...
+                }), ...
+            fname, ...
+            class(scdt) ...
+            );
+
+    endif;
+
+    % Initialize return value to default
+    background = NaN;
+
     % Check for number of scans in the reference dataset
-    if(numel(measurement.irradiated.file_list) ~= nargin - 1)
+    if(numel(msr.irradiated.file_list) ~= nargin - 2)
         % Number of images in the dataset does not match number of images in the
         % reference dataset. Display error mesages and abort loading
         msgbox( ...
@@ -1211,9 +1250,6 @@ function measurement = loadBackgroundDataset(measurement, varargin)
             fname ...
             );
 
-        % Unload loaded packages
-        pkg unload image;
-
         % Abort loading the scanset
         return;
 
@@ -1226,13 +1262,17 @@ function measurement = loadBackgroundDataset(measurement, varargin)
         'name', progress_tracker_title ...
         );
 
+    % Initialize data structures for keeping computation results
+    pwmean     = [];
+    pwstd      = [];
+
     % Initialize loop counter
     idx = 1;
 
     % Validate input files , check dimensions integrity of the given images,
     % calculate mean pixel value, pxelwise standard deviation, and pixelwise
     % stdev RMS
-    while(nargin - 1 >= idx)
+    while(nargin - 2 >= idx)
         img = [];
 
         % Validate input arguments
@@ -1243,29 +1283,16 @@ function measurement = loadBackgroundDataset(measurement, varargin)
 
             endif;
 
-            % Format error message string for display to screen
-            errmsg = strrep(varargin{idx}, '\', '\\');  % Escape backslashes
-
-            % Show error dialog
-            msgbox( ...
-                { ...
-                    sprintf('Invalid input data (varargin\\{%d\\}).', idx), ...
-                    'Aborting loading operation ...' ...
-                    }, ...
-                window_title, ...
-                'error' ...
-                );
-
-            % also send message to the workspace
-            fprintf( ...
-                stderr(), ...
-                '%s: Invalid input data (varargin{%d}). Aborting loading operation ...\n', ...
+            % Display error and abort execution
+            error( ...
+                strjoin({ ...
+                    '%s: Invalid data type for varargin{%d}.', ...
+                    'Expected \"char\", got \"%s\".' ...
+                    }), ...
                 fname, ...
-                idx ...
+                idx, ...
+                class(varargin{idx}) ...
                 );
-
-            % Abort loading the scanset
-            return;
 
         endif;
 
@@ -1299,9 +1326,6 @@ function measurement = loadBackgroundDataset(measurement, varargin)
                 fname, ...
                 err.message ...
                 );
-
-            % Unload loaded packages
-            pkg unload image;
 
             % Abort loading the scanset
             return;
@@ -1342,13 +1366,13 @@ function measurement = loadBackgroundDataset(measurement, varargin)
                     ) ...
                 );
 
-            % Unload loaded packages
-            pkg unload image;
-
             % Abort loading the scanset
             return;
 
         endif;
+
+        % Load required packages
+        pkg load image;  % Required for 'isrgb'
 
         % Check if we have an RGB image
         if(~isrgb(img))
@@ -1392,8 +1416,11 @@ function measurement = loadBackgroundDataset(measurement, varargin)
 
         endif;
 
+        % Unload loaded packages
+        pkg unload image;
+
         % Check if all given images have the same size as refernce dataset
-        if(~isequal(size(img), size(measurement.irradiated.pixel_data)))
+        if(~isequal(size(img), size(msr.irradiated.pixel_data)))
             % Kill image reading progress tracker
             if(ishandle(progress_tracker))
                 delete(progress_tracker);
@@ -1432,9 +1459,6 @@ function measurement = loadBackgroundDataset(measurement, varargin)
 
             endif;
 
-            % Unload loaded packages
-            pkg unload image;
-
             % Abort loading the scanset
             return;
 
@@ -1447,10 +1471,59 @@ function measurement = loadBackgroundDataset(measurement, varargin)
 
         endif;
 
-        % Accumulate mean pixel value
-        pwmean = pwmean + (double(img) ./ (nargin - 1));
+        % Smooth out pixel data if required
+        smoothed = zeros(size(img));
+        if(isequal('median', msr.pixel_data_smoothing.method))
+            % Load required package
+            pkg load image;
 
-        waitbar(idx/(nargin - 1), progress_tracker);
+            % Smooth data using median filter
+            smoothed(:, :, 1) = medfilt2( ...
+                img(:, :, 1), ...
+                msr.pixel_data_smoothing.window ...
+                );
+            smoothed(:, :, 2) = medfilt2( ...
+                img(:, :, 2), ...
+                msr.pixel_data_smoothing.window ...
+                );
+            smoothed(:, :, 3) = medfilt2( ...
+                img(:, :, 3), ...
+                msr.pixel_data_smoothing.window ...
+                );
+
+            % Unload loaded package
+            pkg unload image;
+
+        elseif(isequal('wiener', msr.pixel_data_smoothing.method))
+            % Load required package
+            pkg load image;
+
+            % Smooth data using wiener filter
+            smoothed(:, :, 1) = wiener2( ...
+                img(:, :, 1), ...
+                msr.pixel_data_smoothing.window ...
+                );
+            smoothed(:, :, 2) = wiener2( ...
+                img(:, :, 2), ...
+                msr.pixel_data_smoothing.window ...
+                );
+            smoothed(:, :, 3) = wiener2( ...
+                img(:, :, 3), ...
+                msr.pixel_data_smoothing.window ...
+                );
+
+            % Unload loaded package
+            pkg unload image;
+
+        else
+            smoothed = img;
+
+        endif;
+
+        % Accumulate mean pixel value
+        pwmean = pwmean + (double(smoothed) ./ (nargin - 2));
+
+        waitbar(idx/(nargin - 2), progress_tracker);
 
         idx = idx + 1;
 
@@ -1473,11 +1546,64 @@ function measurement = loadBackgroundDataset(measurement, varargin)
         );
 
     % Calculate sum of squared differences from mean pixel value
-    while(nargin - 1 >= idx)
-        pwstd = pwstd + (double(img) - pwmean).^2;
+    while(nargin - 2 >= idx)
+        % Read image again
+        img = imread(varargin{idx});
+
+        % Smooth out pixel data again if required
+        smoothed = zeros(size(img));
+        if(isequal('median', msr.pixel_data_smoothing.method))
+            % Load required package
+            pkg load image;
+
+            % Smooth data using median filter
+            smoothed(:, :, 1) = medfilt2( ...
+                img(:, :, 1), ...
+                msr.pixel_data_smoothing.window ...
+                );
+            smoothed(:, :, 2) = medfilt2( ...
+                img(:, :, 2), ...
+                msr.pixel_data_smoothing.window ...
+                );
+            smoothed(:, :, 3) = medfilt2( ...
+                img(:, :, 3), ...
+                msr.pixel_data_smoothing.window ...
+                );
+
+            % Unload loaded package
+            pkg unload image;
+
+        elseif(isequal('wiener', msr.pixel_data_smoothing.method))
+            % Load required package
+            pkg load image;
+
+            % Smooth data using wiener filter
+            smoothed(:, :, 1) = wiener2( ...
+                img(:, :, 1), ...
+                msr.pixel_data_smoothing.window ...
+                );
+            smoothed(:, :, 2) = wiener2( ...
+                img(:, :, 2), ...
+                msr.pixel_data_smoothing.window ...
+                );
+            smoothed(:, :, 3) = wiener2( ...
+                img(:, :, 3), ...
+                msr.pixel_data_smoothing.window ...
+                );
+
+            % Unload loaded package
+            pkg unload image;
+
+        else
+            smoothed = img;
+
+        endif;
+
+        % Accumulate the sum of squared differences
+        pwstd = pwstd + (double(smoothed) - pwmean).^2;
 
         % Update progress tracker
-        waitbar(idx/(nargin - 1), progress_tracker);
+        waitbar(idx/(nargin - 2), progress_tracker);
 
         idx = idx + 1;
 
@@ -1490,8 +1616,8 @@ function measurement = loadBackgroundDataset(measurement, varargin)
     endif;
 
     % Only divide by N - 1 if we are dealing with more than one image (scan)
-    if(1 < nargin - 1)
-        pwstd = pwstd ./ ((nargin - 1) - 1);
+    if(1 < nargin - 2)
+        pwstd = pwstd ./ ((nargin - 2) - 1);
 
     endif;
     pwstd = pwstd.^0.5;
@@ -1501,15 +1627,36 @@ function measurement = loadBackgroundDataset(measurement, varargin)
     standard_deviation = rms(pwstd);
 
     % Fill the return structure with calculated data
-    background.scan_date = strftime('%d.%m.%Y', localtime(time()));
-    background.file_list = varargin;
-    background.pixel_data = pwmean;
+    background                    = struct();
+    background.scan_date          = scdt;
+    background.file_list          = varargin;
+    background.pixel_data         = pwmean;
     background.standard_deviation = standard_deviation;
 
-    measurement.background = background;
+endfunction;
 
-    % Unload loaded packages
-    pkg unload image;
+function result = isBackgroundDataStruct(bkg)
+    result = false;
+    if( ...
+            isstruct(bkg) ...
+            && isfield(bkg, 'scan_date') ...
+            && isfield(bkg, 'file_list') ...
+            && isfield(bkg, 'pixel_data') ...
+            && isfield(bkg, 'standard_deviation') ...
+            && ischar(bkg.scan_date) ...
+            && iscell(bkg.file_list) ...
+            && ~isempty(bkg.pixel_data) ...
+            && (3 == size(bkg.pixel_data, 3)) ...
+            && ismatrix(bkg.pixel_data(:, :, 1)) ...
+            && ismatrix(bkg.pixel_data(:, :, 2)) ...
+            && ismatrix(bkg.pixel_data(:, :, 3)) ...
+            && isvector(bkg.standard_deviation) ...
+            && (3 == size(bkg.standard_deviation, 1)) ...
+            && isfloat(bkg.standard_deviation) ...
+            )
+        result = true;
+
+    endif;
 
 endfunction;
 
@@ -1518,76 +1665,41 @@ endfunction;
 % Zero Light Data Structure Routines
 %
 % -----------------------------------------------------------------------------
-function measurement = newBackgroundDataset(measurement)
-    bkg = struct();
-    bkg.scan_date = strftime('%d.%m.%Y', localtime(time()));
-    bkg.file_list = {};
-    bkg.pixel_data = [];
-    bkg.standard_deviation = NaN;
-
-    measurement.background = bkg;
-
-endfunction;
-
-function result = isBackgroundDatasetStruct(bkg)
-    result = false;
-    if( ...
-            isstruct(bkg) ...
-            && isfield(bkg, 'scan_date') ...
-            && isfield(bkg, 'file_list') ...
-            && isfield(bkg, 'pixel_data') ...
-            && isfield(bkg, 'standard_deviation') ...
-            )
-        result = true;
-
-    endif;
-
-endfunction;
-
-function measurement = loadZeroLightDataset(measurement, varargin)
-
-    % Load required packages
-    pkg load image;  % Required for 'isrgb'
+function zero_light = newZeroLightDataset(msr, scdt, varargin)
 
     % Define common window and message strings
     fname = 'loadZeroLightDataset';
-    window_title = 'RCT Analyze Raw Film: Load Zero-Light Dataset';
-    progress_tracker_title = 'Loading Zero-Light Dataset';
+    window_title = 'RCT Analyze Raw Film: New Zero-Light Dataset';
+    progress_tracker_title = 'New Zero-Light Dataset';
 
-    % Initialize data structures for keeping computation results
-    zero_light = struct();
-    pwmean = [];
-    pwstd  = [];
-
-    % Check for reference dataset ('irradiated')
-    if(~isfield(measurement, 'irradiated') || isnan(measurement.irradiated))
-        % Reference dataset is missing. Display error messages and abort loading
-        msgbox( ...
-            { ...
-                'Mising reference dataset (\"Irradiated\").', ...
-                'Aborting loading operation ...' ...
-                }, ...
-            window_title, ...
-            'error' ...
-            );
-
-        % also send message to the workspace
-        fprintf( ...
-            stderr(), ...
-            '%s: Mising reference dataset (\"Irradiated\"). Aborting loading operation ...\n', ...
-            fname ...
-            );
-
-        % Unload loaded packages
-        pkg unload image;
-
-        % Abort loading the scanset
-        return;
+    % Validate input arguments
+    if(~isMeasurementDataStruct(msr))
+        error('%s: Invalid data or measurement not set.', fname);
 
     endif;
 
+    if(~isIrradiatedDataStruct(msr.irradiated))
+        error('%s: Invalid data or irradiated data set not set.', fname);
+
+    endif;
+
+    if(~ischar(scdt))
+        error( ...
+            strjoin({ ...
+                '%s: Invalid data type for function parameter \"scdt\".', ...
+                'Expected \"char\", got \"%s\".' ...
+                }), ...
+            fname, ...
+            class(scdt) ...
+            );
+
+    endif;
+
+    % Initialize return value to default
+    zero_light = NaN;
+
     % Check for number of scans in the reference dataset
-    if(numel(measurement.irradiated.file_list) ~= nargin - 1)
+    if(numel(msr.irradiated.file_list) ~= nargin - 2)
         % Number of images in the dataset does not match number of images in the
         % reference dataset. Display error mesages and abort loading
         msgbox( ...
@@ -1614,9 +1726,6 @@ function measurement = loadZeroLightDataset(measurement, varargin)
             fname ...
             );
 
-        % Unload loaded packages
-        pkg unload image;
-
         % Abort loading the scanset
         return;
 
@@ -1629,13 +1738,17 @@ function measurement = loadZeroLightDataset(measurement, varargin)
         'name', progress_tracker_title ...
         );
 
+    % Initialize data structures for keeping computation results
+    pwmean = [];
+    pwstd  = [];
+
     % Initialize loop counter
     idx = 1;
 
     % Validate input files , check dimensions integrity of the given images,
     % calculate mean pixel value, pxelwise standard deviation, and pixelwise
     % stdev RMS
-    while(nargin - 1 >= idx)
+    while(nargin - 2 >= idx)
         img = [];
 
         % Validate input arguments
@@ -1646,29 +1759,16 @@ function measurement = loadZeroLightDataset(measurement, varargin)
 
             endif;
 
-            % Format error message string for display to screen
-            errmsg = strrep(varargin{idx}, '\', '\\');  % Escape backslashes
-
-            % Show error dialog
-            msgbox( ...
-                { ...
-                    sprintf('Invalid input data (varargin\\{%d\\}).', idx), ...
-                    'Aborting loading operation ...' ...
-                    }, ...
-                window_title, ...
-                'error' ...
-                );
-
-            % also send message to the workspace
-            fprintf( ...
-                stderr(), ...
-                '%s: Invalid input data (varargin{%d}). Aborting loading operation ...\n', ...
+            % Display error and abort execution
+            error( ...
+                strjoin({ ...
+                    '%s: Invalid data type for varargin{%d}.', ...
+                    'Expected \"char\", got \"%s\".' ...
+                    }), ...
                 fname, ...
-                idx ...
+                idx, ...
+                class(varargin{idx}) ...
                 );
-
-            % Abort loading the scanset
-            return;
 
         endif;
 
@@ -1702,9 +1802,6 @@ function measurement = loadZeroLightDataset(measurement, varargin)
                 fname, ...
                 err.message ...
                 );
-
-            % Unload loaded packages
-            pkg unload image;
 
             % Abort loading the scanset
             return;
@@ -1745,13 +1842,13 @@ function measurement = loadZeroLightDataset(measurement, varargin)
                     ) ...
                 );
 
-            % Unload loaded packages
-            pkg unload image;
-
             % Abort loading the scanset
             return;
 
         endif;
+
+        % Load required packages
+        pkg load image;  % Required for 'isrgb'
 
         % Check if we have an RGB image
         if(~isrgb(img))
@@ -1795,8 +1892,11 @@ function measurement = loadZeroLightDataset(measurement, varargin)
 
         endif;
 
+        % Unload loaded packages
+        pkg unload image;
+
         % Check if all given images have the same size as the reference dataset
-        if(~isequal(size(img), size(measurement.irradiated.pixel_data)))
+        if(~isequal(size(img), size(msr.irradiated.pixel_data)))
             % Kill image reading progress tracker
             if(ishandle(progress_tracker))
                 delete(progress_tracker);
@@ -1835,9 +1935,6 @@ function measurement = loadZeroLightDataset(measurement, varargin)
 
             endif;
 
-            % Unload loaded packages
-            pkg unload image;
-
             % Abort loading the scanset
             return;
 
@@ -1850,10 +1947,59 @@ function measurement = loadZeroLightDataset(measurement, varargin)
 
         endif;
 
-        % Accumulate mean pixel value
-        pwmean = pwmean + (double(img) ./ (nargin - 1));
+        % Smooth out pixel data if required
+        smoothed = zeros(size(img));
+        if(isequal('median', msr.pixel_data_smoothing.method))
+            % Load required package
+            pkg load image;
 
-        waitbar(idx/(nargin - 1), progress_tracker);
+            % Smooth data using median filter
+            smoothed(:, :, 1) = medfilt2( ...
+                img(:, :, 1), ...
+                msr.pixel_data_smoothing.window ...
+                );
+            smoothed(:, :, 2) = medfilt2( ...
+                img(:, :, 2), ...
+                msr.pixel_data_smoothing.window ...
+                );
+            smoothed(:, :, 3) = medfilt2( ...
+                img(:, :, 3), ...
+                msr.pixel_data_smoothing.window ...
+                );
+
+            % Unload loaded package
+            pkg unload image;
+
+        elseif(isequal('wiener', msr.pixel_data_smoothing.method))
+            % Load required package
+            pkg load image;
+
+            % Smooth data using wiener filter
+            smoothed(:, :, 1) = wiener2( ...
+                img(:, :, 1), ...
+                msr.pixel_data_smoothing.window ...
+                );
+            smoothed(:, :, 2) = wiener2( ...
+                img(:, :, 2), ...
+                msr.pixel_data_smoothing.window ...
+                );
+            smoothed(:, :, 3) = wiener2( ...
+                img(:, :, 3), ...
+                msr.pixel_data_smoothing.window ...
+                );
+
+            % Unload loaded package
+            pkg unload image;
+
+        else
+            smoothed = img;
+
+        endif;
+
+        % Accumulate mean pixel value
+        pwmean = pwmean + (double(smoothed) ./ (nargin - 2));
+
+        waitbar(idx/(nargin - 2), progress_tracker);
 
         idx = idx + 1;
 
@@ -1876,11 +2022,64 @@ function measurement = loadZeroLightDataset(measurement, varargin)
         );
 
     % Calculate sum of squared differences from mean pixel value
-    while(nargin - 1 >= idx)
-        pwstd = pwstd + (double(img) - pwmean).^2;
+    while(nargin - 2 >= idx)
+        % Read image again
+        img = imread(varargin{idx});
+
+        % Smooth out pixel data again if required
+        smoothed = zeros(size(img));
+        if(isequal('median', msr.pixel_data_smoothing.method))
+            % Load required package
+            pkg load image;
+
+            % Smooth data using median filter
+            smoothed(:, :, 1) = medfilt2( ...
+                img(:, :, 1), ...
+                msr.pixel_data_smoothing.window ...
+                );
+            smoothed(:, :, 2) = medfilt2( ...
+                img(:, :, 2), ...
+                msr.pixel_data_smoothing.window ...
+                );
+            smoothed(:, :, 3) = medfilt2( ...
+                img(:, :, 3), ...
+                msr.pixel_data_smoothing.window ...
+                );
+
+            % Unload loaded package
+            pkg unload image;
+
+        elseif(isequal('wiener', msr.pixel_data_smoothing.method))
+            % Load required package
+            pkg load image;
+
+            % Smooth data using wiener filter
+            smoothed(:, :, 1) = wiener2( ...
+                img(:, :, 1), ...
+                msr.pixel_data_smoothing.window ...
+                );
+            smoothed(:, :, 2) = wiener2( ...
+                img(:, :, 2), ...
+                msr.pixel_data_smoothing.window ...
+                );
+            smoothed(:, :, 3) = wiener2( ...
+                img(:, :, 3), ...
+                msr.pixel_data_smoothing.window ...
+                );
+
+            % Unload loaded package
+            pkg unload image;
+
+        else
+            smoothed = img;
+
+        endif;
+
+        % Accumulate the sum of squared differences
+        pwstd = pwstd + (double(smoothed) - pwmean).^2;
 
         % Update progress tracker
-        waitbar(idx/(nargin - 1), progress_tracker);
+        waitbar(idx/(nargin - 2), progress_tracker);
 
         idx = idx + 1;
 
@@ -1893,8 +2092,8 @@ function measurement = loadZeroLightDataset(measurement, varargin)
     endif;
 
     % Only divide by N - 1 if we are dealing with more than one image (scan)
-    if(1 < nargin - 1)
-        pwstd = pwstd ./ ((nargin - 1) - 1);
+    if(1 < nargin - 2)
+        pwstd = pwstd ./ ((nargin - 2) - 1);
 
     endif;
     pwstd = pwstd.^0.5;
@@ -1904,15 +2103,36 @@ function measurement = loadZeroLightDataset(measurement, varargin)
     standard_deviation = rms(pwstd);
 
     % Fill the return structure with calculated data
-    zero_light.scan_date = strftime('%d.%m.%Y', localtime(time()));
-    zero_light.file_list = varargin;
-    zero_light.pixel_data = pwmean;
+    zero_light                    = struct();
+    zero_light.scan_date          = scdt;
+    zero_light.file_list          = varargin;
+    zero_light.pixel_data         = pwmean;
     zero_light.standard_deviation = standard_deviation;
 
-    measurement.zero_light = zero_light;
+endfunction;
 
-    % Unload loaded packages
-    pkg unload image;
+function result = isZeroLightDataStruct(zrl)
+    result = false;
+    if( ...
+            isstruct(zrl) ...
+            && isfield(zrl, 'scan_date') ...
+            && isfield(zrl, 'file_list') ...
+            && isfield(zrl, 'pixel_data') ...
+            && isfield(zrl, 'standard_deviation') ...
+            && ischar(zrl.scan_date) ...
+            && iscell(zrl.file_list) ...
+            && ~isempty(zrl.pixel_data) ...
+            && (3 == size(zrl.pixel_data, 3)) ...
+            && ismatrix(zrl.pixel_data(:, :, 1)) ...
+            && ismatrix(zrl.pixel_data(:, :, 2)) ...
+            && ismatrix(zrl.pixel_data(:, :, 3)) ...
+            && isvector(zrl.standard_deviation) ...
+            && (3 == size(zrl.standard_deviation, 1)) ...
+            && isfloat(zrl.standard_deviation) ...
+            )
+        result = true;
+
+    endif;
 
 endfunction;
 
@@ -2097,33 +2317,14 @@ endfunction;
 
 % -----------------------------------------------------------------------------
 %
-% Function 'smoothPixelData' - apply pixel data smoothing using window
-%
-% -----------------------------------------------------------------------------
-function smoothed_data = smoothPixelData(pixel_data, smoothing, window)
-
-    if(isequal('none', smoothing))
-        smoothed_data = pixel_data;
-
-        return;
-
-    endif;
-
-    % Load required packages
-    pkg load image;  % Required by 'medfilt2' and 'wiener2'
-
-    % Unload loaded packages
-    pkg unload image;
-
-endfunction;
-
-% -----------------------------------------------------------------------------
-%
 % Function 'rms' - calculate a RMS value for the given array of numbers
 %
 % -----------------------------------------------------------------------------
 function result = rms(X)
-    result = sqrt(sum(sum(X.*X))/numel(X));
+    result = [0; 0; 0];
+    result(1) = sqrt(sum(sum(X(:, :, 1).*X(:, :, 1)))/numel(X(:, :, 1)));
+    result(2) = sqrt(sum(sum(X(:, :, 2).*X(:, :, 2)))/numel(X(:, :, 2)));
+    result(3) = sqrt(sum(sum(X(:, :, 3).*X(:, :, 1)))/numel(X(:, :, 3)));
 
 endfunction;
 
