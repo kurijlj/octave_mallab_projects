@@ -1668,7 +1668,7 @@ endfunction;
 function zero_light = newZeroLightDataset(msr, scdt, varargin)
 
     % Define common window and message strings
-    fname = 'loadZeroLightDataset';
+    fname = 'newZeroLightDataset';
     window_title = 'RCT Analyze Raw Film: New Zero-Light Dataset';
     progress_tracker_title = 'New Zero-Light Dataset';
 
@@ -2141,40 +2141,32 @@ endfunction;
 % Dead Pixels Data Structure Routines
 %
 % -----------------------------------------------------------------------------
-function measurement = calculateDeadPixelsMask(measurement, threshold)
+
+function dead_pixels_mask = newDeadPixelsMask(msr, threshold)
 
     % Define common window and message strings
-    fname = 'calculateDeadPixelsMask';
-    window_title = 'RCT Analyze Raw Film: Calculate Dead Pixels Mask';
-    progress_tracker_title = 'Calculating Dead Pixels Mask';
+    fname = 'newDeadPixelsMask';
+    window_title = 'RCT Analyze Raw Film: New Dead Pixels Mask';
+    progress_tracker_title = 'New Dead Pixels Mask';
 
-    % Initialize data structures for keeping computation results
-    dead_pixels_mask = struct();
-    pixel_data = [];
-
-    % Check for reference dataset ('background')
-    if(~isfield(measurement, 'background') || isnan(measurement.background))
-        % Reference dataset is missing. Display error messages and abort loading
-        msgbox( ...
-            { ...
-                'Mising reference dataset (\"background\").', ...
-                'Aborting calculation ...' ...
-                }, ...
-            window_title, ...
-            'error' ...
-            );
-
-        % also send message to the workspace
-        fprintf( ...
-            stderr(), ...
-            '%s: Mising reference dataset (\"background\"). Aborting calculation ...\n', ...
-            fname ...
-            );
-
-        % Abort loading the scanset
-        return;
+    % Validate input arguments
+    if(~isMeasurementDataStruct(msr))
+        error('%s: Invalid data or measurement not set.', fname);
 
     endif;
+
+    if(~isBackgroundDataStruct(msr.background))
+        error('%s: Invalid data or background data set not set.', fname);
+
+    endif;
+
+    validateattributes( ...
+        threshold, ...
+        {'float'}, ...
+        {'scalar', '>=', 0, '<=', 1}, ...
+        fname, ...
+        'threshold' ...
+        );
 
     % Display information on the calculation progress
     progress_tracker = waitbar( ...
@@ -2187,20 +2179,70 @@ function measurement = calculateDeadPixelsMask(measurement, threshold)
     idx = 1;
 
     % Allocate memory for storing mask pixels
-    pixel_data = ones(size(measurement.background.pixel_data));
+    pixel_data = ones(size(msr.background.pixel_data));
 
     % Accumulate dead pixels
-    while(numel(measurement.background.file_list) >= idx)
-        img = imread(measurement.background.file_list{idx});
-        red_mask   = img(:, :, 1) > (threshold*(intmax('uint16') - 1));
-        green_mask = img(:, :, 2) > (threshold*(intmax('uint16') - 1));
-        blue_mask  = img(:, :, 3) > (threshold*(intmax('uint16') - 1));
+    while(numel(msr.background.file_list) >= idx)
+        img = imread(msr.background.file_list{idx});
+
+        % Smooth out pixel data again if required
+        smoothed = zeros(size(img));
+        if(isequal('median', msr.pixel_data_smoothing.method))
+            % Load required package
+            pkg load image;
+
+            % Smooth data using median filter
+            smoothed(:, :, 1) = medfilt2( ...
+                img(:, :, 1), ...
+                msr.pixel_data_smoothing.window ...
+                );
+            smoothed(:, :, 2) = medfilt2( ...
+                img(:, :, 2), ...
+                msr.pixel_data_smoothing.window ...
+                );
+            smoothed(:, :, 3) = medfilt2( ...
+                img(:, :, 3), ...
+                msr.pixel_data_smoothing.window ...
+                );
+
+            % Unload loaded package
+            pkg unload image;
+
+        elseif(isequal('wiener', msr.pixel_data_smoothing.method))
+            % Load required package
+            pkg load image;
+
+            % Smooth data using wiener filter
+            smoothed(:, :, 1) = wiener2( ...
+                img(:, :, 1), ...
+                msr.pixel_data_smoothing.window ...
+                );
+            smoothed(:, :, 2) = wiener2( ...
+                img(:, :, 2), ...
+                msr.pixel_data_smoothing.window ...
+                );
+            smoothed(:, :, 3) = wiener2( ...
+                img(:, :, 3), ...
+                msr.pixel_data_smoothing.window ...
+                );
+
+            % Unload loaded package
+            pkg unload image;
+
+        else
+            smoothed = img;
+
+        endif;
+
+        red_mask   = smoothed(:, :, 1) > ((1 - threshold)*(intmax('uint16') - 1));
+        green_mask = smoothed(:, :, 2) > ((1 - threshold)*(intmax('uint16') - 1));
+        blue_mask  = smoothed(:, :, 3) > ((1 - threshold)*(intmax('uint16') - 1));
         pixel_data(:, :, 1) = pixel_data(:, :, 1).*red_mask;
         pixel_data(:, :, 2) = pixel_data(:, :, 2).*green_mask;
         pixel_data(:, :, 3) = pixel_data(:, :, 3).*blue_mask;
 
         waitbar( ...
-            idx/numel(measurement.background.file_list), ...
+            idx/numel(msr.background.file_list), ...
             progress_tracker ...
             );
 
@@ -2215,10 +2257,29 @@ function measurement = calculateDeadPixelsMask(measurement, threshold)
     endif;
 
     % Fill the return structure with calculated data
-    dead_pixels_mask.dead_pixels_threshold = threshold;
+    dead_pixels_mask            = struct();
+    dead_pixels_mask.threshold  = threshold;
     dead_pixels_mask.pixel_data = pixel_data;
 
-    measurement.dead_pixels_mask = dead_pixels_mask;
+endfunction;
+
+function result = isDeadPixelsMaskStruct(dpm)
+    result = false;
+    if( ...
+            isstruct(dpm) ...
+            && isfield(dpm, 'threshold') ...
+            && isfield(dpm, 'pixel_data') ...
+            && isscalar(dpm.threshold) ...
+            && isfloat(dpm.threshold) ...
+            && ~isempty(dpm.pixel_data) ...
+            && (3 == size(dpm.pixel_data, 3)) ...
+            && ismatrix(dpm.pixel_data(:, :, 1)) ...
+            && ismatrix(dpm.pixel_data(:, :, 2)) ...
+            && ismatrix(dpm.pixel_data(:, :, 3)) ...
+            )
+        result = true;
+
+    endif;
 
 endfunction;
 
