@@ -175,7 +175,7 @@ function measurement = newMeasurement(title=NaN, date=NaN)
     measurement.irradiated           = NaN;
     measurement.background           = NaN;
     measurement.zero_light           = NaN;
-    measurement.dead_pixels          = NaN;
+    measurement.dead_pixels_mask     = NaN;
     measurement.optical_density      = NaN;
     measurement.roi                  = {};
 
@@ -196,7 +196,7 @@ function result = isMeasurementDataStruct(msr)
             && isfield(msr, 'irradiated') ...
             && isfield(msr, 'background') ...
             && isfield(msr, 'zero_light') ...
-            && isfield(msr, 'dead_pixels') ...
+            && isfield(msr, 'dead_pixels_mask') ...
             && isfield(msr, 'optical_density') ...
             && isfield(msr, 'roi') ...
             && iscell(msr.roi) ...
@@ -2288,81 +2288,46 @@ endfunction;
 % Optical Density Data Structure Routines
 %
 % -----------------------------------------------------------------------------
-function measurement = calculateOpticalDensity(measurement)
+function optical_density = newOpticalDensity(msr)
 
     % Define common window and message strings
-    fname = 'calculateOpticalDensity';
-    window_title = 'RCT Analyze Raw Film: Calculate Optical Density';
+    fname = 'newOpticalDensity';
+    window_title = 'RCT Analyze Raw Film: New Optical Density';
+
+    % Validate input arguments
+    if(~isMeasurementDataStruct(msr))
+        error('%s: Invalid data or measurement not set.', fname);
+
+    endif;
+
+    if(~isIrradiatedDataStruct(msr.irradiated))
+        error('%s: Invalid data or irradiated data set not set.', fname);
+
+    endif;
+
+    if(~isBackgroundDataStruct(msr.background))
+        error('%s: Invalid data or background data set not set.', fname);
+
+    endif;
 
     % Initialize data structures for keeping computation results
     optical_density = struct();
     pixel_data = [];
 
-    % Check for reference dataset ('irradiated')
-    if(~isfield(measurement, 'irradiated') || isnan(measurement.irradiated))
-        % Reference dataset is missing. Display error messages and abort loading
-        msgbox( ...
-            { ...
-                'Missing reference dataset (\"Irradiated\").', ...
-                'Aborting calculation ...' ...
-                }, ...
-            window_title, ...
-            'error' ...
-            );
-
-        % also send message to the workspace
-        fprintf( ...
-            stderr(), ...
-            '%s: Missing reference dataset (\"Irradiated\"). Aborting calculation ...\n', ...
-            fname ...
-            );
-
-        % Abort loading the scanset
-        return;
-
-    endif;
-
-    % Check for reference dataset ('background')
-    if(~isfield(measurement, 'background') || isnan(measurement.background))
-        % Reference dataset is missing. Display error messages and abort loading
-        msgbox( ...
-            { ...
-                'Missing reference dataset (\"Background\").', ...
-                'Aborting calculation ...' ...
-                }, ...
-            window_title, ...
-            'error' ...
-            );
-
-        % also send message to the workspace
-        fprintf( ...
-            stderr(), ...
-            '%s: Missing reference dataset (\"Background\"). Aborting calculation ...\n', ...
-            fname ...
-            );
-
-        % Abort loading the scanset
-        return;
-
-    endif;
-
     % Allocate memory for optical density values
-    pixel_data = zeros(size(measurement.irradiated.pixel_data));
+    pixel_data = zeros(size(msr.irradiated.pixel_data));
 
-    if( ...
-            isfield(measurement, 'zero_light') ...
-            && isfield(measurement.zero_light, 'pixel_data') ...
-            )
+    if(isZeroLightDataStruct(msr.zero_light))
         I0 = ...
-            measurement.background.pixel_data ...
-            - measurement.zero_light.pixel_data;
+            msr.background.pixel_data ...
+            - msr.zero_light.pixel_data;
         It = ...
-            measurement.irradiated.pixel_data ...
-            - measurement.zero_light.pixel_data;
+            msr.irradiated.pixel_data ...
+            - msr.zero_light.pixel_data;
 
     else
-        I0 = measurement.background.pixel_data;
-        It = measurement.irradiated.pixel_data;
+        I0 = msr.background.pixel_data;
+        It = msr.irradiated.pixel_data;
 
     endif;
 
@@ -2371,8 +2336,6 @@ function measurement = calculateOpticalDensity(measurement)
 
     % Fill the return structure with calculated data
     optical_density.pixel_data = pixel_data;
-
-    measurement.optical_density = optical_density;
 
 endfunction;
 
