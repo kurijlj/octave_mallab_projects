@@ -2341,10 +2341,114 @@ endfunction;
 
 % -----------------------------------------------------------------------------
 %
+% ROI Data Structure Routines
+%
+% -----------------------------------------------------------------------------
+function roi = newRoi(msr, roi_window)
+
+    % TODO: Put function implementation here
+
+    roi = struct();
+
+endfunction;
+
+function roi_extents = roiExtents(roi_window)
+
+    roi_extents = NaN;
+
+    % TODO: Put input validation here
+
+    roi_extents = [0, 0, 0, 0];
+    roi_extents(1) = roi_window(1) - round(roi_window(3)/2);
+    roi_extents(2) = roi_window(2) - round(roi_window(3)/2);
+    roi_extents(3) = roi_window(1) + round(roi_window(3)/2);
+    roi_extents(4) = roi_window(2) + round(roi_window(3)/2);
+
+endfunction;
+
+function fit_roi = fitRoiToImageSpace(image_extents, roi_window)
+
+    fit_roi = NaN;
+
+    % TODO: Put input validation here
+
+    fit_roi = roi_window;
+
+    % Check if ROI is larger than image extents. Clip image space few pixels so
+    % we can counteract rounding errors in ROI extents recalculation for ROIs
+    % just few pixels smaller than image space (this is highly unlikely
+    % scenario but ...)
+    if(min(image_extents(3) - 2, image_extents(4) - 2) <= roi_window(3))
+        % This the case when ROI is larger than image extents. Set roi window
+        % size to size of the shorter image border and put ROI in the center of
+        % the image
+        fit_roi(1) = round(image_extents(3)/2);
+        fit_roi(2) = round(image_extents(4)/2);
+        fit_roi(3) = 2*min( ...
+            min(image_extents(3) - fit_roi(1), fit_roi(1)), ...
+            min(image_extents(4) - fit_roi(2), fit_roi(2)) ...
+            );
+
+        return;
+
+    endif;
+
+    % ROI is smaller than image extents. Calculate ROI extents
+    roi_extents = roiExtents(roi_window);
+
+    % We can have folowing cases of ROI position regarding image space:
+    %
+    %     i) right  <= 0           => ROI is outside the image space;
+    %    ii) bottom <= 0           => ROI is outside the image space;
+    %   iii) left   >= img_width   => ROI is outside the image space;
+    %    iv) top    >= img_height  => ROI is outside the image space;
+    %     v) left   <  0           => ROI is partialy outside the image space;
+    %    vi) top    <  0           => ROI is partialy outside the image space;
+    %   vii) right  > image_width  => ROI is partialy outside the image space;
+    %  viii) bottom > image_height => ROI is partialy outside the image space;
+    %
+    % Required actions in these cases are as follows:
+    %
+    %     i) set left = 0, recalculate roix;
+    %    ii) set top = 0, recalculate roiy;
+    %   iii) set right = img_width, recalculate roix;
+    %    iv) set bottom = img_height, recalculate roiy;
+    %     v) set left = 0, recalculate roix
+    %    vi) set top = 0, recalculate roiy;
+    %   vii) set right = img_width, recalculate roix;
+    %  viii) set bottom = img_height, recalculate roiy;
+    %
+    if(0 >= roi_extents(3) || 0 > roi_extents(1))
+        fit_roi(1) = roi_window(1) + (0 - roi_extents(1));
+
+    endif;
+
+    if(0 >= roi_extents(4) || 0 > roi_extents(2))
+        fit_roi(2) = roi_window(2) + (0 - roi_extents(2));
+
+    endif;
+
+    if(image_extents(3) <= roi_extents(1) || image_extents(3) < roi_extents(3))
+        fit_roi(1) = roi_window(1) + (image_extents(3) - roi_extents(3));
+
+    endif;
+
+    if(image_extents(4) <= roi_extents(2) || image_extents(4) < roi_extents(4))
+        fit_roi(2) = roi_window(2) + (image_extents(4) - roi_extents(4));
+
+    endif;
+
+endfunction;
+
+% -----------------------------------------------------------------------------
+%
 % Function 'rms' - calculate a RMS value for the given array of numbers
 %
 % -----------------------------------------------------------------------------
 function result = rms(X)
+
+    % TODO: Put input validation here
+
     result = [0; 0; 0];
     result(1) = sqrt(sum(sum(X(:, :, 1).*X(:, :, 1)))/numel(X(:, :, 1)));
     result(2) = sqrt(sum(sum(X(:, :, 2).*X(:, :, 2)))/numel(X(:, :, 2)));
@@ -2359,6 +2463,8 @@ endfunction;
 %
 % -----------------------------------------------------------------------------
 function I = renderImageFromMatrix(M)
+
+    % TODO: Put input validation here
 
     % Load required packages
     pkg load image;
@@ -2378,6 +2484,8 @@ endfunction;
 % -----------------------------------------------------------------------------
 function I = renderImageFrom3DMatrix(M)
 
+    % TODO: Put input validation here
+
     % Load required packages
     pkg load image;
 
@@ -2390,6 +2498,34 @@ function I = renderImageFrom3DMatrix(M)
 
     % Unload loaded packages
     pkg unload image;
+
+endfunction;
+
+% -----------------------------------------------------------------------------
+%
+% Function 'milimetersToPixels' - convert length from limeters to pixels
+% according to given 'dpi'
+%
+% -----------------------------------------------------------------------------
+function len_px = milimetersToPixels(dpi, len_mm)
+
+    % TODO: Put input validation here
+
+    len_px = (dpi/25.4)*men_mm;
+
+endfunction;
+
+% -----------------------------------------------------------------------------
+%
+% Function 'pixelsToMilimeters' - convert length from pixels to milimeters
+% according to given 'dpi'
+%
+% -----------------------------------------------------------------------------
+function len_mm = pixelsToMilimeters(dpi, len_px)
+
+    % TODO: Put input validation here
+
+    len_mm = (25.4/dpi)*len_px;
 
 endfunction;
 
