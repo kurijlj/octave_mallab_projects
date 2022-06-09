@@ -24,13 +24,12 @@ pkg_name = 'Radiochromic Toolbox'
 % -----------------------------------------------------------------------------
 % TODO: Rename script's name and function's name to
 %       rct_gui_analyze_raw_film_v1' when release is complete
-function rct_gui_analyze_raw_film()
+function rctGuiAnalyzeRawFilm()
 
     % Initialize GUI toolkit
     graphics_toolkit qt;
 
     % Initialize structure for keeping app data
-    app = createAppDataset();
     app = newApp(app, 'scannerdb.csv', 'filmdb.csv');
     app = buildGUI(app);
     guidata(gcf(), app);
@@ -2455,12 +2454,12 @@ function result = isOpticalDensityStruct(od)
     result = false;
     if( ...
             isstruct(od) ...
-            && isfield(dpm, 'pixel_data') ...
-            && ~isempty(dpm.pixel_data) ...
-            && (3 == size(dpm.pixel_data, 3)) ...
-            && ismatrix(dpm.pixel_data(:, :, 1)) ...
-            && ismatrix(dpm.pixel_data(:, :, 2)) ...
-            && ismatrix(dpm.pixel_data(:, :, 3)) ...
+            && isfield(od, 'pixel_data') ...
+            && ~isempty(od.pixel_data) ...
+            && (3 == size(od.pixel_data, 3)) ...
+            && ismatrix(od.pixel_data(:, :, 1)) ...
+            && ismatrix(od.pixel_data(:, :, 2)) ...
+            && ismatrix(od.pixel_data(:, :, 3)) ...
             )
         result = true;
 
@@ -2495,13 +2494,42 @@ function roi = newRoi(msr, roi_window)
 
     endif;
 
+    roi_dp_mask = roiDeadPixelsMask(msr.dead_pixels_mask, roi_window);
+    dp_count = [0, 0, 0];
+    dp_count(1) = sum(~roi_dp_mask(:, :, 1)(:))*100/numel(roi_dp_mask(:, :, 1));
+    dp_count(2) = sum(~roi_dp_mask(:, :, 2)(:))*100/numel(roi_dp_mask(:, :, 2));
+    dp_count(3) = sum(~roi_dp_mask(:, :, 3)(:))*100/numel(roi_dp_mask(:, :, 3));
+    clear('roi_dp_mask');
+    roi_od_mean = roiOpticalDensityMean( ...
+        msr.optical_density, ...
+        msr.dead_pixels_mask, ...
+        roi_window ...
+        );
+    roi_od_stdev = roiOpticalDensityStd( ...
+        msr.optical_density, ...
+        msr.dead_pixels_mask, ...
+        roi_window ...
+        );
+    roi_od_hist = roiOpticalDensityHist(
+        msr.optical_density, ...
+        msr.dead_pixels_mask, ...
+        roi_window, ...
+        64 ...
+        );
+    roi_snr = roiSnr( ...
+        msr.irradiated, ...
+        msr.background, ...
+        msr.dead_pixels_mask, ...
+        roi_window ...
+        );
+
     roi = struct();
     roi.window = roi_window;
-    roi.od = NaN;
-    roi.od_stdev = NaN;
-    roi.od_hist = NaN;
-    roi.snr = NaN;
-    roi.dead_pixels_count = NaN;
+    roi.od = roi_od_mean;
+    roi.od_stdev = roi_od_stdev;
+    roi.od_hist = roi_od_hist;
+    roi.snr = roi_snr;
+    roi.dead_pixels_count = dp_count;
 
 endfunction;
 
@@ -2744,14 +2772,46 @@ function fit_roi = fitRoiToImageSpace(image_size, roi_window)
 
 endfunction;
 
-function od_mean = roiOpticalDensityMean(od_obj, roi_window)
+function roi_dp_mask = roiDeadPixelsMask(dp_mask, roi_window)
 
     % Define common message strings
     fname = 'roiOpticalDensityMean';
-    use_case = ' -- od_mean = roiOpticalDensityMean(od_obj, roi_window)';
+    use_case = ' -- od_mean = roiOpticalDensityMean(dp_mask, roi_window)';
 
     % Validate input arguments
     if(2 ~= nargin)
+        error('Invalid call to %s.  Correct usage is:\n\n%s', fname, use_case);
+
+    endif;
+
+    if(~isDeadPixelsMaskStruct(dp_mask))
+        error('%s: Invalid data or dead pixels mask not set.', fname);
+
+    endif;
+
+    if(~isRoiWindow(roi_window))
+        error('%s: roi_window must be a ROI Window object', fname);
+
+    endif;
+
+    roi_dp_mask = [];
+    roi_extents = roiExtents(roi_window);
+    roi_dp_mask = dp_mask.pixel_data( ...
+        roi_extents(2):roi_extents(4), ...
+        roi_extents(1):roi_extents(3), ...
+        : ...
+        );
+
+endfunction;
+
+function od_mean = roiOpticalDensityMean(od_obj, dp_mask, roi_window)
+
+    % Define common message strings
+    fname = 'roiOpticalDensityMean';
+    use_case = ' -- od_mean = roiOpticalDensityMean(od_obj, dp_mask, roi_window)';
+
+    % Validate input arguments
+    if(3 ~= nargin)
         error('Invalid call to %s.  Correct usage is:\n\n%s', fname, use_case);
 
     endif;
@@ -2761,10 +2821,229 @@ function od_mean = roiOpticalDensityMean(od_obj, roi_window)
 
     endif;
 
+    if(~isDeadPixelsMaskStruct(dp_mask))
+        error('%s: Invalid data or dead pixels mask not set.', fname);
+
+    endif;
+
     if(~isRoiWindow(roi_window))
         error('%s: roi_window must be a ROI Window object', fname);
 
     endif;
+
+    od_mean = [];
+    roi_extents = roiExtents(roi_window);
+    roi_dp_mask = roiDeadPixelsMask(dp_mask, roi_window);
+    roi_pixel_data = od_obj.pixel_data( ...
+        roi_extents(2):roi_extents(4), ...
+        roi_extents(1):roi_extents(3), ...
+        : ...
+        );
+    od_mean = [od_mean, mean(roi_pixel_data(:, :, 1)(logical(roi_dp_mask(:, :, 1))))];
+    od_mean = [od_mean, mean(roi_pixel_data(:, :, 2)(logical(roi_dp_mask(:, :, 2))))];
+    od_mean = [od_mean, mean(roi_pixel_data(:, :, 3)(logical(roi_dp_mask(:, :, 3))))];
+
+endfunction;
+
+function od_std = roiOpticalDensityStd(od_obj, dp_mask, roi_window)
+
+    % Define common message strings
+    fname = 'roiOpticalDensityStd';
+    use_case = ' -- od_std = roiOpticalDensityStd(od_obj, dp_mask, roi_window)';
+
+    % Validate input arguments
+    if(3 ~= nargin)
+        error('Invalid call to %s.  Correct usage is:\n\n%s', fname, use_case);
+
+    endif;
+
+    if(~isOpticalDensityStruct(od_obj))
+        error('%s: Invalid data or optical density data set not set.', fname);
+
+    endif;
+
+    if(~isDeadPixelsMaskStruct(dp_mask))
+        error('%s: Invalid data or dead pixels mask not set.', fname);
+
+    endif;
+
+    if(~isRoiWindow(roi_window))
+        error('%s: roi_window must be a ROI Window object', fname);
+
+    endif;
+
+    od_std = [];
+    roi_extents = roiExtents(roi_window);
+    roi_dp_mask = roiDeadPixelsMask(dp_mask, roi_window);
+    roi_pixel_data = od_obj.pixel_data( ...
+        roi_extents(2):roi_extents(4), ...
+        roi_extents(1):roi_extents(3), ...
+        : ...
+        );
+    od_std = [od_std, std(roi_pixel_data(:, :, 1)(logical(roi_dp_mask(:, :, 1))))];
+    od_std = [od_std, std(roi_pixel_data(:, :, 2)(logical(roi_dp_mask(:, :, 2))))];
+    od_std = [od_std, std(roi_pixel_data(:, :, 3)(logical(roi_dp_mask(:, :, 3))))];
+
+endfunction;
+
+function od_hist = roiOpticalDensityHist(od_obj, dp_mask, roi_window, nbins)
+
+    % Define common message strings
+    fname = 'roiOpticalDensityHist';
+    use_case = ' -- od_hist = roiOpticalDensityHist(od_obj, dp_mask, roi_window, nbins)';
+
+    % Validate input arguments
+    if(4 ~= nargin)
+        error('Invalid call to %s.  Correct usage is:\n\n%s', fname, use_case);
+
+    endif;
+
+    if(~isOpticalDensityStruct(od_obj))
+        error('%s: Invalid data or optical density data set not set.', fname);
+
+    endif;
+
+    if(~isDeadPixelsMaskStruct(dp_mask))
+        error('%s: Invalid data or dead pixels mask not set.', fname);
+
+    endif;
+
+    if(~isRoiWindow(roi_window))
+        error('%s: roi_window must be a ROI Window object', fname);
+
+    endif;
+
+    validateattributes( ...
+        nbins, ...
+        {'numeric'}, ...
+        { ...
+            'scalar', ...
+            'nonempty', ...
+            'nonnan', ...
+            'integer', ...
+            'finite', ...
+            '>=', 2 ...
+            }, ...
+        fname, ...
+        'item' ...
+        );
+
+    roi_extents = roiExtents(roi_window);
+    roi_dp_mask = roiDeadPixelsMask(dp_mask, roi_window);
+    roi_pixel_data = od_obj.pixel_data( ...
+        roi_extents(2):roi_extents(4), ...
+        roi_extents(1):roi_extents(3), ...
+        : ...
+        );
+    od_min = [ ...
+        min(roi_pixel_data(:, :, 1)(logical(roi_dp_mask(:, :, 1)))), ...
+        min(roi_pixel_data(:, :, 2)(logical(roi_dp_mask(:, :, 2)))), ...
+        min(roi_pixel_data(:, :, 3)(logical(roi_dp_mask(:, :, 3)))) ...
+        ];
+    od_max = [ ...
+        max(roi_pixel_data(:, :, 1)(logical(roi_dp_mask(:, :, 1)))), ...
+        max(roi_pixel_data(:, :, 2)(logical(roi_dp_mask(:, :, 2)))), ...
+        max(roi_pixel_data(:, :, 3)(logical(roi_dp_mask(:, :, 3)))) ...
+        ];
+    od_depth = od_max - od_min;
+    binsz = od_depth./(nbins - 1);
+    centers = zeros(nbins, 3);
+    dist = zeros(nbins, 3);
+
+    idx = 1;
+    while(nbins >= idx)
+        centers(idx, 1) = od_min(1) + (idx - 1)*binsz(1);
+        centers(idx, 2) = od_min(2) + (idx - 1)*binsz(2);
+        centers(idx, 3) = od_min(3) + (idx - 1)*binsz(3);
+
+        lbound = [ ...
+            od_min(1) + (idx - 1.5)*binsz(1), ...
+            od_min(2) + (idx - 1.5)*binsz(2), ...
+            od_min(3) + (idx - 1.5)*binsz(3) ...
+            ];
+        lmask = zeros(size(roi_pixel_data));
+        lmask(:, :, 1) = roi_pixel_data(:, :, 1) > lbound(1);
+        lmask(:, :, 2) = roi_pixel_data(:, :, 2) > lbound(2);
+        lmask(:, :, 3) = roi_pixel_data(:, :, 3) > lbound(3);
+
+        ubound = [ ...
+            od_min(1) + (idx - 0.5)*binsz(1), ...
+            od_min(2) + (idx - 0.5)*binsz(2), ...
+            od_min(3) + (idx - 0.5)*binsz(3) ...
+            ];
+        umask = zeros(size(roi_pixel_data));
+        umask(:, :, 1) = roi_pixel_data(:, :, 1) <= ubound(1);
+        umask(:, :, 2) = roi_pixel_data(:, :, 2) <= ubound(2);
+        umask(:, :, 3) = roi_pixel_data(:, :, 3) <= ubound(3);
+
+        dist(idx, 1) = sum((lmask(:, :, 1).*umask(:, :, 1))(:));
+        dist(idx, 2) = sum((lmask(:, :, 2).*umask(:, :, 2))(:));
+        dist(idx, 3) = sum((lmask(:, :, 3).*umask(:, :, 3))(:));
+
+        idx = idx + 1;
+
+    endwhile;
+
+    od_hist = struct();
+    od_hist.bins = centers;
+    od_hist.dist = dist;
+
+endfunction;
+
+function roi_snr = roiSnr(irr, bkg, dp_mask, roi_window)
+
+    % Define common message strings
+    fname = 'roiSnr';
+    use_case = ' -- roi_snr = roiSnr(irr, bkg, dp_mask, roi_window)';
+
+    % Validate input arguments
+    if(4 ~= nargin)
+        error('Invalid call to %s.  Correct usage is:\n\n%s', fname, use_case);
+
+    endif;
+
+    if(~isIrradiatedDataStruct(irr))
+        error('%s: Invalid data or irradiated data set not set.', fname);
+
+    endif;
+
+    if(~isBackgroundDataStruct(bkg))
+        error('%s: Invalid data or background data set not set.', fname);
+
+    endif;
+
+    if(~isDeadPixelsMaskStruct(dp_mask))
+        error('%s: Invalid data or dead pixels mask not set.', fname);
+
+    endif;
+
+    if(~isRoiWindow(roi_window))
+        error('%s: roi_window must be a ROI Window object', fname);
+
+    endif;
+
+    roi_extents = roiExtents(roi_window);
+    roi_dp_mask = roiDeadPixelsMask(dp_mask, roi_window);
+    irr_pixel_data = irr.pixel_data( ...
+        roi_extents(2):roi_extents(4), ...
+        roi_extents(1):roi_extents(3), ...
+        : ...
+        );
+    bkg_pixel_data = bkg.pixel_data( ...
+        roi_extents(2):roi_extents(4), ...
+        roi_extents(1):roi_extents(3), ...
+        : ...
+        );
+    irr_mean = [];
+    irr_mean = [irr_mean, mean(irr_pixel_data(:, :, 1)(logical(roi_dp_mask(:, :, 1))))];
+    irr_mean = [irr_mean, mean(irr_pixel_data(:, :, 2)(logical(roi_dp_mask(:, :, 2))))];
+    irr_mean = [irr_mean, mean(irr_pixel_data(:, :, 3)(logical(roi_dp_mask(:, :, 3))))];
+    bkg_std = [];
+    bkg_std = [bkg_std, std(bkg_pixel_data(:, :, 1)(logical(roi_dp_mask(:, :, 1))))];
+    bkg_std = [bkg_std, std(bkg_pixel_data(:, :, 2)(logical(roi_dp_mask(:, :, 2))))];
+    bkg_std = [bkg_std, std(bkg_pixel_data(:, :, 3)(logical(roi_dp_mask(:, :, 3))))];
+
+    roi_snr = irr_mean./bkg_std;
 
 endfunction;
 
