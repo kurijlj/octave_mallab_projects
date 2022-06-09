@@ -5,6 +5,10 @@
 % TODO: Remove following line when release is complete
 pkg_name = 'Radiochromic Toolbox'
 
+% TODO: Reformat the error messages to comply wiht format set in the 'plotRect'
+%       function.
+% TODO: Add validation of number of input parameters for all functions.
+
 % =============================================================================
 %
 % Main Script Body Section
@@ -19,7 +23,7 @@ pkg_name = 'Radiochromic Toolbox'
 %
 % -----------------------------------------------------------------------------
 % TODO: Rename script's name and function's name to
-% 'rct_gui_analyze_raw_film_v1' when release is complete
+%       rct_gui_analyze_raw_film_v1' when release is complete
 function rct_gui_analyze_raw_film()
 
     % Initialize GUI toolkit
@@ -55,43 +59,23 @@ endfunction;
 % -----------------------------------------------------------------------------
 function app = newApp(scannerdb, filmdb)
 
-    % Store function name into variable for easier management of error messages
+    % Define common message strings
     fname = 'newApp';
+    use_case = ' -- app = newApp(scannerdb, filmdb)';
 
     % Validate input arguments
     if(2 ~= nargin)
-        error( ...
-            strjoin({ ...
-                '%s: Invalid call to function.', ...
-                'Expected 2 arguments in function call, got %d.' ...
-                }), ...
-            fname, ...
-            nargin ...
-            );
+        error('Invalid call to %s.  Correct usage is:\n\n%s', fname, use_case);
 
     endif;
 
     if(~ischar(scannerdb))
-        error( ...
-            strjoin({ ...
-                '%s: Invalid data type for function parameter \"scannerdb\".', ...
-                'Expected \"char\", got \"%s\".' ...
-                }), ...
-            fname, ...
-            class(scannerdb) ...
-            );
+        error('%s: scannerdb must be a string', fname);
 
     endif;
 
     if(~ischar(filmdb))
-        error( ...
-            strjoin({ ...
-                '%s: Invalid data type for function parameter \"filmdb\".', ...
-                'Expected \"char\", got \"%s\".' ...
-                }), ...
-            fname, ...
-            class(filmdb) ...
-            );
+        error('%s: filmbd must be a string', fname);
 
     endif;
 
@@ -103,16 +87,27 @@ function app = newApp(scannerdb, filmdb)
 
 endfunction;
 
-function result = isAppDataStruct(app)
+function result = isAppDataStruct(app_obj)
+
+    % Define common message strings
+    fname = 'isAppDataStruct';
+    use_case = ' -- result = isAppDataStruct(scannerdb, filmdb)';
+
+    % Validate input arguments
+    if(1 ~= nargin)
+        error('Invalid call to %s.  Correct usage is:\n\n%s', fname, use_case);
+
+    endif;
+
     result = false;
     if( ...
-            isstruct(app) ...
-            && isfield(app, 'scannerdb') ...
-            && ischar(app.scannerdb) ...
-            && isfield(app, 'filmdb') ...
-            && ischar(app.filmdb) ...
-            && isfield(app, 'measurement') ...
-            && isfield(app, 'gui') ...
+            isstruct(app_obj) ...
+            && isfield(app_obj, 'scannerdb') ...
+            && ischar(app_obj.scannerdb) ...
+            && isfield(app_obj, 'filmdb') ...
+            && ischar(app_obj.filmdb) ...
+            && isfield(app_obj, 'measurement') ...
+            && isfield(app_obj, 'gui') ...
             )
         result = true;
 
@@ -129,29 +124,29 @@ function measurement = newMeasurement(title=NaN, date=NaN)
 
     % Store function name into variable for easier management of error messages
     fname = 'newMeasurement';
+    use_case_a = ' -- measurement = newMeasurement()';
+    use_case_b = ' -- measurement = newMeasurement(title)';
+    use_case_c = ' -- measurement = newMeasurement(title, date)';
 
     % Validate input arguments
-    if(~isnan(title) && ~ischar(title))
+    if(2 < nargin)
         error( ...
-            strjoin({ ...
-                '%s: Invalid data type for function parameter \"title\".', ...
-                'Expected \"NaN\" or \"char\", got \"%s\".' ...
-                }), ...
+            'Invalid call to %s.  Correct usage is:\n\n%s\n%s\n%s', ...
             fname, ...
-            class(title) ...
+            use_case_a, ...
+            use_case_b, ...
+            use_case_c ...
             );
 
     endif;
 
+    if(~isnan(title) && ~ischar(title))
+        error('%s: title must be NaN or a string', fname);
+
+    endif;
+
     if(~isnan(date) && ~ischar(date))
-        error( ...
-            strjoin({ ...
-                '%s: Invalid data type for function parameter \"date\".', ...
-                'Expected \"NaN\" or \"char\", got \"%s\".' ...
-                }), ...
-            fname, ...
-            class(date) ...
-            );
+        error('%s: date must be NaN or a date string (dd.mm.YYYY)', fname);
 
     endif;
 
@@ -184,6 +179,17 @@ function measurement = newMeasurement(title=NaN, date=NaN)
 endfunction;
 
 function result = isMeasurementDataStruct(msr)
+
+    % Define common message strings
+    fname = 'isMeasurementDataStruct';
+    use_case = ' -- result = isMeasurementDataStruct(msr)';
+
+    % Validate input arguments
+    if(1 ~= nargin)
+        error('Invalid call to %s.  Correct usage is:\n\n%s', fname, use_case);
+
+    endif;
+
     result = false;
     if( ...
             isstruct(msr) ...
@@ -218,31 +224,41 @@ function device = newScannerDevice(scannerdb=NaN, item=1)
 
     % Store function name into variable for easier management of error messages
     fname = 'newScannerDevice';
+    use_case_a = ' -- device = newScannerDevice()';
+    use_case_b = ' -- device = newScannerDevice(scannerdb)';
+    use_case_c = ' -- device = newScannerDevice(scannerdb, item)';
 
     % Validate input arguments
+    if(2 < nargin)
+        error( ...
+            'Invalid call to %s.  Correct usage is:\n\n%s\n%s\n%s', ...
+            fname, ...
+            use_case_a, ...
+            use_case_b, ...
+            use_case_c ...
+            );
+
+    endif;
+
     if(~isnan(scannerdb) && ~ischar(scannerdb))
-        error( ...
-            strjoin({ ...
-                '%s: Invalid data type for function parameter \"scannerdb\".', ...
-                'Expected \"NaN\" or \"char\", got \"%s\".' ...
-                }), ...
-            fname, ...
-            class(scannerdb) ...
-            );
+        error('%s: scannerdb must be NaN or a string', fname);
 
     endif;
 
-    if(~isscalar(item) && ~isfloat(item))
-        error( ...
-            strjoin({ ...
-                '%s: Invalid data type for function parameter \"item\".', ...
-                'Expected \"floating point scalar\", got \"%s\".' ...
-                }), ...
-            fname, ...
-            class(item) ...
-            );
-
-    endif;
+    validateattributes( ...
+        item, ...
+        {'numeric'}, ...
+        { ...
+            'scalar', ...
+            'nonempty', ...
+            'nonnan', ...
+            'integer', ...
+            'finite', ...
+            '>=', 0 ...
+            }, ...
+        fname, ...
+        'item' ...
+        );
 
     % Load device list first
     device_list = loadScannerDatabase(scannerdb);
@@ -270,6 +286,17 @@ function device = newScannerDevice(scannerdb=NaN, item=1)
 endfunction;
 
 function result = isScannerDeviceStruct(sd)
+
+    % Define common message strings
+    fname = 'isScannerDeviceStruct';
+    use_case = ' -- result = isScannerDeviceStruct(sd)';
+
+    % Validate input arguments
+    if(1 ~= nargin)
+        error('Invalid call to %s.  Correct usage is:\n\n%s', fname, use_case);
+
+    endif;
+
     result = false;
     if( ...
             isstruct(sd) ...
@@ -297,6 +324,13 @@ function device_list = loadScannerDatabase(dbfile=NaN)
     % Define common window and message strings
     fname = 'loadScannerDatabase';
     window_title = 'RCT Analyze Raw Film: Load Scanner Database';
+    use_case = ' -- device_list = loadScannerDatabase(dbfile)';
+
+    % Validate input arguments
+    if(1 < nargin)
+        error('Invalid call to %s.  Correct usage is:\n\n%s', fname, use_case);
+
+    endif;
 
     % Initialize to default values
     device_list = { ...
@@ -374,17 +408,16 @@ function result = scannerDatabaseExists(dbfile=NaN)
 
     % Store function name into variable for easier management of error messages
     fname = 'scannerDatabaseExists';
+    use_case = ' -- result = scannerDatabaseExists(dbfile)';
 
     % Validate input arguments
+    if(1 < nargin)
+        error('Invalid call to %s.  Correct usage is:\n\n%s', fname, use_case);
+
+    endif;
+
     if(~isnan(dbfile) && ~ischar(dbfile))
-        error( ...
-            strjoin({ ...
-                '%s: Invalid data type for function parameter \"dbfile\".', ...
-                'Expected \"NaN\" or \"char\", got \"%s\".' ...
-                }), ...
-            fname, ...
-            class(dbfile) ...
-            );
+        error('%s: dbfile must be NaN or a string', fname);
 
     endif;
 
@@ -406,31 +439,42 @@ function film = newFilm(filmdb=NaN, item=1)
 
     % Store function name into variable for easier management of error messages
     fname = 'newFilm';
+    use_case_a = ' -- film = newFilm()';
+    use_case_b = ' -- film = newFilm(filmdb)';
+    use_case_c = ' -- film = newFilm(filmdb, item)';
 
     % Validate input arguments
+    if(2 < nargin)
+        error( ...
+            'Invalid call to %s.  Correct usage is:\n\n%s\n%s\n%s', ...
+            fname, ...
+            use_case_a, ...
+            use_case_b, ...
+            use_case_c ...
+            );
+
+    endif;
+
     if(~isnan(filmdb) && ~ischar(filmdb))
-        error( ...
-            strjoin({ ...
-                '%s: Invalid data type for function parameter \"filmdb\".', ...
-                'Expected \"NaN\" or \"char\", got \"%s\".' ...
-                }), ...
-            fname, ...
-            class(filmdb) ...
-            );
+        error('%s: filmdb must be NaN or a string', fname);
 
     endif;
 
-    if(~isscalar(item) && ~isfloat(item))
-        error( ...
-            strjoin({ ...
-                '%s: Invalid data type for function parameter \"item\".', ...
-                'Expected \"floating point scalar\", got \"%s\".' ...
-                }), ...
-            fname, ...
-            class(item) ...
-            );
+    validateattributes( ...
+        item, ...
+        {'numeric'}, ...
+        { ...
+            'scalar', ...
+            'nonempty', ...
+            'nonnan', ...
+            'integer', ...
+            'finite', ...
+            '>=', 0 ...
+            }, ...
+        fname, ...
+        'item' ...
+        );
 
-    endif;
 
     % Load film list
     film_list = loadFilmDatabase(filmdb);
@@ -454,6 +498,17 @@ function film = newFilm(filmdb=NaN, item=1)
 endfunction;
 
 function result = isFilmStruct(film)
+
+    % Define common message strings
+    fname = 'isFilmStruct';
+    use_case = ' -- result = isFilmStruct(film)';
+
+    % Validate input arguments
+    if(1 ~= nargin)
+        error('Invalid call to %s.  Correct usage is:\n\n%s', fname, use_case);
+
+    endif;
+
     result = false;
     if( ...
             isstruct(film) ...
@@ -475,6 +530,14 @@ function film_list = loadFilmDatabase(dbfile=NaN)
     % Define common window and message strings
     fname = 'loadFilmDatabase';
     window_title = 'RCT Analyze Raw Film: Load Film Database';
+    use_case = ' -- film_list = loadFilmDatabase(dbfile)';
+
+    % Validate input arguments
+    if(1 < nargin)
+        error('Invalid call to %s.  Correct usage is:\n\n%s', fname, use_case);
+
+    endif;
+
 
     % Initialize to default values
     film_list = { ...
@@ -546,17 +609,16 @@ function result = filmDatabaseExists(dbfile=NaN)
 
     % Store function name into variable for easier management of error messages
     fname = 'filmDatabaseExists';
+    use_case = ' -- result = filmDatabaseExists(dbfile)';
 
     % Validate input arguments
+    if(1 < nargin)
+        error('Invalid call to %s.  Correct usage is:\n\n%s', fname, use_case);
+
+    endif;
+
     if(~isnan(dbfile) && ~ischar(dbfile))
-        error( ...
-            strjoin({ ...
-                '%s: Invalid data type for function parameter \"dbfile\".', ...
-                'Expected \"NaN\" or \"char\", got \"%s\".' ...
-                }), ...
-            fname, ...
-            class(dbfile) ...
-            );
+        error('%s: dbfile must be NaN or a string', fname);
 
     endif;
 
@@ -583,41 +645,26 @@ function field = newField( ...
 
     % Store function name into variable for easier management of error messages
     fname = 'newField';
+    use_case = ' -- field = newField(beam_type, beam_energy, field_shape, field_size)';
 
     % Validate input arguments
+    if(4 ~= nargin)
+        error('Invalid call to %s.  Correct usage is:\n\n%s', fname, use_case);
+
+    endif;
+
     if(~ischar(beam_type))
-        error( ...
-            strjoin({ ...
-                '%s: Invalid data type for function parameter \"beam_type\".', ...
-                'Expected \"char\", got \"%s\".' ...
-                }), ...
-            fname, ...
-            class(beam_type) ...
-            );
+        error('%s: beam_type must be a string', fname);
 
     endif;
 
     if(~ischar(beam_energy))
-        error( ...
-            strjoin({ ...
-                '%s: Invalid data type for function parameter \"beam_energy\".', ...
-                'Expected \"char\", got \"%s\".' ...
-                }), ...
-            fname, ...
-            class(beam_energy) ...
-            );
+        error('%s: beam_energy must be a string', fname);
 
     endif;
 
     if(~ischar(field_shape))
-        error( ...
-            strjoin({ ...
-                '%s: Invalid data type for function parameter \"field_shape\".', ...
-                'Expected \"char\", got \"%s\".' ...
-                }), ...
-            fname, ...
-            class(field_shape) ...
-            );
+        error('%s: field_shape must be a string', fname);
 
     endif;
     validatestring( ...
@@ -628,14 +675,7 @@ function field = newField( ...
         );
 
     if(~ischar(field_size))
-        error( ...
-            strjoin({ ...
-                '%s: Invalid data type for function parameter \"field_size\".', ...
-                'Expected \"char\", got \"%s\".' ...
-                }), ...
-            fname, ...
-            class(field_size) ...
-            );
+        error('%s: field_size must be a string', fname);
 
     endif;
 
@@ -648,6 +688,17 @@ function field = newField( ...
 endfunction;
 
 function result = isFieldStruct(field)
+
+    % Define common message strings
+    fname = 'isFilmStruct';
+    use_case = ' -- result = isFieldStruct(field)';
+
+    % Validate input arguments
+    if(1 ~= nargin)
+        error('Invalid call to %s.  Correct usage is:\n\n%s', fname, use_case);
+
+    endif;
+
     result = false;
     if( ...
             isstruct(field) ...
@@ -675,17 +726,22 @@ function smoothing = newPixelDataSmoothing(method='none', window=[])
 
     % Store function name into variable for easier management of error messages
     fname = 'newPixelDataSmoothing';
+    use_case_a = ' -- smoothing = newPixelDataSmoothing()';
+    use_case_b = ' -- smoothing = newPixelDataSmoothing(method, window)';
 
     % Validate input arguments
-    if(~ischar(method))
+    if(0 ~= nargin && 2 ~= nargin)
         error( ...
-            strjoin({ ...
-                '%s: Invalid data type for function parameter \"method\".', ...
-                'Expected \"char\", got \"%s\".' ...
-                }), ...
+            'Invalid call to %s.  Correct usage is:\n\n%s\n%s', ...
             fname, ...
-            class(method) ...
+            use_case_a, ...
+            use_case_a ...
             );
+
+    endif;
+
+    if(~ischar(method))
+        error('%s: method must be a string', fname);
 
     endif;
     validatestring( ...
@@ -718,6 +774,17 @@ function smoothing = newPixelDataSmoothing(method='none', window=[])
 endfunction;
 
 function result = isPixelDataSmoothingStruct(smt)
+
+    % Define common message strings
+    fname = 'isPixelDataSmoothingStruct';
+    use_case = ' -- result = isPixelDataSmoothingStruct(smt)';
+
+    % Validate input arguments
+    if(1 ~= nargin)
+        error('Invalid call to %s.  Correct usage is:\n\n%s', fname, use_case);
+
+    endif;
+
     result = false;
     if( ...
             isstruct(smt) ...
@@ -737,14 +804,20 @@ endfunction;
 % Irradiated Data Structure Routines
 %
 % -----------------------------------------------------------------------------
-function irradiated = newIrradiatedDataset(msr, irrdt, scdt, varargin)
+function irradiated = newIrradiatedDataset(msr, irr_date, sc_date, varargin)
 
     % Define common window and message strings
     fname = 'newIrradiatedDataset';
     window_title = 'RCT Analyze Raw Film: New Irradiated Dataset';
     progress_tracker_title = 'New Irradiated Dataset';
+    use_case = ' -- irradiated = newIrradiatedDataset(msr, irr_date, sc_date, scan_1, scan_2, ...)';
 
     % Validate input arguments
+    if(4 > nargin)
+        error('Invalid call to %s.  Correct usage is:\n\n%s', fname, use_case);
+
+    endif;
+
     if(~isMeasurementDataStruct(msr))
         error('%s: Invalid data or measurement not set.', fname);
 
@@ -755,27 +828,13 @@ function irradiated = newIrradiatedDataset(msr, irrdt, scdt, varargin)
 
     endif;
 
-    if(~ischar(irrdt))
-        error( ...
-            strjoin({ ...
-                '%s: Invalid data type for function parameter \"irrdt\".', ...
-                'Expected \"char\", got \"%s\".' ...
-                }), ...
-            fname, ...
-            class(irrdt) ...
-            );
+    if(~ischar(irr_date))
+        error('%s: irr_date must be a date string (dd.mm.YYYY)', fname);
 
     endif;
 
-    if(~ischar(scdt))
-        error( ...
-            strjoin({ ...
-                '%s: Invalid data type for function parameter \"scdt\".', ...
-                'Expected \"char\", got \"%s\".' ...
-                }), ...
-            fname, ...
-            class(scdt) ...
-            );
+    if(~ischar(sc_date))
+        error('%s: sc_date must be a date string (dd.mm.YYYY)', fname);
 
     endif;
 
@@ -810,13 +869,9 @@ function irradiated = newIrradiatedDataset(msr, irrdt, scdt, varargin)
 
             % Display error and abort execution
             error( ...
-                strjoin({ ...
-                    '%s: Invalid data type for varargin{%d}.', ...
-                    'Expected \"char\", got \"%s\".' ...
-                    }), ...
+                '%s: varargin{%d} must be a string containing a path to a file', ...
                 fname, ...
-                idx, ...
-                class(varargin{idx}) ...
+                idx ...
                 );
 
         endif;
@@ -1151,8 +1206,8 @@ function irradiated = newIrradiatedDataset(msr, irrdt, scdt, varargin)
 
     % Fill the return structure with calculated data
     irradiated                    = struct();
-    irradiated.irradiation_date   = irrdt;
-    irradiated.scan_date          = scdt;
+    irradiated.irradiation_date   = irr_date;
+    irradiated.scan_date          = sc_date;
     irradiated.file_list          = varargin;
     irradiated.pixel_data         = pwmean;
     irradiated.standard_deviation = standard_deviation;
@@ -1160,6 +1215,17 @@ function irradiated = newIrradiatedDataset(msr, irrdt, scdt, varargin)
 endfunction;
 
 function result = isIrradiatedDataStruct(irr)
+
+    % Define common message strings
+    fname = 'isIrradiatedDataStruct';
+    use_case = ' -- result = isIrradiatedDataStruct(irr)';
+
+    % Validate input arguments
+    if(1 ~= nargin)
+        error('Invalid call to %s.  Correct usage is:\n\n%s', fname, use_case);
+
+    endif;
+
     result = false;
     if( ...
             isstruct(irr) ...
@@ -1191,14 +1257,20 @@ endfunction;
 % Background Data Structure Routines
 %
 % -----------------------------------------------------------------------------
-function background = newBackgroundDataset(msr, scdt, varargin)
+function background = newBackgroundDataset(msr, sc_date, varargin)
 
     % Define common window and message strings
     fname = 'newBackgroundDataset';
     window_title = 'RCT Analyze Raw Film: New Background Dataset';
     progress_tracker_title = 'New Background Dataset';
+    use_case = ' -- background = newBackgroundDataset(msr, sc_date, scan_1, scan_2, ...)';
 
     % Validate input arguments
+    if(3 > nargin)
+        error('Invalid call to %s.  Correct usage is:\n\n%s', fname, use_case);
+
+    endif;
+
     if(~isMeasurementDataStruct(msr))
         error('%s: Invalid data or measurement not set.', fname);
 
@@ -1209,15 +1281,8 @@ function background = newBackgroundDataset(msr, scdt, varargin)
 
     endif;
 
-    if(~ischar(scdt))
-        error( ...
-            strjoin({ ...
-                '%s: Invalid data type for function parameter \"scdt\".', ...
-                'Expected \"char\", got \"%s\".' ...
-                }), ...
-            fname, ...
-            class(scdt) ...
-            );
+    if(~ischar(sc_date))
+        error('%s: sc_date must be a date string (dd.mm.YYYY)', fname);
 
     endif;
 
@@ -1287,13 +1352,9 @@ function background = newBackgroundDataset(msr, scdt, varargin)
 
             % Display error and abort execution
             error( ...
-                strjoin({ ...
-                    '%s: Invalid data type for varargin{%d}.', ...
-                    'Expected \"char\", got \"%s\".' ...
-                    }), ...
+                '%s: varargin{%d} must be a string containing a path to a file', ...
                 fname, ...
-                idx, ...
-                class(varargin{idx}) ...
+                idx ...
                 );
 
         endif;
@@ -1630,7 +1691,7 @@ function background = newBackgroundDataset(msr, scdt, varargin)
 
     % Fill the return structure with calculated data
     background                    = struct();
-    background.scan_date          = scdt;
+    background.scan_date          = sc_date;
     background.file_list          = varargin;
     background.pixel_data         = pwmean;
     background.standard_deviation = standard_deviation;
@@ -1638,6 +1699,17 @@ function background = newBackgroundDataset(msr, scdt, varargin)
 endfunction;
 
 function result = isBackgroundDataStruct(bkg)
+
+    % Define common message strings
+    fname = 'isBackgroundDataStruct';
+    use_case = ' -- result = isBackgroundDataStruct(bkg)';
+
+    % Validate input arguments
+    if(1 ~= nargin)
+        error('Invalid call to %s.  Correct usage is:\n\n%s', fname, use_case);
+
+    endif;
+
     result = false;
     if( ...
             isstruct(bkg) ...
@@ -1667,14 +1739,20 @@ endfunction;
 % Zero Light Data Structure Routines
 %
 % -----------------------------------------------------------------------------
-function zero_light = newZeroLightDataset(msr, scdt, varargin)
+function zero_light = newZeroLightDataset(msr, sc_date, varargin)
 
     % Define common window and message strings
     fname = 'newZeroLightDataset';
     window_title = 'RCT Analyze Raw Film: New Zero-Light Dataset';
     progress_tracker_title = 'New Zero-Light Dataset';
+    use_case = ' -- zero_light = newZeroLightDataset(msr, sc_date, scan_1, scan_2, ...)';
 
     % Validate input arguments
+    if(3 > nargin)
+        error('Invalid call to %s.  Correct usage is:\n\n%s', fname, use_case);
+
+    endif;
+
     if(~isMeasurementDataStruct(msr))
         error('%s: Invalid data or measurement not set.', fname);
 
@@ -1685,15 +1763,8 @@ function zero_light = newZeroLightDataset(msr, scdt, varargin)
 
     endif;
 
-    if(~ischar(scdt))
-        error( ...
-            strjoin({ ...
-                '%s: Invalid data type for function parameter \"scdt\".', ...
-                'Expected \"char\", got \"%s\".' ...
-                }), ...
-            fname, ...
-            class(scdt) ...
-            );
+    if(~ischar(sc_date))
+        error('%s: sc_date must be a date string (dd.mm.YYYY)', fname);
 
     endif;
 
@@ -1763,13 +1834,9 @@ function zero_light = newZeroLightDataset(msr, scdt, varargin)
 
             % Display error and abort execution
             error( ...
-                strjoin({ ...
-                    '%s: Invalid data type for varargin{%d}.', ...
-                    'Expected \"char\", got \"%s\".' ...
-                    }), ...
+                '%s: varargin{%d} must be a string containing a path to a file', ...
                 fname, ...
-                idx, ...
-                class(varargin{idx}) ...
+                idx ...
                 );
 
         endif;
@@ -2106,7 +2173,7 @@ function zero_light = newZeroLightDataset(msr, scdt, varargin)
 
     % Fill the return structure with calculated data
     zero_light                    = struct();
-    zero_light.scan_date          = scdt;
+    zero_light.scan_date          = sc_date;
     zero_light.file_list          = varargin;
     zero_light.pixel_data         = pwmean;
     zero_light.standard_deviation = standard_deviation;
@@ -2114,6 +2181,17 @@ function zero_light = newZeroLightDataset(msr, scdt, varargin)
 endfunction;
 
 function result = isZeroLightDataStruct(zrl)
+
+    % Define common message strings
+    fname = 'isZeroLightDataStruct';
+    use_case = ' -- result = isZeroLightDataStruct(zrl)';
+
+    % Validate input arguments
+    if(1 ~= nargin)
+        error('Invalid call to %s.  Correct usage is:\n\n%s', fname, use_case);
+
+    endif;
+
     result = false;
     if( ...
             isstruct(zrl) ...
@@ -2148,10 +2226,15 @@ function dead_pixels_mask = newDeadPixelsMask(msr, threshold)
 
     % Define common window and message strings
     fname = 'newDeadPixelsMask';
-    window_title = 'RCT Analyze Raw Film: New Dead Pixels Mask';
     progress_tracker_title = 'New Dead Pixels Mask';
+    use_case = ' -- dead_pixels_mask = newDeadPixelsMask(msr, threshold)';
 
     % Validate input arguments
+    if(2 ~= nargin)
+        error('Invalid call to %s.  Correct usage is:\n\n%s', fname, use_case);
+
+    endif;
+
     if(~isMeasurementDataStruct(msr))
         error('%s: Invalid data or measurement not set.', fname);
 
@@ -2266,6 +2349,17 @@ function dead_pixels_mask = newDeadPixelsMask(msr, threshold)
 endfunction;
 
 function result = isDeadPixelsMaskStruct(dpm)
+
+    % Define common message strings
+    fname = 'isDeadPixelsMaskStruct';
+    use_case = ' -- result = isDeadPixelsMaskStruct(dpm)';
+
+    % Validate input arguments
+    if(1 ~= nargin)
+        error('Invalid call to %s.  Correct usage is:\n\n%s', fname, use_case);
+
+    endif;
+
     result = false;
     if( ...
             isstruct(dpm) ...
@@ -2292,11 +2386,16 @@ endfunction;
 % -----------------------------------------------------------------------------
 function optical_density = newOpticalDensity(msr)
 
-    % Define common window and message strings
+    % Define common message strings
     fname = 'newOpticalDensity';
-    window_title = 'RCT Analyze Raw Film: New Optical Density';
+    use_case = ' -- optical_density = newOpticalDensity(msr)';
 
     % Validate input arguments
+    if(1 ~= nargin)
+        error('Invalid call to %s.  Correct usage is:\n\n%s', fname, use_case);
+
+    endif;
+
     if(~isMeasurementDataStruct(msr))
         error('%s: Invalid data or measurement not set.', fname);
 
@@ -2341,29 +2440,68 @@ function optical_density = newOpticalDensity(msr)
 
 endfunction;
 
+function result = isOpticalDensityStruct(od)
+
+    % Define common message strings
+    fname = 'isOpticalDensityStruct';
+    use_case = ' -- result = isOpticalDensityStruct(od)';
+
+    % Validate input arguments
+    if(1 ~= nargin)
+        error('Invalid call to %s.  Correct usage is:\n\n%s', fname, use_case);
+
+    endif;
+
+    result = false;
+    if( ...
+            isstruct(od) ...
+            && isfield(dpm, 'pixel_data') ...
+            && ~isempty(dpm.pixel_data) ...
+            && (3 == size(dpm.pixel_data, 3)) ...
+            && ismatrix(dpm.pixel_data(:, :, 1)) ...
+            && ismatrix(dpm.pixel_data(:, :, 2)) ...
+            && ismatrix(dpm.pixel_data(:, :, 3)) ...
+            )
+        result = true;
+
+    endif;
+
+endfunction;
+
 % -----------------------------------------------------------------------------
 %
 % ROI Data Structure Routines
 %
 % -----------------------------------------------------------------------------
-function roi = newRoi(msr, rw)
+function roi = newRoi(msr, roi_window)
 
-    % Define common window and message strings
+    % Define common message strings
     fname = 'newRoi';
+    use_case = ' -- roi = newOpticalDensity(msr, roi_window)';
 
     % Validate input arguments
+    if(2 ~= nargin)
+        error('Invalid call to %s.  Correct usage is:\n\n%s', fname, use_case);
+
+    endif;
+
     if(~isMeasurementDataStruct(msr))
         error('%s: msr must be a Measurement object', fname);
 
     endif;
 
-    if(~isRoiWindow(rw))
-        error('%s: rw must be a ROI Window object', fname);
+    if(~isRoiWindow(roi_window))
+        error('%s: roi_window must be a ROI Window object', fname);
 
     endif;
 
     roi = struct();
-    roi.window = rw;
+    roi.window = roi_window;
+    roi.od = NaN;
+    roi.od_stdev = NaN;
+    roi.od_hist = NaN;
+    roi.snr = NaN;
+    roi.dead_pixels_count = NaN;
 
 endfunction;
 
@@ -2371,8 +2509,14 @@ function roi_window = newRoiWindow(x, y, rsize)
 
     % Define common window and message strings
     fname = 'newRoiWindow';
+    use_case = ' -- roi_window = newRoiWindow(x, y, rsize)';
 
     % Validate input arguments
+    if(3 ~= nargin)
+        error('Invalid call to %s.  Correct usage is:\n\n%s', fname, use_case);
+
+    endif;
+
     validateattributes( ...
         x, ...
         {'numeric'}, ...
@@ -2382,7 +2526,7 @@ function roi_window = newRoiWindow(x, y, rsize)
             'integer', ...
             'nonempty', ...
             'nonnan', ...
-            'scalar', ...
+            'scalar' ...
             }, ...
         fname, ...
         'x' ...
@@ -2396,7 +2540,7 @@ function roi_window = newRoiWindow(x, y, rsize)
             'integer', ...
             'nonempty', ...
             'nonnan', ...
-            'scalar', ...
+            'scalar' ...
             }, ...
         fname, ...
         'y' ...
@@ -2410,7 +2554,7 @@ function roi_window = newRoiWindow(x, y, rsize)
             'integer', ...
             'nonempty', ...
             'nonnan', ...
-            'scalar', ...
+            'scalar' ...
             }, ...
         fname, ...
         'rsize' ...
@@ -2421,6 +2565,16 @@ function roi_window = newRoiWindow(x, y, rsize)
 endfunction;
 
 function result = isRoiWindow(roi_window)
+
+    % Define common message strings
+    fname = 'isRoiWindow';
+    use_case = ' -- result = isRoiWindow(roi_window)';
+
+    % Validate input arguments
+    if(1 ~= nargin)
+        error('Invalid call to %s.  Correct usage is:\n\n%s', fname, use_case);
+
+    endif;
 
     result = true;
 
@@ -2451,26 +2605,20 @@ endfunction;
 
 function roi_extents = roiExtents(roi_window)
 
-    % Define common window and message strings
+    % Define common message strings
     fname = 'roiExtents';
+    use_case = ' -- roi_extents = roiExtents(roi_window)';
 
     % Validate input arguments
-    validateattributes( ...
-        roi_window, ...
-        {'numeric'}, ...
-        { ...
-            'nonempty', ...
-            'nonnan', ...
-            'row', ...
-            '2d', ...
-            'ncols', 3, ...
-            'nrows', 1, ...
-            'numel', 3, ...
-            'integer', ...
-            '>=', 0, ...
-            'finite' ...
-            } ...
-        );
+    if(1 ~= nargin)
+        error('Invalid call to %s.  Correct usage is:\n\n%s', fname, use_case);
+
+    endif;
+
+    if(~isRoiWindow(roi_window))
+        error('%s: roi_window must be a ROI Window object', fname);
+
+    endif;
 
     roi_extents = [0, 0, 0, 0];
     roi_extents(1) = roi_window(1) - round(roi_window(3)/2);
@@ -2480,11 +2628,53 @@ function roi_extents = roiExtents(roi_window)
 
 endfunction;
 
-function fit_roi = fitRoiToImageSpace(image_extents, roi_window)
+% -----------------------------------------------------------------------------
+%
+% Function 'fitRoiToImageSpace':
+%
+% -- fit_roi = itRoiToImageSpace(image_size, roi_window)
+%
+%     For image size given as two elements vector [image_width, image_height]
+%     and for given ROI window as three elements vector [roi_center_x,
+%     roi_center_y, roi_size] recalculate the new ROI window such that center
+%     of new ROI fits into image space (image extents) and return new ROI
+%     window. If center and size of ROI are already such that ROI fits into the
+%     image return the copy of original ROI window.
+%
+% -----------------------------------------------------------------------------
+function fit_roi = fitRoiToImageSpace(image_size, roi_window)
 
-    fit_roi = NaN;
+    % Define common message strings
+    fname = 'roiExtents';
+    use_case = ' -- fit_roi = itRoiToImageSpace(image_size, roi_window)';
 
-    % TODO: Put input validation here
+    % Validate input arguments
+    if(2 ~= nargin)
+        error('Invalid call to %s.  Correct usage is:\n\n%s', fname, use_case);
+
+    endif;
+
+    validateattributes( ...
+        image_size, ...
+        {'numeric'}, ...
+        { ...
+            'nonempty', ...
+            'nonnan', ...
+            'row', ...
+            '2d', ...
+            'numel', 2, ...
+            'integer', ...
+            '>=', 0, ...
+            'finite' ...
+            }, ...
+        fname, ...
+        'image_size' ...
+        );
+
+    if(~isRoiWindow(roi_window))
+        error('%s: roi_window must be a ROI Window object', fname);
+
+    endif;
 
     fit_roi = roi_window;
 
@@ -2492,15 +2682,15 @@ function fit_roi = fitRoiToImageSpace(image_extents, roi_window)
     % we can counteract rounding errors in ROI extents recalculation for ROIs
     % just few pixels smaller than image space (this is highly unlikely
     % scenario but ...)
-    if(min(image_extents(3) - 2, image_extents(4) - 2) <= roi_window(3))
+    if(min(image_size(1) - 2, image_size(2) - 2) <= roi_window(3))
         % This the case when ROI is larger than image extents. Set roi window
         % size to size of the shorter image border and put ROI in the center of
         % the image
-        fit_roi(1) = round(image_extents(3)/2);
-        fit_roi(2) = round(image_extents(4)/2);
+        fit_roi(1) = round(image_size(1)/2);
+        fit_roi(2) = round(image_size(2)/2);
         fit_roi(3) = 2*min( ...
-            min(image_extents(3) - fit_roi(1), fit_roi(1)), ...
-            min(image_extents(4) - fit_roi(2), fit_roi(2)) ...
+            min(image_size(1) - fit_roi(1), fit_roi(1)), ...
+            min(image_size(2) - fit_roi(2), fit_roi(2)) ...
             );
 
         return;
@@ -2542,13 +2732,37 @@ function fit_roi = fitRoiToImageSpace(image_extents, roi_window)
 
     endif;
 
-    if(image_extents(3) <= roi_extents(1) || image_extents(3) < roi_extents(3))
-        fit_roi(1) = roi_window(1) + (image_extents(3) - roi_extents(3));
+    if(image_size(1) <= roi_extents(1) || image_size(1) < roi_extents(3))
+        fit_roi(1) = roi_window(1) + (image_size(1) - roi_extents(3));
 
     endif;
 
-    if(image_extents(4) <= roi_extents(2) || image_extents(4) < roi_extents(4))
-        fit_roi(2) = roi_window(2) + (image_extents(4) - roi_extents(4));
+    if(image_size(2) <= roi_extents(2) || image_size(2) < roi_extents(4))
+        fit_roi(2) = roi_window(2) + (image_size(2) - roi_extents(4));
+
+    endif;
+
+endfunction;
+
+function od_mean = roiOpticalDensityMean(od_obj, roi_window)
+
+    % Define common message strings
+    fname = 'roiOpticalDensityMean';
+    use_case = ' -- od_mean = roiOpticalDensityMean(od_obj, roi_window)';
+
+    % Validate input arguments
+    if(2 ~= nargin)
+        error('Invalid call to %s.  Correct usage is:\n\n%s', fname, use_case);
+
+    endif;
+
+    if(~isOpticalDensityStruct(od_obj))
+        error('%s: Invalid data or optical density data set not set.', fname);
+
+    endif;
+
+    if(~isRoiWindow(roi_window))
+        error('%s: roi_window must be a ROI Window object', fname);
 
     endif;
 
@@ -3203,16 +3417,16 @@ function plotRect(hax, rect)
 
     % Store function name into variable for easier management of error messages
     fname = 'plotRect';
-    use_case_1 = ' -- plotRect(rect)';
-    use_case_1 = ' -- plotRect(hax, rect)';
+    use_case_a = ' -- plotRect(rect)';
+    use_case_b = ' -- plotRect(hax, rect)';
 
     % Validate input arguments
     if(2 < nargin || 0 == nargin)
         error( ...
             'Invalid call to %s.  Correct usage is:\n%s\n%s', ...
             fname, ...
-            use_case_1, ...
-            use_case_2 ...
+            use_case_a, ...
+            use_case_b ...
             );
 
     elseif(2 == nargin && ~ishandle(hax))
