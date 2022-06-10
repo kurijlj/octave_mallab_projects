@@ -90,7 +90,7 @@ function result = isAppDataStruct(app_obj)
 
     % Define common message strings
     fname = 'isAppDataStruct';
-    use_case = ' -- result = isAppDataStruct(scannerdb, filmdb)';
+    use_case = ' -- result = isAppDataStruct(app_obj)';
 
     % Validate input arguments
     if(1 ~= nargin)
