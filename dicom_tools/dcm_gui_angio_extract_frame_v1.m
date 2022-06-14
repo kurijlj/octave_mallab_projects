@@ -24,6 +24,10 @@
 % <Put documentation here>
 %
 %
+% 2022-06-14 Ljubomir Kurij <ljubomir_kurij@proton.me>
+%
+% * Renamed to: dcm_gui_angio_extract_frame_v1.m.
+%
 % 2022-06-10 Ljubomir Kurij <ljubomir_kurij@proton.me>
 %
 % * dcm_gui_angio_extract.m: created.
@@ -33,20 +37,14 @@
 
 % =============================================================================
 %
-% TODO:
-%
-% =============================================================================
-
-
-% =============================================================================
-%
-% References (this section should be deleted in the release version)
+% TODO: 1) Add app help
+%       2) Add app about
 %
 % =============================================================================
 
 
 % TODO: Remove following line when release is complete
-pkg_name = 'DICOM Toolbox'
+% pkg_name = 'DICOM Toolbox'
 
 
 % =============================================================================
@@ -63,7 +61,7 @@ pkg_name = 'DICOM Toolbox'
 %
 % -----------------------------------------------------------------------------
 % TODO: Rename script and function to the 'dcm_gui_angio_extract_v1' on release
-function dcm_gui_angio_extract()
+function dcm_gui_angio_extract_frame_v1()
 
     % Define common message strings
     fname = 'dcm_gui_angio_extract';
@@ -826,9 +824,9 @@ function position = uiFrameExtractPanelElementsPosition(gui_handle)
     position = [];
 
     % Calculate elements position
-    parent_extents = getpixelposition(gui_handle.main_panel);
+    parent_extents = getpixelposition(gui_handle.frame_extract_panel);
     height = abs(parent_extents(4) - parent_extents(2));
-    width = abs(parent_extents(3) - parent_extents(1))*0.30;
+    width = abs(parent_extents(3) - parent_extents(1));
     rel_row_height = gui_handle.row_height/height;
     rel_vpadding = gui_handle.padding/height;
     rel_hpadding = gui_handle.padding/width;
@@ -935,7 +933,7 @@ function uiLoadExam(src, evt)
         );
     text( ...
         'parent', app.gui.frame_axes, ...
-        50, 30, ...
+        70, 30, ...
         sprintf('Frame: %d', dicom_data.selected_frame), ...
         'color', [1 1 0], ...
         'fontsize', 24, ...
@@ -944,35 +942,35 @@ function uiLoadExam(src, evt)
         );
 
     set(app.gui.frame_select, 'min', 1);
-    set(app.gui.frame_select, 'max', size(dicom_data.pixel_data, 3));
+    set(app.gui.frame_select, 'max', size(app.dicom_data.pixel_data, 3));
     set( ...
         app.gui.frame_select, ...
         'sliderstep', ...
         [ ...
-            1/(size(dicom_data.pixel_data, 3) - 1), ...
-            1/(size(dicom_data.pixel_data, 3) - 1) ...
+            1/(size(app.dicom_data.pixel_data, 3) - 1), ...
+            1/(size(app.dicom_data.pixel_data, 3) - 1) ...
             ] ...
         );
-    set(app.gui.frame_select, 'value', dicom_data.selected_frame);
+    set(app.gui.frame_select, 'value', app.dicom_data.selected_frame);
     set(app.gui.frame_select, 'enable', 'on');
 
     % Update patient and study data info
-    if(isfield('PatientName', dicom_data.info))
-        set(app.gui.name_view, 'string', dicom_data.info.PatientName);
+    if(isfield(app.dicom_data.info, 'PatientName'))
+        set(app.gui.name_view, 'string', app.dicom_data.info.PatientName);
 
     else
         set(app.gui.name_view, 'string', 'N/A');
 
     endif;
-    if(isfield('PatientID', dicom_data.info))
-        set(app.gui.id_view, 'string', dicom_data.info.PatientID);
+    if(isfield(app.dicom_data.info, 'PatientID'))
+        set(app.gui.id_view, 'string', app.dicom_data.info.PatientID);
 
     else
         set(app.gui.id_view, 'string', 'N/A');
 
     endif;
-    if(isfield('StudyDescription', dicom_data.info))
-        set(app.gui.study_view, 'string', dicom_data.info.StudyDescription);
+    if(isfield(app.dicom_data.info, 'StudyDescription'))
+        set(app.gui.study_view, 'string', app.dicom_data.info.StudyDescription);
 
     else
         set(app.gui.study_view, 'string', 'N/A');
