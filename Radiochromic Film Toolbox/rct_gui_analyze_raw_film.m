@@ -61,21 +61,22 @@ pkg_name = 'Radiochromic Toolbox'
 
 % -----------------------------------------------------------------------------
 %
-% App 'rct_gui_analyze_film':
+% App 'rct_gui_analyze_raw_film_v1':
 %
 % -- rct_gui_analyze_raw_film()
 %
 % -----------------------------------------------------------------------------
-% TODO: Rename script's name and function's name to
-%       rct_gui_analyze_raw_film_v1' when release is complete
-function rctGuiAnalyzeRawFilm()
+function rct_gui_analyze_raw_film_v1()
+
+    % Define common message strings
+    fname = 'rct_gui_analyze_raw_film_v1';
 
     % Initialize GUI toolkit
     graphics_toolkit qt;
 
     % Initialize structure for keeping app data
-    app = newApp(app, 'scannerdb.csv', 'filmdb.csv');
-    app = buildGUI(app);
+    app = newApp('scannerdb.csv', 'filmdb.csv');
+    app = newGui(app);
     guidata(gcf(), app);
 
     % Update display
@@ -91,13 +92,18 @@ endfunction;
 
 % =============================================================================
 %
-% Data Handling and Manipulation Routines Section
+% Application Data Structure Section
 %
 % =============================================================================
 
 % -----------------------------------------------------------------------------
 %
-% Application Data Structure Routines
+% Function: newApp
+%
+% Use:
+%       -- app = newApp(scannerdb, filmdb)
+%
+% Description: TODO: Put function description here
 %
 % -----------------------------------------------------------------------------
 function app = newApp(scannerdb, filmdb)
@@ -130,6 +136,16 @@ function app = newApp(scannerdb, filmdb)
 
 endfunction;
 
+% -----------------------------------------------------------------------------
+%
+% Function: isAppDataStruct
+%
+% Use:
+%       -- result = isAppDataStruct(app_obj)
+%
+% Description: TODO: Put function description here
+%
+% -----------------------------------------------------------------------------
 function result = isAppDataStruct(app_obj)
 
     % Define common message strings
@@ -158,9 +174,20 @@ function result = isAppDataStruct(app_obj)
 
 endfunction;
 
+% =============================================================================
+%
+% Measurement Data Structure Section
+%
+% =============================================================================
+
 % -----------------------------------------------------------------------------
 %
-% Measurement Data Structure Routines
+% Function: newMeasurement
+%
+% Use:
+%       -- measurement = newMeasurement(title=NaN, date=NaN)
+%
+% Description: TODO: Put function description here
 %
 % -----------------------------------------------------------------------------
 function measurement = newMeasurement(title=NaN, date=NaN)

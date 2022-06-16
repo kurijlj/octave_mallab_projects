@@ -39,6 +39,7 @@
 %
 % TODO: 1) Add app help
 %       2) Add app about
+%       3) Add code docummentation
 %
 % =============================================================================
 
@@ -60,7 +61,6 @@
 % -- dcm_gui_angio_extract_v1()
 %
 % -----------------------------------------------------------------------------
-% TODO: Rename script and function to the 'dcm_gui_angio_extract_v1' on release
 function dcm_gui_angio_extract_frame_v1()
 
     % Define common message strings
@@ -122,7 +122,7 @@ endfunction;
 % Function: isAppDataStruct
 %
 % Use:
-%       -- result = isAppDataStruct()
+%       -- result = isAppDataStruct(app_obj)
 %
 % Description: TODO: Put function description here
 %
