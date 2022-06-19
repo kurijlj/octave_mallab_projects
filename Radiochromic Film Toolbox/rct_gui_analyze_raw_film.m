@@ -76,7 +76,7 @@ function rct_gui_analyze_raw_film_v1()
 
     % Initialize structure for keeping app data
     app = newApp('scannerdb.csv', 'filmdb.csv');
-    app = newGui(app);
+    app.gui = uiNewGui(app);
     guidata(gcf(), app);
 
     % Update display
@@ -86,7 +86,6 @@ function rct_gui_analyze_raw_film_v1()
     uiwait(app.gui.main_figure);
 
 endfunction;
-
 
 
 
@@ -174,6 +173,8 @@ function result = isAppDataStruct(app_obj)
 
 endfunction;
 
+
+
 % =============================================================================
 %
 % Measurement Data Structure Section
@@ -248,6 +249,16 @@ function measurement = newMeasurement(title=NaN, date=NaN)
 
 endfunction;
 
+% -----------------------------------------------------------------------------
+%
+% Function: isMeasurementDataStruct
+%
+% Use:
+%       -- result = isMeasurementDataStruct(msr)
+%
+% Description: TODO: Put function description here
+%
+% -----------------------------------------------------------------------------
 function result = isMeasurementDataStruct(msr)
 
     % Define common message strings
@@ -285,6 +296,16 @@ function result = isMeasurementDataStruct(msr)
 
 endfunction;
 
+% -----------------------------------------------------------------------------
+%
+% Function: stripPixelData
+%
+% Use:
+%       -- result = stripPixelData(msr)
+%
+% Description: TODO: Put function description here
+%
+% -----------------------------------------------------------------------------
 function result = stripPixelData(msr)
 
     % Define common message strings
@@ -346,6 +367,16 @@ function result = stripPixelData(msr)
 
 endfunction;
 
+% -----------------------------------------------------------------------------
+%
+% Function: exportMsrToJson
+%
+% Use:
+%       -- result = exportMsrToJson(msr)
+%
+% Description: TODO: Put function description here
+%
+% -----------------------------------------------------------------------------
 function result = exportMsrToJson(msr)
 
     % Define common message strings
@@ -371,9 +402,22 @@ function result = exportMsrToJson(msr)
 
 endfunction;
 
+
+
+% =============================================================================
+%
+% Scanner Device Data Structure Section
+%
+% =============================================================================
+
 % -----------------------------------------------------------------------------
 %
-% Scanner Device Data Structure Routines
+% Function: newScannerDevice
+%
+% Use:
+%       -- device = newScannerDevice(scannerdb=NaN, item=1)
+%
+% Description: TODO: Put function description here
 %
 % -----------------------------------------------------------------------------
 function device = newScannerDevice(scannerdb=NaN, item=1)
@@ -439,9 +483,20 @@ function device = newScannerDevice(scannerdb=NaN, item=1)
     device.resolution_unit     = device_list{item + 1, 5};
     device.scanning_mode       = device_list{item + 1, 6};
     device.scanning_resolution = device_list{item + 1, 7};
+    device.film_fixation       = device_list{item + 1, 8};
 
 endfunction;
 
+% -----------------------------------------------------------------------------
+%
+% Function: isScannerDeviceStruct
+%
+% Use:
+%       -- result = isScannerDeviceStruct(sd)
+%
+% Description: TODO: Put function description here
+%
+% -----------------------------------------------------------------------------
 function result = isScannerDeviceStruct(sd)
 
     % Define common message strings
@@ -471,6 +526,8 @@ function result = isScannerDeviceStruct(sd)
             && ischar(sd.scanning_mode) ...
             && isfield(sd, 'scanning_resolution') ...
             && ischar(sd.scanning_resolution) ...
+            && isfield(sd, 'film_fixation') ...
+            && ischar(sd.film_fixation) ...
             )
         result = true;
 
@@ -478,6 +535,16 @@ function result = isScannerDeviceStruct(sd)
 
 endfunction;
 
+% -----------------------------------------------------------------------------
+%
+% Function: loadScannerDatabase
+%
+% Use:
+%       -- device_list = loadScannerDatabase(dbfile=NaN)
+%
+% Description: TODO: Put function description here
+%
+% -----------------------------------------------------------------------------
 function device_list = loadScannerDatabase(dbfile=NaN)
 
     % Define common window and message strings
@@ -499,7 +566,9 @@ function device_list = loadScannerDatabase(dbfile=NaN)
         'Native Resolution', ...
         'Resolution Unit', ...
         'Scanning Mode', ...
-        'Scanning Resolution'; ...
+        'Scanning Resolution',
+        'Film Fixation'; ...
+        'Unknown', ...
         'Unknown', ...
         'Unknown', ...
         'Unknown', ...
@@ -565,6 +634,16 @@ function device_list = loadScannerDatabase(dbfile=NaN)
 
 endfunction;
 
+% -----------------------------------------------------------------------------
+%
+% Function: scannerDatabaseExists
+%
+% Use:
+%       -- result = scannerDatabaseExists(dbfile=NaN)
+%
+% Description: TODO: Put function description here
+%
+% -----------------------------------------------------------------------------
 function result = scannerDatabaseExists(dbfile=NaN)
 
     % Store function name into variable for easier management of error messages
@@ -586,14 +665,37 @@ function result = scannerDatabaseExists(dbfile=NaN)
 
 endfunction;
 
+% -----------------------------------------------------------------------------
+%
+% Function: scannerDatabaseIntegrityOk
+%
+% Use:
+%       -- result = scannerDatabaseIntegrityOk(path_to_file)
+%
+% Description: TODO: Put function description here
+%
+% -----------------------------------------------------------------------------
 function result = scannerDatabaseIntegrityOk(path_to_file=NaN)
     % TODO: Add function implementation here
 
 endfunction;
 
+
+
+% =============================================================================
+%
+% Film Data Structure Section
+%
+% =============================================================================
+
 % -----------------------------------------------------------------------------
 %
-% Film Data Structure Routines
+% Function: newFilm
+%
+% Use:
+%       -- film = newFilm(filmdb=NaN, item=1)
+%
+% Description: TODO: Put function description here
 %
 % -----------------------------------------------------------------------------
 function film = newFilm(filmdb=NaN, item=1)
@@ -658,6 +760,16 @@ function film = newFilm(filmdb=NaN, item=1)
 
 endfunction;
 
+% -----------------------------------------------------------------------------
+%
+% Function: isFilmStruct
+%
+% Use:
+%       -- result = isFilmStruct(film)
+%
+% Description: TODO: Put function description here
+%
+% -----------------------------------------------------------------------------
 function result = isFilmStruct(film)
 
     % Define common message strings
@@ -686,6 +798,16 @@ function result = isFilmStruct(film)
 
 endfunction;
 
+% -----------------------------------------------------------------------------
+%
+% Function: loadFilmDatabase
+%
+% Use:
+%       -- film_list = loadFilmDatabase(dbfile=NaN)
+%
+% Description: TODO: Put function description here
+%
+% -----------------------------------------------------------------------------
 function film_list = loadFilmDatabase(dbfile=NaN)
 
     % Define common window and message strings
@@ -766,6 +888,16 @@ function film_list = loadFilmDatabase(dbfile=NaN)
 
 endfunction;
 
+% -----------------------------------------------------------------------------
+%
+% Function: filmDatabaseExists
+%
+% Use:
+%       -- result = filmDatabaseExists(dbfile=NaN)
+%
+% Description: TODO: Put function description here
+%
+% -----------------------------------------------------------------------------
 function result = filmDatabaseExists(dbfile=NaN)
 
     % Store function name into variable for easier management of error messages
@@ -787,14 +919,42 @@ function result = filmDatabaseExists(dbfile=NaN)
 
 endfunction;
 
+% -----------------------------------------------------------------------------
+%
+% Function: filmDatabaseIntegrityOk
+%
+% Use:
+%       -- result = filmDatabaseIntegrityOk(path_to_file)
+%
+% Description: TODO: Put function description here
+%
+% -----------------------------------------------------------------------------
 function result = filmDatabaseIntegrityOk(path_to_file)
     % TODO: Add function implementation here
 
 endfunction;
 
+
+
+% =============================================================================
+%
+% Field Data Structure Section
+%
+% =============================================================================
+
 % -----------------------------------------------------------------------------
 %
-% Field Data Structure Routines
+% Function: newField
+%
+% Use:
+%       -- field = newField( ...
+%               beam_type='Unknown', ...
+%               beam_energy='Unknown', ...
+%               field_shape='Unknown', ...
+%               field_size='Unknown' ...
+%               )
+%
+% Description: TODO: Put function description here
 %
 % -----------------------------------------------------------------------------
 function field = newField( ...
@@ -813,6 +973,12 @@ function field = newField( ...
         error('%s: beam_type must be a string', fname);
 
     endif;
+    validatestring( ...
+        beam_type, ...
+        {'Unknown', 'Photon', 'Electron', 'Proton'}, ...
+        fname, ...
+        'field_shape' ...
+        );
 
     if(~ischar(beam_energy))
         error('%s: beam_energy must be a string', fname);
@@ -843,6 +1009,16 @@ function field = newField( ...
 
 endfunction;
 
+% -----------------------------------------------------------------------------
+%
+% Function: isFieldStruct
+%
+% Use:
+%       -- result = isFieldStruct(field)
+%
+% Description: TODO: Put function description here
+%
+% -----------------------------------------------------------------------------
 function result = isFieldStruct(field)
 
     % Define common message strings
@@ -873,9 +1049,22 @@ function result = isFieldStruct(field)
 
 endfunction;
 
+
+
+% =============================================================================
+%
+% Pixel Data Smoothing Structure Section
+%
+% =============================================================================
+
 % -----------------------------------------------------------------------------
 %
-% Pixel Data Smoothing Structure Routines
+% Function: newPixelDataSmoothing
+%
+% Use:
+%       -- smoothing = newPixelDataSmoothing(method='none', window=[])
+%
+% Description: TODO: Put function description here
 %
 % -----------------------------------------------------------------------------
 function smoothing = newPixelDataSmoothing(method='none', window=[])
@@ -929,6 +1118,16 @@ function smoothing = newPixelDataSmoothing(method='none', window=[])
 
 endfunction;
 
+% -----------------------------------------------------------------------------
+%
+% Function: isPixelDataSmoothingStruct
+%
+% Use:
+%       -- result = isPixelDataSmoothingStruct(smt)
+%
+% Description: TODO: Put function description here
+%
+% -----------------------------------------------------------------------------
 function result = isPixelDataSmoothingStruct(smt)
 
     % Define common message strings
@@ -955,9 +1154,22 @@ function result = isPixelDataSmoothingStruct(smt)
 
 endfunction;
 
+
+
+% =============================================================================
+%
+% Irradiated Data Structure Section
+%
+% =============================================================================
+
 % -----------------------------------------------------------------------------
 %
-% Irradiated Data Structure Routines
+% Function: newIrradiatedDataset
+%
+% Use:
+%       -- irradiated = newIrradiatedDataset(msr, irr_date, sc_date, sc_path1, sc_path2, ...)
+%
+% Description: TODO: Put function description here
 %
 % -----------------------------------------------------------------------------
 function irradiated = newIrradiatedDataset(msr, irr_date, sc_date, varargin)
@@ -1436,6 +1648,16 @@ function irradiated = newIrradiatedDataset(msr, irr_date, sc_date, varargin)
 
 endfunction;
 
+% -----------------------------------------------------------------------------
+%
+% Function: isIrradiatedDataStruct
+%
+% Use:
+%       -- result = isIrradiatedDataStruct(irr)
+%
+% Description: TODO: Put function description here
+%
+% -----------------------------------------------------------------------------
 function result = isIrradiatedDataStruct(irr)
 
     % Define common message strings
@@ -1474,9 +1696,22 @@ function result = isIrradiatedDataStruct(irr)
 
 endfunction;
 
+
+
+% =============================================================================
+%
+% Background Data Structure Section
+%
+% =============================================================================
+
 % -----------------------------------------------------------------------------
 %
-% Background Data Structure Routines
+% Function: newBackgroundDataset
+%
+% Use:
+%       -- background = newBackgroundDataset(msr, sc_date, sc_path1, sc_path2, ...)
+%
+% Description: TODO: Put function description here
 %
 % -----------------------------------------------------------------------------
 function background = newBackgroundDataset(msr, sc_date, varargin)
@@ -1986,6 +2221,16 @@ function background = newBackgroundDataset(msr, sc_date, varargin)
 
 endfunction;
 
+% -----------------------------------------------------------------------------
+%
+% Function: isBackgroundDataStruct
+%
+% Use:
+%       -- result = isBackgroundDataStruct(bkg)
+%
+% Description: TODO: Put function description here
+%
+% -----------------------------------------------------------------------------
 function result = isBackgroundDataStruct(bkg)
 
     % Define common message strings
@@ -2022,9 +2267,22 @@ function result = isBackgroundDataStruct(bkg)
 
 endfunction;
 
+
+
+% =============================================================================
+%
+% Zero Light Data Structure Section
+%
+% =============================================================================
+
 % -----------------------------------------------------------------------------
 %
-% Zero Light Data Structure Routines
+% Function: newZeroLightDataset
+%
+% Use:
+%       -- zero_ight = newZeroLightDataset(msr, sc_date, sc_path1, sc_path2, ...)
+%
+% Description: TODO: Put function description here
 %
 % -----------------------------------------------------------------------------
 function zero_light = newZeroLightDataset(msr, sc_date, varargin)
@@ -2534,6 +2792,16 @@ function zero_light = newZeroLightDataset(msr, sc_date, varargin)
 
 endfunction;
 
+% -----------------------------------------------------------------------------
+%
+% Function: isZeroLightDataStruct
+%
+% Use:
+%       -- result = isZeroLightDataStruct(zrl)
+%
+% Description: TODO: Put function description here
+%
+% -----------------------------------------------------------------------------
 function result = isZeroLightDataStruct(zrl)
 
     % Define common message strings
@@ -2570,12 +2838,24 @@ function result = isZeroLightDataStruct(zrl)
 
 endfunction;
 
-% -----------------------------------------------------------------------------
-%
-% Dead Pixels Data Structure Routines
-%
-% -----------------------------------------------------------------------------
 
+
+% =============================================================================
+%
+% Dead Pixels Mask Data Structure Section
+%
+% =============================================================================
+
+% -----------------------------------------------------------------------------
+%
+% Function: newDeadPixelsMask
+%
+% Use:
+%       -- dead_pixels_mask = newDeadPixelsMask(msr, threshod)
+%
+% Description: TODO: Put function description here
+%
+% -----------------------------------------------------------------------------
 function dead_pixels_mask = newDeadPixelsMask(msr, threshold)
 
     % Define common window and message strings
@@ -2735,6 +3015,16 @@ function dead_pixels_mask = newDeadPixelsMask(msr, threshold)
 
 endfunction;
 
+% -----------------------------------------------------------------------------
+%
+% Function: isDeadPixelsMaskStruct
+%
+% Use:
+%       -- result = isDeadPixelsMaskStruct(dpm)
+%
+% Description: TODO: Put function description here
+%
+% -----------------------------------------------------------------------------
 function result = isDeadPixelsMaskStruct(dpm)
 
     % Define common message strings
@@ -2766,9 +3056,22 @@ function result = isDeadPixelsMaskStruct(dpm)
 
 endfunction;
 
+
+
+% =============================================================================
+%
+% Optical Density Data Structure Section
+%
+% =============================================================================
+
 % -----------------------------------------------------------------------------
 %
-% Optical Density Data Structure Routines
+% Function: newOpticalDensity
+%
+% Use:
+%       -- optical_density = newOpticalDensity(msr)
+%
+% Description: TODO: Put function description here
 %
 % -----------------------------------------------------------------------------
 function optical_density = newOpticalDensity(msr)
@@ -2827,6 +3130,16 @@ function optical_density = newOpticalDensity(msr)
 
 endfunction;
 
+% -----------------------------------------------------------------------------
+%
+% Function: isOpticalDensityStruct
+%
+% Use:
+%       -- result = isOpticalDensityStruct(od)
+%
+% Description: TODO: Put function description here
+%
+% -----------------------------------------------------------------------------
 function result = isOpticalDensityStruct(od)
 
     % Define common message strings
@@ -2855,9 +3168,22 @@ function result = isOpticalDensityStruct(od)
 
 endfunction;
 
+
+
+% =============================================================================
+%
+% ROI Density Data Structure Section
+%
+% =============================================================================
+
 % -----------------------------------------------------------------------------
 %
-% ROI Data Structure Routines
+% Function: newRoi
+%
+% Use:
+%       -- roi = newRoi(msr, roi_window)
+%
+% Description: TODO: Put function description here
 %
 % -----------------------------------------------------------------------------
 function roi = newRoi(msr, roi_window)
@@ -2953,6 +3279,16 @@ function roi = newRoi(msr, roi_window)
 
 endfunction;
 
+% -----------------------------------------------------------------------------
+%
+% Function: newRoiWindow
+%
+% Use:
+%       -- roi_window = newRoiWindow(x, y, rsize)
+%
+% Description: TODO: Put function description here
+%
+% -----------------------------------------------------------------------------
 function roi_window = newRoiWindow(x, y, rsize)
 
     % Define common window and message strings
@@ -3012,6 +3348,16 @@ function roi_window = newRoiWindow(x, y, rsize)
 
 endfunction;
 
+% -----------------------------------------------------------------------------
+%
+% Function: isRoiWindow
+%
+% Use:
+%       -- result = isRoiWindow(roi_window)
+%
+% Description: TODO: Put function description here
+%
+% -----------------------------------------------------------------------------
 function result = isRoiWindow(roi_window)
 
     % Define common message strings
@@ -3051,6 +3397,16 @@ function result = isRoiWindow(roi_window)
 
 endfunction;
 
+% -----------------------------------------------------------------------------
+%
+% Function: roiExtents
+%
+% Use:
+%       -- roi_extents = roiExtents(roi_window)
+%
+% Description: TODO: Put function description here
+%
+% -----------------------------------------------------------------------------
 function roi_extents = roiExtents(roi_window)
 
     % Define common message strings
@@ -3192,6 +3548,16 @@ function fit_roi = fitRoiToImageSpace(image_size, roi_window)
 
 endfunction;
 
+% -----------------------------------------------------------------------------
+%
+% Function: roiDeadPixelsMask
+%
+% Use:
+%       -- roi_msk = roiDeadPixelsMask(dp_mask, roi_window)
+%
+% Description: TODO: Put function description here
+%
+% -----------------------------------------------------------------------------
 function roi_msk = roiDeadPixelsMask(dp_mask, roi_window)
 
     % Define common message strings
@@ -3224,6 +3590,16 @@ function roi_msk = roiDeadPixelsMask(dp_mask, roi_window)
 
 endfunction;
 
+% -----------------------------------------------------------------------------
+%
+% Function: roiOpticalDensityMean
+%
+% Use:
+%       -- od_mean = roiOpticalDensityMean(od_obj, dp_mask, roi_window)
+%
+% Description: TODO: Put function description here
+%
+% -----------------------------------------------------------------------------
 function od_mean = roiOpticalDensityMean(od_obj, dp_mask, roi_window)
 
     % Define common message strings
@@ -3265,6 +3641,16 @@ function od_mean = roiOpticalDensityMean(od_obj, dp_mask, roi_window)
 
 endfunction;
 
+% -----------------------------------------------------------------------------
+%
+% Function: roiOpticalDensityStd
+%
+% Use:
+%       -- od_std = roiOpticalDensityStd(od_obj, dp_mask, roi_window)
+%
+% Description: TODO: Put function description here
+%
+% -----------------------------------------------------------------------------
 function od_std = roiOpticalDensityStd(od_obj, dp_mask, roi_window)
 
     % Define common message strings
@@ -3306,6 +3692,16 @@ function od_std = roiOpticalDensityStd(od_obj, dp_mask, roi_window)
 
 endfunction;
 
+% -----------------------------------------------------------------------------
+%
+% Function: roiOpticalDensityHist
+%
+% Use:
+%       -- od_hist = roiOpticalDensityHist(od_obj, dp_mask, roi_window, nbins)
+%
+% Description: TODO: Put function description here
+%
+% -----------------------------------------------------------------------------
 function od_hist = roiOpticalDensityHist(od_obj, dp_mask, roi_window, nbins)
 
     % Define common message strings
@@ -3410,6 +3806,16 @@ function od_hist = roiOpticalDensityHist(od_obj, dp_mask, roi_window, nbins)
 
 endfunction;
 
+% -----------------------------------------------------------------------------
+%
+% Function: roiSnr
+%
+% Use:
+%       -- roi_snr = roiSnr(irr, bkg, zrl, dp_mask, roi_window)
+%
+% Description: TODO: Put function description here
+%
+% -----------------------------------------------------------------------------
 function roi_snr = roiSnr(irr, bkg, zrl, dp_mask, roi_window)
 
     % Define common message strings
@@ -3495,9 +3901,22 @@ function roi_snr = roiSnr(irr, bkg, zrl, dp_mask, roi_window)
 
 endfunction;
 
+
+
+% =============================================================================
+%
+% Auxiliary Data Processing Routines Section
+%
+% =============================================================================
+
 % -----------------------------------------------------------------------------
 %
-% Function 'rms' - calculate a RMS value for the given array of numbers
+% Function: rms
+%
+% Use:
+%       -- result = rms(X)
+%
+% Description: calculate a RMS value for the given array of numbers
 %
 % -----------------------------------------------------------------------------
 function result = rms(X)
@@ -3513,11 +3932,15 @@ endfunction;
 
 % -----------------------------------------------------------------------------
 %
-% Function 'renderImageFrom2DMatrix' - render 2D matrix data to the data format
-% displayable on the screen
+% Function: renderImageFrom2DMatrix
+%
+% Use:
+%       -- I = renderImageFrom2DMatrix(M)
+%
+% Description: render 2D matrix data as an monochrome image
 %
 % -----------------------------------------------------------------------------
-function I = renderImageFromMatrix(M)
+function I = renderImageFrom2DMatrix(M)
 
     % TODO: Put input validation here
 
@@ -3533,8 +3956,12 @@ endfunction;
 
 % -----------------------------------------------------------------------------
 %
-% Function 'renderImageFrom3DMatrix' - Render 3D matrix data to the data format
-% displayable on the screen
+% Function: renderImageFrom3DMatrix
+%
+% Use:
+%       -- I = renderImageFrom3DMatrix(M)
+%
+% Description: render 3D matrix data as an RGB image
 %
 % -----------------------------------------------------------------------------
 function I = renderImageFrom3DMatrix(M)
@@ -3558,8 +3985,13 @@ endfunction;
 
 % -----------------------------------------------------------------------------
 %
-% Function 'milimetersToPixels' - convert length from limeters to pixels
-% according to given 'dpi'
+% Function: milimetersToPixels
+%
+% Use:
+%       -- len_px = milimetersToPixels(dpi, len_mm)
+%
+% Description: for given length in milimeters and given dpi calculate the
+%              corresponding length in pixels
 %
 % -----------------------------------------------------------------------------
 function len_px = milimetersToPixels(dpi, len_mm)
@@ -3572,8 +4004,13 @@ endfunction;
 
 % -----------------------------------------------------------------------------
 %
-% Function 'pixelsToMilimeters' - convert length from pixels to milimeters
-% according to given 'dpi'
+% Function: pixelsToMilimeters
+%
+% Use:
+%       -- len_mm = pixelsToMilimeters(dpi, len_px)
+%
+% Description: for given length in pixels and given dpi calculate the
+%              coressponding length in milimeters
 %
 % -----------------------------------------------------------------------------
 function len_mm = pixelsToMilimeters(dpi, len_px)
@@ -3589,9 +4026,113 @@ endfunction;
 
 % =============================================================================
 %
-% GUI Creation Section
+% GUI Routines Section
 %
 % =============================================================================
+
+% -----------------------------------------------------------------------------
+%
+% Function: uiNewGui
+%
+% Use:
+%       -- gui = uiNewGui(app_obj)
+%
+% Description: TODO: Put function description here
+%
+% -----------------------------------------------------------------------------
+function gui = uiNewGui(app_obj)
+
+    % Allocate structure for storing gui elemnents ----------------------------
+    gui = struct();
+
+    % Create main figure ------------------------------------------------------
+    gui.main_figure = figure( ...
+        'name', 'RCT Analyze Film', ...
+        'tag', 'main_figure', ...
+        'menubar', 'none', ...
+        % 'sizechangedfcn', @uiResize, ... %TODO: remove comment when all GUI elemts implemented
+        'position', uiCalculateInitialPosition(get(0, 'ScreenSize')) ...
+        );
+
+    % Create custom menu bar --------------------------------------------------
+
+    % Create file menu and file menu entries
+    gui.file_menu = uimenu( ...
+        'parent', gui.main_figure, ...
+        'tag', 'file_menu', ...
+        'label', '&File', ...
+        'accelerator', 'f' ...
+        );
+    gui.fm_new_measurement = uimenu( ...
+        'parent', gui.file_menu, ...
+        'tag', 'fm_new_measurement', ...
+        'label', 'New &Measurement', ...
+        'accelerator', 'm', ...
+        'callback', @(src, evt)uiNewMeasurement(app_obj) ...
+        );
+    gui.fm_export_to_workspace = uimenu( ...
+        'parent', gui.file_menu, ...
+        'tag', 'fm_export_to_workspace', ...
+        'label', 'Export Measurement to &Workspace', ...
+        'accelerator', 'w', ...
+        'separator', 'on', ...
+        'callback', @(src, evt)uiExportTo('workspace') ...
+        );
+    gui.fm_export_to_json = uimenu( ...
+        'parent', gui.file_menu, ...
+        'tag', 'fm_export_to_json', ...
+        'label', 'Export Measurement to &JSON File', ...
+        'accelerator', 'j', ...
+        'callback', @(src, evt)uiExportTo('file') ...
+        );
+    gui.fm_quit = uimenu( ...
+        'parent', gui.file_menu, ...
+        'tag', 'fm_quit', ...
+        'label', '&Quit', ...
+        'accelerator', 'q', ...
+        'separator', 'on', ...
+        'callback', @uiQuit ...
+        );
+
+    % Create help menu and help menu entries
+    gui.help_menu = uimenu( ...
+        'parent', gui.main_figure, ...
+        'tag', 'help_menu', ...
+        'label', '&Help', ...
+        'accelerator', 'h' ...
+        );
+    gui.hm_help = uimenu( ...
+        'parent', gui.help_menu, ...
+        'tag', 'hm_help', ...
+        'label', 'Help on &Application', ...
+        'accelerator', 'a', ...
+        'enable', 'off', ...
+        'callback', @uiAppHelp ...
+        );
+    gui.hm_about = uimenu( ...
+        'parent', gui.help_menu, ...
+        'tag', 'hm_about', ...
+        'label', 'A&bout', ...
+        'accelerator', 'b', ...
+        'separator', 'on', ...
+        'enable', 'off', ...
+        'callback', @uiAppAbout ...
+        );
+
+    % Create main panel -------------------------------------------------------
+    gui.main_panel = uipanel( ...
+        'parent', gui.main_figure, ...
+        'tag', 'main_panel', ...
+        'bordertype', 'none', ...
+        'position', [0, 0, 1, 1] ...
+        );
+
+
+    % % Define dimensions for panel elements with fixed size
+    gui.padding = 5;
+    gui.control_panel_width = 300;
+
+endfunction;
 
 % -----------------------------------------------------------------------------
 %
@@ -4040,10 +4581,506 @@ endfunction;
 % Menu Bar Callbacks Section
 %
 % -----------------------------------------------------------------------------
-function uiLoadScanset(scantype)
+function uiNewMeasurement(app_obj)
+
+    app_obj.measurement = newMeasurement();
+    app_obj.measurement.field = newField();
+    app_obj.measurement.film = newFilm(app_obj.filmdb, 1);
+
+    parameters = struct();
+    handles    = struct();
+
+    % Define static UI parameters
+    parameters.header_height_px = 72;
+    parameters.padding_px = 6;
+    parameters.row_height_px = 24;
+    parameters.btn_width_px = 128;
+
+    % Create 'New Measurement' figure -----------------------------------------
+    handles.new_msr_figure = figure( ...
+        % 'parent', app_obj.gui.main_figure, ...
+        'name', 'RCT Analyze Film: Setup New Measuremnt', ...
+        'tag', 'new_msr_figure', ...
+        'menubar', 'none', ...
+        'sizechangedfcn', @uiNewMeasurementResize ...
+        % 'position', uiCalculateInitialPosition(get(0, 'ScreenSize')) ...
+        );
+
+    % Split figure space into three horizontal sections: 'Header', 'Form' and
+    % 'Control' ('Footer') ----------------------------------------------------
+    position = uiNewMeasurementElementsPosition( ...
+        handles.new_msr_figure, ...
+        parameters ...
+        );
+    handles.control_panel = uipanel( ...
+        'parent', handles.new_msr_figure, ...
+        'tag', 'control_panel', ...
+        'bordertype', 'none', ...
+        'position', position(1, :) ...
+        );
+    handles.form_panel = uipanel( ...
+        'parent', handles.new_msr_figure, ...
+        'tag', 'form_panel', ...
+        'bordertype', 'none', ...
+        'position', position(2, :) ...
+        );
+    handles.header_panel = uipanel( ...
+        'parent', handles.new_msr_figure, ...
+        'tag', 'header_panel', ...
+        'bordertype', 'none', ...
+        'position', position(3, :) ...
+        );
+
+    % Create 'Control' panel controls -----------------------------------------
+    position = uiControlPanelElementsPostion( ...
+        handles.control_panel, ...
+        parameters ...
+        );
+    handles.cancel_button = uicontrol( ...
+        'parent', handles.control_panel, ...
+        'style', 'pushbutton', ...
+        'tag', 'cancel_button', ...
+        'string', 'Cancel', ...
+        'callback', @uiCancelNewMeasurement, ...
+        'units', 'normalized', ...
+        'position', position(1, :) ...
+        );
+    handles.create_button = uicontrol( ...
+        'parent', handles.control_panel, ...
+        'style', 'pushbutton', ...
+        'tag', 'create_button', ...
+        'string', 'Create', ...
+        'callback', @uiCreateNewMeasurement, ...
+        'units', 'normalized', ...
+        'position', position(2, :) ...
+        );
+
+    % Split 'Form' panel into five even vertical sections ---------------------
+    position = uiFormPanelElementsPosition( ...
+        handles.form_panel, ...
+        parameters ...
+        );
+    idx = 1;
+    while(length(position) >= idx)
+        uipanel( ...
+            'parent', handles.form_panel, ...
+            'tag', sprintf('vpanel_%d', idx), ...
+            'bordertype', 'none', ...
+            'position', position(idx, :) ...
+            );
+
+        idx = idx + 1;
+
+    endwhile;
+
+    % Create 'Title & Date', 'Field' and 'Film' panels ------------------------
+    position = uiVerticalPanel1ElementsPosition( ...
+        uiGetChildByTag(handles.form_panel, 'vpanel_1'), ...
+        parameters ...
+        );
+    handles.film_panel = uipanel( ...
+        'parent', uiGetChildByTag(handles.form_panel, 'vpanel_1'), ...
+        'tag', 'film_panel', ...
+        'title', 'Film', ...
+        'position', position(1, :) ...
+        );
+    handles.field_panel = uipanel( ...
+        'parent', uiGetChildByTag(handles.form_panel, 'vpanel_1'), ...
+        'tag', 'field_panel', ...
+        'title', 'Radiation Field', ...
+        'position', position(2, :) ...
+        );
+    handles.title_and_date_panel = uipanel( ...
+        'parent', uiGetChildByTag(handles.form_panel, 'vpanel_1'), ...
+        'tag', 'title_and_date_panel', ...
+        'title', 'Title & Date', ...
+        'position', position(3, :) ...
+        );
+
+    % Create 'Title & Date' panel controls ------------------------------------
+    position = uiInputElementsPostion( ...
+        handles.title_and_date_panel, ...
+        parameters, ...
+        2 ...
+        );
+    handles.edit_date = uicontrol( ...
+        'parent', handles.title_and_date_panel, ...
+        'style', 'edit', ...
+        'tag', 'edit_measurement_date', ...
+        'string', app_obj.measurement.date, ...
+        'tooltipstring', 'Input measurement date', ...
+        'horizontalalignment', 'left', ...
+        'units', 'normalized', ...
+        'position', position(1, :) ...
+        );
+    handles.label_date = uicontrol( ...
+        'parent', handles.title_and_date_panel, ...
+        'style', 'text', ...
+        'tag', 'label_measurement_date', ...
+        'string', 'Date: ', ...
+        'horizontalalignment', 'left', ...
+        'units', 'normalized', ...
+        'position', position(2, :) ...
+        );
+    handles.edit_title = uicontrol( ...
+        'parent', handles.title_and_date_panel, ...
+        'style', 'edit', ...
+        'tag', 'edit_measurement_title', ...
+        'string', app_obj.measurement.title, ...
+        'tooltipstring', 'Input measurement title', ...
+        'horizontalalignment', 'left', ...
+        'units', 'normalized', ...
+        'position', position(3, :) ...
+        );
+    handles.label_title = uicontrol( ...
+        'parent', handles.title_and_date_panel, ...
+        'style', 'text', ...
+        'tag', 'label_measurement_title', ...
+        'string', 'Title: ', ...
+        'horizontalalignment', 'left', ...
+        'units', 'normalized', ...
+        'position', position(4, :) ...
+        );
+
+    % Create 'Field' panel controls ------------------------------------
+    position = uiInputElementsPostion( ...
+        handles.field_panel, ...
+        parameters, ...
+        4 ...
+        );
+    handles.edit_field_size = uicontrol( ...
+        'parent', handles.field_panel, ...
+        'style', 'edit', ...
+        'tag', 'edit_field_size', ...
+        'string', app_obj.measurement.field.field_size, ...
+        'tooltipstring', 'Input field size', ...
+        'horizontalalignment', 'left', ...
+        'units', 'normalized', ...
+        'position', position(1, :) ...
+        );
+    handles.label_field_size = uicontrol( ...
+        'parent', handles.field_panel, ...
+        'style', 'text', ...
+        'tag', 'label_measurement_date', ...
+        'string', 'Field size: ', ...
+        'horizontalalignment', 'left', ...
+        'units', 'normalized', ...
+        'position', position(2, :) ...
+        );
+    handles.edit_field_shape = uicontrol( ...
+        'parent', handles.field_panel, ...
+        'style', 'popupmenu', ...
+        'tag', 'edit_field_shape', ...
+        'string', { ...
+            'Unknown', ...
+            'Circular', ...
+            'Rectangular', ...
+            'Square', ...
+            'Irregular' ...
+            }, ...
+        % 'value', app_obj.measurement.field.field_shape,
+        'tooltipstring', 'Select field shape', ...
+        'horizontalalignment', 'left', ...
+        'units', 'normalized', ...
+        'position', position(3, :) ...
+        );
+    handles.label_field_shape = uicontrol( ...
+        'parent', handles.field_panel, ...
+        'style', 'text', ...
+        'tag', 'label_field_shape', ...
+        'string', 'Field shape: ', ...
+        'horizontalalignment', 'left', ...
+        'units', 'normalized', ...
+        'position', position(4, :) ...
+        );
+    handles.edit_beam_energy = uicontrol( ...
+        'parent', handles.field_panel, ...
+        'style', 'edit', ...
+        'tag', 'edit_beam_energy', ...
+        'string', app_obj.measurement.field.beam_energy, ...
+        'tooltipstring', 'Input beam energy', ...
+        'horizontalalignment', 'left', ...
+        'units', 'normalized', ...
+        'position', position(5, :) ...
+        );
+    handles.label_beam_energy = uicontrol( ...
+        'parent', handles.field_panel, ...
+        'style', 'text', ...
+        'tag', 'label_beam_energy', ...
+        'string', 'Beam energy: ', ...
+        'horizontalalignment', 'left', ...
+        'units', 'normalized', ...
+        'position', position(6, :) ...
+        );
+    handles.edit_beam_type = uicontrol( ...
+        'parent', handles.field_panel, ...
+        'style', 'popupmenu', ...
+        'tag', 'edit_beam_type', ...
+        'string', {'Unknown', 'Photon', 'Electron', 'Proton'}, ...
+        % 'value', app_obj.measurement.field.beam_type, ...
+        'tooltipstring', 'Select beam type', ...
+        'horizontalalignment', 'left', ...
+        'units', 'normalized', ...
+        'position', position(7, :) ...
+        );
+    handles.label_beam_type = uicontrol( ...
+        'parent', handles.field_panel, ...
+        'style', 'text', ...
+        'tag', 'label_beam_type', ...
+        'string', 'Beam type: ', ...
+        'horizontalalignment', 'left', ...
+        'units', 'normalized', ...
+        'position', position(8, :) ...
+        );
+
+    % Create 'Film' panel controls ------------------------------------
+    position = uiInputElementsPostion( ...
+        handles.film_panel, ...
+        parameters, ...
+        3 ...
+        );
+    handles.edit_film_custom_cut = uicontrol( ...
+        'parent', handles.film_panel, ...
+        'style', 'popupmenu', ...
+        'tag', 'edit_film_custom_cut', ...
+        'string', {'Unknown', 'True', 'False'}, ...
+        'tooltipstring', 'Choose if film piece is custom cut', ...
+        'horizontalalignment', 'left', ...
+        'units', 'normalized', ...
+        'position', position(1, :) ...
+        );
+    handles.label_film_custom_cut = uicontrol( ...
+        'parent', handles.film_panel, ...
+        'style', 'text', ...
+        'tag', 'label_film_custom_cut', ...
+        'string', 'Custom cut: ', ...
+        'horizontalalignment', 'left', ...
+        'units', 'normalized', ...
+        'position', position(2, :) ...
+        );
+    handles.edit_film_model = uicontrol( ...
+        'parent', handles.film_panel, ...
+        'style', 'edit', ...
+        'tag', 'edit_film_model', ...
+        'string', app_obj.measurement.film.model, ...
+        'tooltipstring', 'Input film model', ...
+        'horizontalalignment', 'left', ...
+        'units', 'normalized', ...
+        'position', position(3, :) ...
+        );
+    handles.label_film_model = uicontrol( ...
+        'parent', handles.film_panel, ...
+        'style', 'text', ...
+        'tag', 'label_film_model', ...
+        'string', 'Film model: ', ...
+        'horizontalalignment', 'left', ...
+        'units', 'normalized', ...
+        'position', position(4, :) ...
+        );
+    handles.edit_film_manufacturer = uicontrol( ...
+        'parent', handles.film_panel, ...
+        'style', 'edit', ...
+        'tag', 'edit_film_manufacturer', ...
+        'string', app_obj.measurement.film.manufacturer, ...
+        'tooltipstring', 'Input film manufacturer', ...
+        'horizontalalignment', 'left', ...
+        'units', 'normalized', ...
+        'position', position(5, :) ...
+        );
+    handles.label_film_manufacturer = uicontrol( ...
+        'parent', handles.film_panel, ...
+        'style', 'text', ...
+        'tag', 'label_film_manufacturer', ...
+        'string', 'Film manufacturer: ', ...
+        'horizontalalignment', 'left', ...
+        'units', 'normalized', ...
+        'position', position(6, :) ...
+        );
+
+    gui = struct();
+    gui.parameters = parameters;
+    gui.handles = handles;
+    guidata(handles.new_msr_figure, gui);
+
+endfunction;
+
+function uiCancelNewMeasurement(src, evt)
     % TODO: Add function implementation here
-    % utl_gui_file_multiselect();
-    % rct_load_scanset(fnames);
+
+endfunction;
+
+function uiCreateNewMeasurement(src, evt)
+    % TODO: Add function implementation here
+
+endfunction;
+
+function position = uiNewMeasurementElementsPosition(hparent, parameters)
+
+    % Calculate relative extents of GUI parameters ----------------------------
+    pextents = getpixelposition(hparent);
+    header_height_abs = parameters.header_height_px / pextents(4);
+    ver_padding_abs = parameters.padding_px / pextents(4);
+    row_height_abs = parameters.row_height_px / pextents(4);
+
+    % Calculate elements position ---------------------------------------------
+    position = [...
+        0.00, ...
+        0.00, ...
+        1.00, ...
+        row_height_abs + 2*ver_padding_abs; ...
+        0.00, ...
+        row_height_abs + 2*ver_padding_abs, ...
+        1.00, ...
+        1.00 - row_height_abs - 2*ver_padding_abs - header_height_abs; ...
+        0.00, ...
+        1.00 - header_height_abs, ...
+        1.00, ...
+        header_height_abs ...
+        ];
+
+endfunction;
+
+function position = uiControlPanelElementsPostion(hparent, parameters)
+
+    % Calculate relative extents of GUI parameters ----------------------------
+    pextents = getpixelposition(hparent);
+    hor_padding_abs = parameters.padding_px / pextents(3);
+    ver_padding_abs = parameters.padding_px / pextents(4);
+    btn_width_abs = parameters.btn_width_px / pextents(3);
+    row_height_abs = parameters.row_height_px / pextents(4);
+
+    % Calculate elements position ---------------------------------------------
+    position = [...
+        hor_padding_abs, ...
+        ver_padding_abs, ...
+        btn_width_abs, ...
+        row_height_abs; ...
+        1.00 - btn_width_abs - 2*hor_padding_abs, ...
+        ver_padding_abs, ...
+        btn_width_abs, ...
+        row_height_abs ...
+        ];
+
+endfunction;
+
+function position = uiFormPanelElementsPosition(hparent, parameters)
+
+    % Calculate elements position ---------------------------------------------
+    position = [...
+        0.00, 0.00, 0.20, 1.00; ...
+        0.20, 0.00, 0.20, 1.00; ...
+        0.40, 0.00, 0.20, 1.00; ...
+        0.60, 0.00, 0.20, 1.00; ...
+        0.80, 0.00, 0.20, 1.00 ...
+        ];
+
+endfunction;
+
+function position = uiVerticalPanel1ElementsPosition(hparent, parameters)
+
+    % Calculate relative extents of GUI parameters ----------------------------
+    pextents = getpixelposition(hparent);
+    ver_padding_abs = parameters.padding_px / pextents(4);
+
+    % Calculate elements position ---------------------------------------------
+    position = [...
+        0.00, 0.00, 1.00, 1.0 - 0.66 - 2*ver_padding_abs;
+        0.00, 1.0 - 0.66 - 1*ver_padding_abs, 1.00, 0.44;
+        0.00, 1.0 - 0.22, 1.00, 0.22;
+        ];
+
+endfunction;
+
+function position = uiInputElementsPostion(hparent, parameters, n)
+
+    % Calculate relative extents of GUI parameters ----------------------------
+    pextents = getpixelposition(hparent);
+    hor_padding_abs = parameters.padding_px / pextents(3);
+    ver_padding_abs = parameters.padding_px / pextents(4);
+    btn_width_abs = parameters.btn_width_px / pextents(3);
+    row_height_abs = parameters.row_height_px / pextents(4);
+
+    position = [];
+    idx = n;
+    while(1 <= idx)
+        position = [ ...
+            position; ...
+            hor_padding_abs, ...
+            1.00 - idx*ver_padding_abs - (2*idx)*row_height_abs, ...
+            1.00 - 2*hor_padding_abs, ...
+            row_height_abs; ...
+            hor_padding_abs, ...
+            1.00 - idx*ver_padding_abs - (2*idx - 1)*row_height_abs, ...
+            1.00 - 2*hor_padding_abs, ...
+            row_height_abs; ...
+            ];
+
+        idx = idx - 1;
+
+    endwhile;
+
+endfunction;
+
+function uiNewMeasurementResize(src, evt)
+
+    % Retrieve handle to app data ---------------------------------------------
+    gui = guidata(src);
+
+    % Recalculate main figure elements position -------------------------------
+    position = uiNewMeasurementElementsPosition( ...
+        gui.handles.new_msr_figure, ...
+        gui.parameters ...
+        );
+    set(gui.handles.control_panel, 'position', position(1, :));
+    set(gui.handles.form_panel, 'position', position(2, :));
+    set(gui.handles.header_panel, 'position', position(3, :));
+
+    % Recalculate "Control" panel elements position ---------------------------
+    position = uiControlPanelElementsPostion( ...
+        gui.handles.control_panel, ...
+        gui.parameters ...
+        );
+    set(gui.handles.cancel_button, 'position', position(1, :));
+    set(gui.handles.create_button, 'position', position(2, :));
+
+    % Recalculate "Date and Time" panel elements position ---------------------
+    position = uiInputElementsPostion( ...
+        gui.handles.title_and_date_panel, ...
+        gui.parameters, ...
+        2 ...
+        );
+    set(gui.handles.edit_date, 'position', position(1, :));
+    set(gui.handles.label_date, 'position', position(2, :));
+    set(gui.handles.edit_title, 'position', position(3, :));
+    set(gui.handles.label_title, 'position', position(4, :));
+
+    % Recalculate "Field" panel elements position -----------------------------
+    position = uiInputElementsPostion( ...
+        gui.handles.field_panel, ...
+        gui.parameters, ...
+        4 ...
+        );
+    set(gui.handles.edit_field_size, 'position', position(1, :));
+    set(gui.handles.label_field_size, 'position', position(2, :));
+    set(gui.handles.edit_field_shape, 'position', position(3, :));
+    set(gui.handles.label_field_shape, 'position', position(4, :));
+    set(gui.handles.edit_beam_energy, 'position', position(5, :));
+    set(gui.handles.label_beam_energy, 'position', position(6, :));
+    set(gui.handles.edit_beam_type, 'position', position(7, :));
+    set(gui.handles.label_beam_type, 'position', position(8, :));
+
+    % Recalculate "Film" panel elements position ------------------------------
+    position = uiInputElementsPostion( ...
+        gui.handles.film_panel, ...
+        gui.parameters, ...
+        3 ...
+        );
+    set(gui.handles.edit_film_custom_cut, 'position', position(1, :));
+    set(gui.handles.label_film_custom_cut, 'position', position(2, :));
+    set(gui.handles.edit_film_model, 'position', position(3, :));
+    set(gui.handles.label_film_model, 'position', position(4, :));
+    set(gui.handles.edit_film_manufacturer, 'position', position(5, :));
+    set(gui.handles.label_film_manufacturer, 'position', position(6, :));
 
 endfunction;
 
@@ -4127,6 +5164,33 @@ endfunction;
 % GUI Utility Functions Section
 %
 % =============================================================================
+
+% -----------------------------------------------------------------------------
+%
+% Function 'uiGetChildByTag':
+%
+% -- hchild = uiGetChildByTag(hparent, tag)
+%
+% Description: TODO: Put function description here
+%
+% -----------------------------------------------------------------------------
+function hchild = uiGetChildByTag(hparent, tag)
+
+    hchild = NaN;
+    hchildren = get(hparent, 'children');
+
+    idx = 1;
+    while(length(hchildren) >= idx)
+        if(isequal(tag, get(hchildren(idx), 'tag')))
+            hchild = hchildren(idx);
+
+        endif;
+
+        idx = idx + 1;
+
+    endwhile;
+
+endfunction;
 
 % -----------------------------------------------------------------------------
 %
