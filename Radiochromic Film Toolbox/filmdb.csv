@@ -1,2 +1,3 @@
-Manufacturer,Model,Custom Cut
-Unknown,Unknown,Unknown
+Title,Manufacturer,Model,LOT,Custom Cut
+GK PPS QA,Ashland,EBT3 3x3,#123456,True
+EBT3-810 Uncut,Ashland,EBT3-810,#456789,False
