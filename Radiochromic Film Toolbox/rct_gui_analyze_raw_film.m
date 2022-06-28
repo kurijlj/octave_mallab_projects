@@ -826,8 +826,8 @@ function film_entries = loadFilmDatabase(dbfile)
 
     % Store function name into variable
     % for easier management of error messages ---------------------------------
-    fname = 'filmDatabaseExists';
-    use_case = ' -- result = filmDatabaseExists(dbfile)';
+    fname = 'loadFilmDatabase';
+    use_case = ' -- film_entries = loadFilmDatabase(dbfile)';
 
     % Validate input arguments ------------------------------------------------
 
