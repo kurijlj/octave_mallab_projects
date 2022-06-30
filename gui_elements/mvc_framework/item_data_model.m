@@ -1,35 +1,33 @@
 display('Item Data Model Loaded');
 
-function item = newItem(title, value)
+function item = newItem(item_title, item_value)
 
     % Store function name into variable
     % for easier management of error messages ---------------------------------
     fname = 'newItem';
-    use_case_a = ' -- item = newFilm()';
-    use_case_b = ' -- item = newFilm(title, value)';
+    use_case = ' -- item = newFilm(item_title, item_value)';
 
     % Validate input arguments ------------------------------------------------
 
-    % Define function parameters names and array for keeping values
-    parameter = {'title', 'value'};
-    par_value = {title, value};
+    % Define function parameters names
+    parameter = {'item_title', 'item_value'};
 
     % Validate number of input arguments
-    if(0 ~= nargin && length(parameter) ~= nargin)
+    if(numel(parameter) ~= nargin)
         error( ...
             'Invalid call to %s.  Correct usage is:\n%s\n%s\n%s', ...
             fname, ...
-            use_case_a, ...
-            use_case_b ...
+            use_case ...
             );
 
     endif;
 
     % Validate user supplied values, if any
-    if(length(parameter) == nargin)
+    if(numel(parameter) == nargin)
+        prm_val = {item_title, item_value};
         idx = 1;
-        while(length(parameter) >= idx)
-            if(~ischar(par_value{idx}) || isempty(par_value{idx}))
+        while(numel(parameter) >= idx)
+            if(~ischar(prm_val{idx}) || isempty(prm_val{idx}))
                 error( ...
                     '%s: %s must be a non-empty string', ...
                     fname, ...
@@ -46,8 +44,8 @@ function item = newItem(title, value)
 
     % Create and populate 'Item' structure ------------------------------------
     item = struct();
-    item.title = title;
-    item.value = value;
+    item.title = item_title;
+    item.value = item_value;
 
 endfunction;
 
