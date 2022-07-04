@@ -3,6 +3,27 @@ display('Item View Controller Loaded');
 source('./item_data_model.m');
 source('./item_view.m');
 
+% -----------------------------------------------------------------------------
+%
+% Function: newItemViewController
+%
+% Use:
+%       -- controller = newItemViewController(item, parent_controller)
+%
+% Description: Create new 'Item View' ui displaying item fields, and assign
+% controller to it. If assigned 'parent controller' is a controller of a
+% container holding the 'Item View', and handling size changed events. If no
+% parent container is supplaid 'Item View Controller' will create a figure
+% containing the view.
+%
+% Parent controller must be a structure containing at least following fields:
+%       layout;
+%       ui_handles;
+% where 'layout; is a structure containing 'padding_px', 'row_height_px', and
+% 'btn_width_px' fields, and 'ui_handles' is a structure containing field
+% 'main_container' with a handle to the 'Item View' container.
+%
+% -----------------------------------------------------------------------------
 function controller = newItemViewController(item, parent_controller)
 
     % Store function name into variable
