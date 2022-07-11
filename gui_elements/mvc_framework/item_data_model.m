@@ -1,5 +1,17 @@
-display('Item Data Model Loaded');
+item_data_model_version = '1.0';
 
+% -----------------------------------------------------------------------------
+%
+% Function 'newItem':
+%
+% Use:
+%       -- newItem(item_title, item_value)
+%
+% Description:
+% Generate a new Item data structure with given item_title and item_value
+% values.
+%
+% -----------------------------------------------------------------------------
 function item = newItem(item_title, item_value)
 
     % Store function name into variable
@@ -49,9 +61,22 @@ function item = newItem(item_title, item_value)
 
 endfunction;
 
+% -----------------------------------------------------------------------------
+%
+% Function 'isItemDataStruct':
+%
+% Use:
+%       -- isItemDataStruct(obj)
+%
+% Description:
+% Return true if passed object is a proper 'Item' data sructure, i.e. is
+% a structure, has fields 'title' and 'value' which are nonempty string.
+%
+% -----------------------------------------------------------------------------
 function result = isItemDataStruct(obj)
 
-    % Define common message strings
+    % Store function name into variable
+    % for easier management of error messages ---------------------------------
     fname = 'isItemDataStruct';
     use_case = ' -- result = isItemDataStruct(film_obj)';
 
