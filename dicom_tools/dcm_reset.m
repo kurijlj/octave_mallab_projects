@@ -1,8 +1,20 @@
-% 'dcm_reset' is a function from the package: 'DICOM Toolbox'
+% -----------------------------------------------------------------------------
 %
-%  -- dcm_reset ()
-%      TODO: Put function description here
-
+% Function 'dcm_reset':
+%
+% Use:
+%       -- dcm_reset ()
+%       -- dcm_reset (..., "PROPERTY", VALUE, ...)
+%
+% Description:
+% Anonymize DICOM images.
+%
+% DICOM tags that can be set by the user as using property-values:
+%       PatientName
+%       PatientID
+%       PatientSex
+%
+% -----------------------------------------------------------------------------
 function dcm_reset(varargin)
     % Store function name into variable for easier lgo reporting and user
     % feedback management
