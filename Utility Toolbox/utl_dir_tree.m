@@ -111,15 +111,19 @@ function tree = utlDirTree(root)
 
     tree = {};
     if(0 ~= numel(entries))
-        % We are not dealing with an empty directory
-        dirs_map = isfolder(entries);
-        dirs = {entries(dirs_map)};
-        tree = {tree{:} dirs{:}};
-
+        % We are not dealing with an empty directory. Search for directory
+        % entries
         idx = 1;
-        while(numel(dirs) >= idx)
-            display(dirs{idx});
-            tree = {tree{:} utlDirTree(dirs{idx}){:}};
+        while(numel(entries) >= idx)
+            path = fullfile(root, entries{idx});
+            if(isfolder(path))
+                % Add path to tree
+                tree = {tree{:} path};
+
+                % Traverse subdirectory
+                tree = {tree{:} utlDirTree(path){:}};
+
+            endif;
 
             idx = idx + 1;
 
