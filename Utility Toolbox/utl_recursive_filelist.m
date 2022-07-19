@@ -61,8 +61,8 @@ function flist = utlRecursiveFilelist(root)
     % Store function name into variable
     % for easier management of error messages ---------------------------------
     fname = 'utlRecursiveFilelist';
-    use_case_a = ' -- tree = utlDirTree()';
-    use_case_b = ' -- tree = utlDirTree(root)';
+    use_case_a = ' -- flist = utlRecursiveFilelist()';
+    use_case_b = ' -- flist = utlRecursiveFilelist(root)';
 
     % Validate input arguments ------------------------------------------------
 
