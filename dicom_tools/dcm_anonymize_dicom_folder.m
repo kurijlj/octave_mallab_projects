@@ -136,6 +136,18 @@ function dcmAnonymizeFolder()
 
         info = dicominfo(flist{idx});
 
+        % We don't know how to handle these three so we skip them
+        if( ...
+                isequal('RTDOSE', info.Modality) ...
+                || isequal('RTPLAN', info.Modality) ...
+                || isequal('RTSTRUCT', info.Modality) ...
+                )
+            continue;
+
+        endif;
+
+        printf('%s: %s\n', fname, flist{idx});
+
         % Check if we already have encountered this study
         if(~ismember(info.StudyInstanceUID, studies))
             % It's a study we have not encountered previously. Generate new
@@ -153,7 +165,7 @@ function dcmAnonymizeFolder()
             series = {series{:}, info.SeriesInstanceUID};
             new_series_uids = {new_series_uids{:}, dicomuid()};
             new_instance_uids = {new_instance_uids{:}, dicomuid()};
-            instance_idx = [instance_idx(:), 1];
+            instance_idx = [instance_idx, 1];
 
         endif
 
@@ -190,6 +202,7 @@ function dcmAnonymizeFolder()
         info.SeriesTime = timestr;
         info.AcquisitionTime = timestr;
         info.ContentTime = timestr;
+        info.AcquisitionMatrix = 0;
 
         if(~isfield(info, 'PatientSex'))
             info.PatientSex = 'M';
@@ -242,7 +255,7 @@ function dcmAnonymizeFolder()
         endif;
 
         if(isfield(info, 'PatientAge'))
-            info.PatientAge = '';
+            info.PatientAge = '000Y';
 
         endif;
 
