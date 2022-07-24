@@ -1,22 +1,20 @@
-item_edit_controller_version = '1.0';
+control_panel_controller_version = '1.0';
 
-source('./item_data_model.m');
-source('./item_edit_view.m');
+source('./control_panel_view.m');
 
 % -----------------------------------------------------------------------------
 %
-% Function: newItemEditController
+% Function: newControlPanelController
 %
 % Use:
-%       -- controller = newItemEditController(item, parent_controller)
+%       -- controller = newControlPanelController(parent_controller)
 %
 % Description:
-% Create new 'Item Edit View' ui displaying item fields, and assign controller
-% to it. If assigned 'parent controller' is a controller of a container holding
-% the 'Item Edit View', and handling size changed events. If no parent
-% container is supplied 'Item Edit View Controller' will create a figure
-% containing the view.
-%
+% Create new 'Control Panel View' ui displaying control buttons, and assign
+% controller to it. If assigned 'parent controller' is a controller of a
+% container holding the 'Control Panel View', and handling size changed events.
+% If no parent container is supplied 'Control Panel Controller' will create a
+% figure containing the view.
 %
 % Parent controller must be a structure containing at least following fields:
 %       order;
@@ -26,7 +24,7 @@ source('./item_edit_view.m');
 % controller. This data is used to determine proper invocation of the callback
 % for the size changed event.'layout; is a structure containing 'padding_px',
 % 'row_height_px', and 'btn_width_px' fields, and 'ui_handles' is a structure
-% containing field 'item_edit_container' with a handle to the 'Item Edit'
+% containing field 'control_panel_container' with a handle to the 'Control Panel'
 % container:
 %
 %
@@ -42,48 +40,46 @@ source('./item_edit_view.m');
 %        | ui_callbacks      |  |   |
 %        +-------------------+  |   |
 %                               |   |
-%                               |   |  +================================+
-%                               |   +->| layout                         |
-%                               |      +================================+
-%                               |      | padding_px                     |
-%                               |      +--------------------------------+
-%                               |      | row_height_px                  |
-%                               |      +--------------------------------+
-%                               |      | btn_width_px                   |
-%                               |      +--------------------------------+
+%                               |   |  +====================================+
+%                               |   +->| layout                             |
+%                               |      +====================================+
+%                               |      | padding_px                         |
+%                               |      +------------------------------------+
+%                               |      | row_height_px                      |
+%                               |      +------------------------------------+
+%                               |      | btn_width_px                       |
+%                               |      +------------------------------------+
 %                               |
 %                               |
-%                               |      +================================+
-%                               +----->| ui_handles                     |
-%                                      +================================+
-%                                      | item_edit_container (uihandle) |
-%                                      +--------------------------------+
+%                               |      +====================================+
+%                               +----->| ui_handles                         |
+%                                      +====================================+
+%                                      | control_panel_container (uihandle) |
+%                                      +------------------------------------+
 %
 % -----------------------------------------------------------------------------
-function controller = newItemEditController(item, parent_controller)
+function controller = newControlPanelController(parent_controller)
 
     % Store function name into variable
     % for easier management of error messages ---------------------------------
-    fname = 'newItemEditController';
-    use_case_a = ' -- controller = newItemEditController(item)';
-    use_case_b = ' -- controller = newItemEditController(item, parent_controller)';
+    fname = 'newControlPanelController';
+    use_case = ' -- controller = newControlPanelController(parent_controller)';
 
     % Validate input arguments ------------------------------------------------
 
     % Validate number of input arguments
-    if(1 ~= nargin && 2 ~= nargin)
+    if(0 ~= nargin && 1 ~= nargin)
         error( ...
             'Invalid call to %s.  Correct usage is:\n%s\n%s', ...
             fname, ...
-            use_case_a, ...
-            use_case_b ...
+            use_case ...
             );
 
     endif;
 
     controller = struct();
 
-    if(1 == nargin)
+    if(0 == nargin)
         % User did not supply parent controller and is running 'Item View' as
         % standalone GUI app. Create supporting data structures
         controller.parent = struct();
@@ -99,11 +95,12 @@ function controller = newItemEditController(item, parent_controller)
         controller.parent.layout.padding_px = 6;
         controller.parent.layout.row_height_px = 24;
         controller.parent.layout.btn_width_px = 128;
+        controller.parent.layout.btn_height_px = 32;
 
         % Create figure and define it as parent to 'Item' view
         controller.parent.ui_handles = struct();
-        controller.parent.ui_handles.item_edit_container = figure( ...
-            'name', 'Item Edit', ...
+        controller.parent.ui_handles.control_panel_container = figure( ...
+            'name', 'Control Panel', ...
             'menubar', 'none' ...
             );
 
@@ -167,11 +164,11 @@ function controller = newItemEditController(item, parent_controller)
         if(~isstruct(parent_controller.ui_handles))
             error('%s: ui_handles must be a data structure', fname);
         endif;
-        if(~isfield(parent_controller.ui_handles, 'item_edit_container'))
-            error('%s: item_edit_container field is missing in the ui_handles structure', fname);
+        if(~isfield(parent_controller.ui_handles, 'control_panel_container'))
+            error('%s: control_panel_container field is missing in the ui_handles structure', fname);
         endif;
-        if(~ishandle(parent_controller.ui_handles.item_edit_container))
-            error('%s: item_edit_container field must be a hendle to a graphics object', fname);
+        if(~ishandle(parent_controller.ui_handles.control_panel_container))
+            error('%s: control_panel_container field must be a hendle to a graphics object', fname);
         endif;
 
         % User supplied a valid parent controller
@@ -179,70 +176,77 @@ function controller = newItemEditController(item, parent_controller)
 
     endif;
 
-    controller.item = item;
-    controller = newItemEditView(controller);
+    controller = newControlPanelView(controller);
 
-    if(1 == nargin)
+    if(0 == nargin)
         % Define callbacks for events we handle
         set( ...
-            controller.parent.ui_handles.item_edit_container, ...
-            'sizechangedfcn', @(src, evt)handleItemEditViewSzChng(controller) ...
+            controller.parent.ui_handles.control_panel_container, ...
+            'sizechangedfcn', @(src, evt)handleControlPanelViewSzChng(controller) ...
             );
-
-    endif;
-
-endfunction;
-
-% -----------------------------------------------------------------------------
-%
-% Function 'updateEditedItem':
-%
-% Use:
-%       -- controller = updateEditedItem(controller, item)
-%
-% Description:
-% Update an 'Item Edit View' to the item supplied by user.
-%
-% -----------------------------------------------------------------------------
-function controller = updateEditedItem(controller, item)
-
-    if(1 == nargin)
-
-        values = getEditViewFieldValues(controller);
-        controller.item = newItem(values{1}, values{2});
-
-    else
-
-        controller.item = item;
-
-    endif;
-
-    if(0 == controller.parent.order)
         set( ...
-            controller.parent.ui_handles.item_edit_container, ...
-            'sizechangedfcn', @(src, evt)handleItemEditViewSzChng(controller) ...
+            controller.ui_handles.cancel_button, ...
+            'callback', @(src, evt)handleControlPanelPushAccept(controller) ...
+            );
+        set( ...
+            controller.ui_handles.accept_button, ...
+            'callback', @(src, evt)handleControlPanelPushCancel(controller) ...
             );
 
     endif;
-
-    updateItemEditView(controller);
 
 endfunction;
 
 % -----------------------------------------------------------------------------
 %
-% Function 'handleItemEditViewSzChng':
+% Function 'handleControlPanelViewSzChng':
 %
 % Use:
-%       -- handleItemEditViewSzChng(controller)
+%       -- handleControlPanelViewSzChng(controller)
 %
 % Description:
 % Handle size changed events from the container. This function is to be called
 % by the container callback to the 'size changed' event.
 %
 % -----------------------------------------------------------------------------
-function handleItemEditViewSzChng(controller)
+function handleControlPanelViewSzChng(controller)
 
-    updateItemEditView(controller);
+    updateControlPanelView(controller);
+
+endfunction;
+
+% -----------------------------------------------------------------------------
+%
+% Function 'handleControlPanelPushAccept':
+%
+% Use:
+%       -- handleControlPanelPushAccept(controller)
+%
+% Description:
+% Handle push 'Accept' button event from the container. This function is to be
+% called by the container callback to the puch 'Accept' button event.
+%
+% -----------------------------------------------------------------------------
+function handleControlPanelPushAccept(controller)
+
+    delete(gcbf());
+
+endfunction;
+
+% -----------------------------------------------------------------------------
+%
+% Function 'handleControlPanelPushCancel':
+%
+% Use:
+%       -- handleControlPanelPushCancel(controller)
+%
+% Description:
+% Handle push 'Cancel' button event from the container. This function is to be
+% called by the container callback to the puch 'Cancel' button event.
+%
+% -----------------------------------------------------------------------------
+function handleControlPanelPushCancel(controller)
+
+    delete(gcbf());
 
 endfunction;

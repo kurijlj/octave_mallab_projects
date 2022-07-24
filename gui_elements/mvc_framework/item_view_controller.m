@@ -24,7 +24,8 @@ source('./item_view.m');
 % controller. This data is used to determine proper invocation of the callback
 % for the size changed event.'layout; is a structure containing 'padding_px',
 % 'row_height_px', and 'btn_width_px' fields, and 'ui_handles' is a structure
-% containing field 'main_container' with a handle to the 'Item View' container:
+% containing field 'item_view_container' with a handle to the 'Item View'
+% container:
 %
 %
 %        +===================+
@@ -36,24 +37,25 @@ source('./item_view.m');
 %        +-------------------+      |
 %        | ui_handles        | -+   |
 %        +-------------------+  |   |
+%        | ui_callbacks      |  |   |
+%        +-------------------+  |   |
 %                               |   |
-%                               |   |  +===========================+
-%                               |   +->| layout                    |
-%                               |      +===========================+
-%                               |      | padding_px                |
-%                               |      +---------------------------+
-%                               |      | row_height_px             |
-%                               |      +---------------------------+
-%                               |      | btn_width_px              |
-%                               |      +---------------------------+
+%                               |   |  +================================+
+%                               |   +->| layout                         |
+%                               |      +================================+
+%                               |      | padding_px                     |
+%                               |      +--------------------------------+
+%                               |      | row_height_px                  |
+%                               |      +--------------------------------+
+%                               |      | btn_width_px                   |
+%                               |      +--------------------------------+
 %                               |
 %                               |
-%                               |      +===========================+
-%                               +----->| ui_handles                |
-%                                      +===========================+
-%                                      | main_container (uihandle) |
-%                                      +---------------------------+
-%
+%                               |      +================================+
+%                               +----->| ui_handles                     |
+%                                      +================================+
+%                                      | item_view_container (uihandle) |
+%                                      +--------------------------------+
 %
 % -----------------------------------------------------------------------------
 function controller = newItemViewController(item, parent_controller)
@@ -98,7 +100,7 @@ function controller = newItemViewController(item, parent_controller)
 
         % Create figure and define it as parent to 'Item' view
         controller.parent.ui_handles = struct();
-        controller.parent.ui_handles.main_container = figure( ...
+        controller.parent.ui_handles.item_view_container = figure( ...
             'name', 'Item View', ...
             'menubar', 'none' ...
             );
@@ -163,11 +165,11 @@ function controller = newItemViewController(item, parent_controller)
         if(~isstruct(parent_controller.ui_handles))
             error('%s: ui_handles must be a data structure', fname);
         endif;
-        if(~isfield(parent_controller.ui_handles, 'main_container'))
-            error('%s: main_container field is missing in the ui_handles structure', fname);
+        if(~isfield(parent_controller.ui_handles, 'item_view_container'))
+            error('%s: item_view_container field is missing in the ui_handles structure', fname);
         endif;
-        if(~ishandle(parent_controller.ui_handles.main_container))
-            error('%s: main_container field must be a hendle to a graphics object', fname);
+        if(~ishandle(parent_controller.ui_handles.item_view_container))
+            error('%s: item_view_container field must be a hendle to a graphics object', fname);
         endif;
 
         % User supplied a valid parent controller
@@ -179,8 +181,9 @@ function controller = newItemViewController(item, parent_controller)
     controller = newItemView(controller);
 
     if(1 == nargin)
+        % Define callbacks for events we handle
         set( ...
-            controller.parent.ui_handles.main_container, ...
+            controller.parent.ui_handles.item_view_container, ...
             'sizechangedfcn', @(src, evt)handleItemViewSzChng(controller) ...
             );
 
@@ -199,11 +202,13 @@ endfunction;
 % Update an 'Item View' to the item supplied by user.
 %
 % -----------------------------------------------------------------------------
-function controller = updateItem(controller, item)
+function controller = updateViewedItem(controller, item)
+
     controller.item = item;
+
     if(0 == controller.parent.order)
         set( ...
-            controller.parent.ui_handles.main_container, ...
+            controller.parent.ui_handles.item_view_container, ...
             'sizechangedfcn', @(src, evt)handleItemViewSzChng(controller) ...
             );
 
@@ -225,6 +230,7 @@ endfunction;
 %
 % -----------------------------------------------------------------------------
 function handleItemViewSzChng(controller)
+
     updateItemView(controller);
 
 endfunction;
