@@ -1,7 +1,19 @@
-display('Item List Model Loaded');
+item_list_model_version = '1.0';
 
 source('./item_data_model.m');
 
+% -----------------------------------------------------------------------------
+%
+% Function 'newItemList':
+%
+% Use:
+%       -- newItemList(item1, item2, ...)
+%
+% Description:
+% Generate a new Item data structure with given item_title and item_value
+% values.
+%
+% -----------------------------------------------------------------------------
 function list = newItemList(varargin)
 
     % Store function name into variable
@@ -49,6 +61,17 @@ function list = newItemList(varargin)
 
 endfunction;
 
+% -----------------------------------------------------------------------------
+%
+% Function 'loadItemListFromFile':
+%
+% Use:
+%       -- loadItemListFromFile(file_path)
+%
+% Description:
+% Load list of 'Item' objects from a file designated with file_path.
+%
+% -----------------------------------------------------------------------------
 function list = loadItemListFromFile(file_path)
 
     % Store function name into variable
@@ -70,7 +93,7 @@ function list = loadItemListFromFile(file_path)
 
     endif;
 
-    % Set scanner_entries to default value ------------------------------------
+    % Initialize cell array for storin items ----------------------------------
     list = {};
 
     % Check if given file path poins to actual file ---------------------------
@@ -120,6 +143,18 @@ function list = loadItemListFromFile(file_path)
 
 endfunction;
 
+% -----------------------------------------------------------------------------
+%
+% Function 'isItemListObject':
+%
+% Use:
+%       -- isItemListObject(obj)
+%
+% Description:
+% Return true if passed object is a proper 'Item List' data sructure, i.e. is
+% cell array of 'Item' objects.
+%
+% -----------------------------------------------------------------------------
 function result = isItemListObject(obj)
 
     % Store function name into variable
@@ -130,7 +165,7 @@ function result = isItemListObject(obj)
     % Validate input arguments ------------------------------------------------
 
     % Validate number of input arguments
-    if(1 > nargin)
+    if(1 ~= nargin)
         error( ...
             'Invalid call to %s.  Correct usage is:\n%s\n%s\n%s', ...
             fname, ...
@@ -178,7 +213,67 @@ function result = isItemListObject(obj)
 
 endfunction;
 
+% -----------------------------------------------------------------------------
+%
+% Function 'checkItemDatabaseIntegrity':
+%
+% Use:
+%       -- checkItemDatabaseIntegrity(file_path)
+%
+% Description:
+%       TODO: Put function description here
+%
+% -----------------------------------------------------------------------------
 function result = checkItemDatabaseIntegrity(file_path)
     % TODO: Add function implementation here.
+
+endfunction;
+
+% -----------------------------------------------------------------------------
+%
+% Function 'listItemTitles':
+%
+% Use:
+%       -- title_list = listItemTitles(item_list)
+%
+% Description:
+%       TODO: Put function description here
+%
+% -----------------------------------------------------------------------------
+function title_list = listItemTitles(item_list)
+
+    % Store function name into variable
+    % for easier management of error messages ---------------------------------
+    fname = 'listItemTitles';
+    use_case = ' -- title_list = listItemTitles(item_list)';
+
+    % Validate input arguments ------------------------------------------------
+
+    % Validate number of input arguments
+    if(1 ~= nargin)
+        error( ...
+            'Invalid call to %s.  Correct usage is:\n%s\n%s\n%s', ...
+            fname, ...
+            use_case ...
+            );
+
+    endif;
+
+    if(~isItemListObject(item_list))
+        error( ...
+            '%s:item_list must be an instance of the Item List data structure', ...
+            fname ...
+            );
+
+    endif;
+
+    title_list = {};
+    idx = 1;
+    while(numel(item_list) >= idx)
+        title_list = {title_list{:}, item_list{idx}.title};
+
+        idx = idx + 1;
+
+    endwhile;
 
 endfunction;
