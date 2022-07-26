@@ -38,8 +38,6 @@ source('./item_select_view.m');
 %        +-------------------+      |
 %        | ui_handles        | -+   |
 %        +-------------------+  |   |
-%        | ui_callbacks      |  |   |
-%        +-------------------+  |   |
 %                               |   |
 %                               |   |  +================================+
 %                               |   +->| layout                         |
@@ -170,7 +168,7 @@ function controller = newItemSelectViewController(item_list, parent_controller)
             error('%s: item_view_container field is missing in the ui_handles structure', fname);
         endif;
         if(~ishandle(parent_controller.ui_handles.item_view_container))
-            error('%s: item_view_container field must be a hendle to a graphics object', fname);
+            error('%s: item_view_container field must be a handle to a graphics object', fname);
         endif;
 
         % User supplied a valid parent controller
@@ -179,6 +177,7 @@ function controller = newItemSelectViewController(item_list, parent_controller)
     endif;
 
     controller.item_list = item_list;
+    controller.selected_item = 1;
     controller = newItemSelectView(controller);
 
     if(1 == nargin)
@@ -194,27 +193,166 @@ endfunction;
 
 % -----------------------------------------------------------------------------
 %
-% Function 'updateItem':
+% Function 'isItemSelectViewControllerObject':
 %
 % Use:
-%       -- controller = updateItem(controller, item)
+%       -- isItemSelectViewControllerObject(obj)
 %
 % Description:
-% Update an 'Item View' to the item supplied by user.
+% Return true if passed object is a proper 'Item Select View Controller' data
+% sructure.
 %
 % -----------------------------------------------------------------------------
-function controller = updateViewedItem(controller, item)
+function result = isItemSelectViewControllerObject(obj)
 
-    controller.item = item;
+    % Store function name into variable
+    % for easier management of error messages ---------------------------------
+    fname = 'isItemSelectViewControllerObject';
+    use_case = ' -- result = isItemSelectViewControllerObject(obj)';
+
+    % Validate input arguments ------------------------------------------------
+
+    % Validate number of input arguments
+    if(1 ~= nargin)
+        error( ...
+            'Invalid call to %s.  Correct usage is:\n%s\n%s\n%s', ...
+            fname, ...
+            use_case ...
+            );
+
+    endif;
+
+    % Initialize return value to default
+    result = false;
+
+    if( ...
+            isstruct(obj) ...
+            && isfield(obj, 'item_list') ...
+            && isItemListObject(obj.item_list)...
+            && isfield(obj, 'selected_item') ...
+            && isscalar(obj.selected_item) ...
+            && isfloat(obj.selected_item) ...
+            && (0 < obj.selected_item) ...
+            && isfield(obj, 'ui_handles') ...
+            && isstruct(obj.ui_handles) ...
+            && isfield(obj, 'parent') ...
+            && isstruct(obj.parent) ...
+            && isfield(obj.parent, 'order') ...
+            && ( ...
+                isequal(0, obj.parent.order) ...
+                || isequal(1, obj.parent.order) ...
+                ) ...
+            && isfield(obj.parent, 'layout') ...
+            && isstruct(obj.parent.layout) ...
+            && isfield(obj.parent.layout, 'padding_px') ...
+            && isscalar(obj.parent.layout.padding_px) ...
+            && isfloat(obj.parent.layout.padding_px) ...
+            && (0 < obj.parent.layout.padding_px) ...
+            && isfield(obj.parent.layout, 'row_height_px') ...
+            && isscalar(obj.parent.layout.row_height_px) ...
+            && isfloat(obj.parent.layout.row_height_px) ...
+            && (0 < obj.parent.layout.row_height_px) ...
+            && isfield(obj.parent.layout, 'btn_width_px') ...
+            && isscalar(obj.parent.layout.btn_width_px) ...
+            && isfloat(obj.parent.layout.btn_width_px) ...
+            && (0 < obj.parent.layout.btn_width_px) ...
+            && isfield(obj.parent, 'ui_handles') ...
+            && isstruct(obj.parent.ui_handles) ...
+            && isfield(obj.parent.ui_handles, 'item_view_container') ...
+            && ishandle(obj.parent.ui_handles.item_view_container) ...
+            )
+
+        % Check obj.ui_handles fields
+        idx = 1;
+        flds = fieldnames(obj.ui_handles);
+        while(numel(flds) >= idx)
+            if(~ishandle(getfield(obj.ui_handles, flds{idx})))
+                return;
+
+            endif;
+
+            idx = idx + 1;
+
+        endwhile;
+
+        result = true;
+
+    endif;
+
+endfunction;
+
+% -----------------------------------------------------------------------------
+%
+% Function 'updateViewedList':
+%
+% Use:
+%       -- controller = updateViewedList(controller, item_list)
+%
+% Description:
+% Update an 'Item Select View' to the item_list supplied by the user.
+%
+% -----------------------------------------------------------------------------
+function controller = updateViewedList(controller, item_list)
+
+    % Store function name into variable
+    % for easier management of error messages ---------------------------------
+    fname = 'updateViewedList';
+    use_case = ' -- result = updateViewedList(controller, item_list)';
+
+    % Validate input arguments ------------------------------------------------
+
+    % Validate number of input arguments
+    if(2 ~= nargin)
+        error( ...
+            'Invalid call to %s.  Correct usage is:\n%s\n%s\n%s', ...
+            fname, ...
+            use_case ...
+            );
+
+    endif;
+
+    % Validate controller argument
+    if(~isItemSelectViewControllerObject(controller))
+        error( ...
+            '%s:controller must be an instance of the Item Select View Controller data structure', ...
+            fname ...
+            );
+
+    endif;
+
+    % Validate item_list argument
+    if(~isItemListObject(item_list))
+        error( ...
+            '%s:item_list must be an instance of the Item List data structure', ...
+            fname ...
+            );
+
+    if(~isItemListObject(item_list))
+        error( ...
+            '%s:item_list must be an instance of the Item List data structure', ...
+            fname ...
+            );
+
+    endif;
+
+    endif;
+
+    controller.item_list = item_list;
+    controller.selected_item = 1;
 
     if(0 == controller.parent.order)
         set( ...
             controller.parent.ui_handles.item_view_container, ...
             'sizechangedfcn', @(src, evt)handleItemSelectViewSzChng(controller) ...
             );
+        set( ...
+            controller.ui_handles.item_title_field, ...
+            'string', listItemTitles(controller.item_list) ...
+            );
 
     endif;
-    updateItemView(controller);
+
+    updateItemSelectView(controller);
 
 endfunction;
 
@@ -232,6 +370,6 @@ endfunction;
 % -----------------------------------------------------------------------------
 function handleItemSelectViewSzChng(controller)
 
-    updateItemView(controller);
+    updateItemSelectView(controller);
 
 endfunction;
