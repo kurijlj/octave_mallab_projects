@@ -237,7 +237,7 @@ endfunction;
 %       -- title_list = listItemTitles(item_list)
 %
 % Description:
-%       TODO: Put function description here
+% Retrieve cell array of item titles of the passed item_list.
 %
 % -----------------------------------------------------------------------------
 function title_list = listItemTitles(item_list)
@@ -259,6 +259,7 @@ function title_list = listItemTitles(item_list)
 
     endif;
 
+    % Validate if item_list is a 'Item List' object
     if(~isItemListObject(item_list))
         error( ...
             '%s:item_list must be an instance of the Item List data structure', ...
@@ -267,13 +268,22 @@ function title_list = listItemTitles(item_list)
 
     endif;
 
+    % Initialize title cell array
     title_list = {};
-    idx = 1;
-    while(numel(item_list) >= idx)
-        title_list = {title_list{:}, item_list{idx}.title};
 
-        idx = idx + 1;
+    if(~isempty(item_list))
+        idx = 1;
+        while(numel(item_list) >= idx)
+            title_list = {title_list{:}, item_list{idx}.title};
 
-    endwhile;
+            idx = idx + 1;
+
+        endwhile;
+
+    else
+        % We are dealing with an empty list so return default value
+        title_list = {title_list{:}, 'Empty'};
+
+    endif;
 
 endfunction;
