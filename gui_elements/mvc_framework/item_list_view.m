@@ -34,7 +34,7 @@ function controller = newItemListView(controller)
     % Create 'Item List View' panel -------------------------------------------
     position = itemListViewElementsPosition(controller);
     controller.ui_handles.main_container = uipanel( ...
-        'parent', controller.parent.ui_handles.item_view_container, ...
+        'parent', controller.parent.ui_handles.item_list_view_container, ...
         'title', 'Item List', ...
         'position', position(1, :) ...
         );
@@ -43,8 +43,11 @@ function controller = newItemListView(controller)
     controller.ui_handles.item_table = uitable( ...
         'parent', controller.ui_handles.main_container, ...
         'Data', itemList2CellArray(controller.data.item_list), ...
-        'tooltipstring', 'Items', ...
+        'tooltipstring', 'Select row to select Item', ...
         'ColumnName', {'Title', 'Value'}, ...
+        'CellSelectionCallback', @onItemListViewCellSelect, ...
+        'ButtonDownFcn', @onBtnDwn, ...
+        % 'ColumnEditable', true, ...
         'units', 'normalized', ...
         'position', position(2, :) ...
         );
@@ -98,7 +101,7 @@ function position = itemListViewElementsPosition(controller)
     position = [];
 
     % Calculate relative extents ----------------------------------------------
-    cexts = getpixelposition(controller.parent.ui_handles.item_view_container);
+    cexts = getpixelposition(controller.parent.ui_handles.item_list_view_container);
     horpadabs = controller.parent.layout.padding_px / cexts(3);
     verpadabs = controller.parent.layout.padding_px / cexts(4);
     btnwdtabs = controller.parent.layout.btn_width_px / cexts(3);
@@ -123,4 +126,29 @@ function position = itemListViewElementsPosition(controller)
         1.00 - 2*verpadabs; ...
         ];
 
+endfunction;
+
+function onItemListViewCellSelect(x, y)
+    controllers = guidata(gcbf());
+    controller = controllers.item_list_view;
+    idx = unique(y.Indices(:, 1));
+    if(2 == size(y.Indices)(1) && 1 == numel(idx))
+        controller.data.selected_item_idx = idx;
+        controller.data.selected_item = controller.data.item_list{idx};
+
+    else
+        controller.data.selected_item_idx = 0;
+        controller.data.selected_item = newItem('Empty', 'None');
+
+    endif;
+
+    controllers.item_list_view = controller;
+    guidata(controller.parent.ui_handles.item_list_view_container, controllers);
+
+endfunction;
+
+function onBtnDwn(src, evt)
+    display('Processing');
+    display(src);
+    display(evt);
 endfunction;

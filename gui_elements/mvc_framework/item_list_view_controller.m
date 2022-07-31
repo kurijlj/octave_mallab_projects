@@ -25,7 +25,7 @@ source('./item_list_view.m');
 % controller. This data is used to determine proper invocation of the callback
 % for the size changed event.'layout; is a structure containing 'padding_px',
 % 'row_height_px', and 'btn_width_px' fields, and 'ui_handles' is a structure
-% containing field 'item_view_container' with a handle to the view's container:
+% containing field 'item_list_view_container' with a handle to the view's container:
 %
 %
 %        +===================+
@@ -38,24 +38,24 @@ source('./item_list_view.m');
 %        | ui_handles        | -+   |
 %        +-------------------+  |   |
 %                               |   |
-%                               |   |  +================================+
-%                               |   +->| layout                         |
-%                               |      +================================+
-%                               |      | padding_px                     |
-%                               |      +--------------------------------+
-%                               |      | column_width_px                |
-%                               |      +--------------------------------+
-%                               |      | row_height_px                  |
-%                               |      +--------------------------------+
-%                               |      | btn_width_px                   |
-%                               |      +--------------------------------+
+%                               |   |  +=====================================+
+%                               |   +->| layout                              |
+%                               |      +=====================================+
+%                               |      | padding_px                          |
+%                               |      +-------------------------------------+
+%                               |      | column_width_px                     |
+%                               |      +-------------------------------------+
+%                               |      | row_height_px                       |
+%                               |      +-------------------------------------+
+%                               |      | btn_width_px                        |
+%                               |      +-------------------------------------+
 %                               |
 %                               |
-%                               |      +================================+
-%                               +----->| ui_handles                     |
-%                                      +================================+
-%                                      | item_view_container (uihandle) |
-%                                      +--------------------------------+
+%                               |      +=====================================+
+%                               +----->| ui_handles                          |
+%                                      +=====================================+
+%                                      | item_list_view_container (uihandle) |
+%                                      +-------------------------------------+
 %
 % -----------------------------------------------------------------------------
 function controller = newItemListViewController(item_list, parent_controller)
@@ -101,7 +101,7 @@ function controller = newItemListViewController(item_list, parent_controller)
 
         % Create figure and define it as parent to 'Item' view
         controller.parent.ui_handles = struct();
-        controller.parent.ui_handles.item_view_container = figure( ...
+        controller.parent.ui_handles.item_list_view_container = figure( ...
             'name', 'Item List', ...
             'menubar', 'none' ...
             );
@@ -109,7 +109,7 @@ function controller = newItemListViewController(item_list, parent_controller)
         % Initialize structure for storing app data
         controllers = struct();
         controllers.item_list_view = NaN;
-        guidata(controller.parent.ui_handles.item_view_container, controllers);
+        guidata(controller.parent.ui_handles.item_list_view_container, controllers);
 
     else
         % Check if parent controller is proper parent for the
@@ -130,11 +130,13 @@ function controller = newItemListViewController(item_list, parent_controller)
 
     controller.data = struct();
     controller.data.item_list = item_list;
+    controller.data.selected_item_idx = 1;
     if(isempty(item_list))
         controller.data.selected_item = newItem('Empty', 'None');
 
     else
-        controller.data.selected_item = item_list{1};
+        controller.data.selected_item ...
+            = item_list{controller.data.selected_item_idx};
 
     endif;
 
@@ -143,15 +145,15 @@ function controller = newItemListViewController(item_list, parent_controller)
     if(1 == nargin)
         % Define callbacks for events we handle
         set( ...
-            controller.parent.ui_handles.item_view_container, ...
+            controller.parent.ui_handles.item_list_view_container, ...
             'sizechangedfcn', @(src, evt)handleItemListViewSzChng(controller) ...
             );
 
     endif;
 
-    controllers = guidata(controller.parent.ui_handles.item_view_container);
+    controllers = guidata(controller.parent.ui_handles.item_list_view_container);
     controllers.item_list_view = controller;
-    guidata(controller.parent.ui_handles.item_view_container, controllers);
+    guidata(controller.parent.ui_handles.item_list_view_container, controllers);
 
 endfunction;
 
@@ -216,8 +218,8 @@ function result = isItemListViewParentControllerObject(obj)
             && (0 < obj.layout.btn_width_px) ...
             && isfield(obj, 'ui_handles') ...
             && isstruct(obj.ui_handles) ...
-            && isfield(obj.ui_handles, 'item_view_container') ...
-            && ishandle(obj.ui_handles.item_view_container) ...
+            && isfield(obj.ui_handles, 'item_list_view_container') ...
+            && ishandle(obj.ui_handles.item_list_view_container) ...
             )
 
         result = true;
@@ -349,6 +351,7 @@ function controller = updateViewedList(controller, item_list)
     endif;
 
     controller.data.item_list = item_list;
+    controller.data.selected_item_idx = 1;
     set( ...
         controller.ui_handles.item_table, ...
         'Data', itemList2CellArray(controller.data.item_list) ...
@@ -357,21 +360,22 @@ function controller = updateViewedList(controller, item_list)
         controller.data.selected_item = newItem('Empty', 'None');
 
     else
-        controller.data.selected_item = item_list{1};
+        controller.data.selected_item ...
+            = item_list{controller.data.selected_item_idx};
 
     endif;
 
     if(0 == controller.parent.order)
         set( ...
-            controller.parent.ui_handles.item_view_container, ...
+            controller.parent.ui_handles.item_list_view_container, ...
             'sizechangedfcn', @(src, evt)handleItemListViewSzChng(controller) ...
             );
 
     endif;
 
-    controllers = guidata(controller.parent.ui_handles.item_view_container);
+    controllers = guidata(controller.parent.ui_handles.item_list_view_container);
     controllers.item_list_view = controller;
-    guidata(controller.parent.ui_handles.item_view_container, controllers);
+    guidata(controller.parent.ui_handles.item_list_view_container, controllers);
 
     updateItemListView(controller);
 
@@ -439,9 +443,11 @@ function controller = updateSelectedItem(controller, item_index)
     endif;
 
     if(isempty(item_list))
+        controller.data.selected_item_idx = 1;
         controller.data.selected_item = newItem('Empty', 'None');
 
     else
+        controller.data.selected_item_idx = item_index;
         controller.data.selected_item = controller.data.item_list{item_index};
 
     endif;
@@ -449,15 +455,15 @@ function controller = updateSelectedItem(controller, item_index)
 
     if(0 == controller.parent.order)
         set( ...
-            controller.parent.ui_handles.item_view_container, ...
+            controller.parent.ui_handles.item_list_view_container, ...
             'sizechangedfcn', @(src, evt)handleItemListViewSzChng(controller) ...
             );
 
     endif;
 
-    controllers = guidata(controller.parent.ui_handles.item_view_container);
+    controllers = guidata(controller.parent.ui_handles.item_list_view_container);
     controllers.item_list_view = controller;
-    guidata(controller.parent.ui_handles.item_view_container, controllers);
+    guidata(controller.parent.ui_handles.item_list_view_container, controllers);
 
     updateItemListView(controller);
 
