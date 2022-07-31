@@ -287,3 +287,64 @@ function title_list = listItemTitles(item_list)
     endif;
 
 endfunction;
+
+% -----------------------------------------------------------------------------
+%
+% Function 'itemList2CellArray':
+%
+% Use:
+%       -- item_cell_list = itemList2CellArray(item_list)
+%
+% Description:
+% Retrieve item list as cell array of item fields.
+%
+% -----------------------------------------------------------------------------
+function item_cell_list = itemList2CellArray(item_list)
+
+    % Store function name into variable
+    % for easier management of error messages ---------------------------------
+    fname = 'itemList2CellArray';
+    use_case = ' -- title_list = itemList2CellArray(item_list)';
+
+    % Validate input arguments ------------------------------------------------
+
+    % Validate number of input arguments
+    if(1 ~= nargin)
+        error( ...
+            'Invalid call to %s.  Correct usage is:\n%s\n%s\n%s', ...
+            fname, ...
+            use_case ...
+            );
+
+    endif;
+
+    % Validate if item_list is a 'Item List' object
+    if(~isItemListObject(item_list))
+        error( ...
+            '%s:item_list must be an instance of the Item List data structure', ...
+            fname ...
+            );
+
+    endif;
+
+    % Initialize title cell array
+    item_cell_list = {};
+
+    if(~isempty(item_list))
+        item_cell_list = cell(numel(item_list), 2);
+        idx = 1;
+        while(numel(item_list) >= idx)
+            item_cell_list{idx, 1} = item_list{idx}.title;
+            item_cell_list{idx, 2} = item_list{idx}.value;
+
+            idx = idx + 1;
+
+        endwhile;
+
+    else
+        % We are dealing with an empty list so return default value
+        item_cell_list = {'Empty', 'None';};
+
+    endif;
+
+endfunction;

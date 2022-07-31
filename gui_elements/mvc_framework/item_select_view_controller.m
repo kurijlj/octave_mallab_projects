@@ -25,8 +25,7 @@ source('./item_select_view.m');
 % controller. This data is used to determine proper invocation of the callback
 % for the size changed event.'layout; is a structure containing 'padding_px',
 % 'row_height_px', and 'btn_width_px' fields, and 'ui_handles' is a structure
-% containing field 'item_view_container' with a handle to the 'Item View'
-% container:
+% containing field 'item_view_container' with a handle to the view's container:
 %
 %
 %        +===================+
@@ -100,7 +99,7 @@ function controller = newItemSelectViewController(item_list, parent_controller)
         % Create figure and define it as parent to 'Item' view
         controller.parent.ui_handles = struct();
         controller.parent.ui_handles.item_view_container = figure( ...
-            'name', 'Item View', ...
+            'name', 'Item Select', ...
             'menubar', 'none' ...
             );
 
@@ -177,6 +176,15 @@ function controller = newItemSelectViewController(item_list, parent_controller)
     endif;
 
     controller.item_list = item_list;
+
+    if(isempty(item_list))
+        controller.selected_item = newItem('Empty', 'None');
+
+    else
+        controller.selected_item = item_list{1};
+
+    endif;
+
     controller = newItemSelectView(controller);
     set( ...
         controller.ui_handles.item_title_field, ...
@@ -232,6 +240,8 @@ function result = isItemSelectViewControllerObject(obj)
             isstruct(obj) ...
             && isfield(obj, 'item_list') ...
             && isItemListObject(obj.item_list)...
+            && isfield(obj, 'selected_item') ...
+            && isItemDataStruct(obj.selected_item)...
             && isfield(obj, 'ui_handles') ...
             && isstruct(obj.ui_handles) ...
             && isfield(obj, 'parent') ...
@@ -348,6 +358,95 @@ endfunction;
 
 % -----------------------------------------------------------------------------
 %
+% Function 'updateSelectedItem':
+%
+% Use:
+%       -- controller = updateSelectedItem(controller, item_index)
+%
+% Description:
+% Update an controller item to the item selected by a user in the view or,
+% set the view to the item with index supplied by the user.
+%
+% -----------------------------------------------------------------------------
+function controller = updateSelectedItem(controller, item_index)
+
+    % Store function name into variable
+    % for easier management of error messages ---------------------------------
+    fname = 'updateSelectedItem';
+    use_case_a = ' -- result = updateSelectedItem(controller)';
+    use_case_b = ' -- result = updateSelectedItem(controller, item_index)';
+
+    % Validate input arguments ------------------------------------------------
+
+    % Validate number of input arguments
+    if(1 ~= nargin && 2 ~= nargin)
+        error( ...
+            'Invalid call to %s.  Correct usage is:\n%s\n%s\n%s', ...
+            fname, ...
+            use_case ...
+            );
+
+    endif;
+
+    % Validate controller argument
+    if(~isItemSelectViewControllerObject(controller))
+        error( ...
+            '%s:controller must be an instance of the Item Select View Controller data structure', ...
+            fname ...
+            );
+
+    endif;
+
+    if(2 == nargin)
+        % Validate item_index argument
+        validateattributes( ...
+            item_index, ...
+            {'numeric'}, ...
+            { ...
+                '>=', 1, ...
+                '<=', numel(controller.item_list), ...
+                'finite', ...
+                'integer', ...
+                'nonempty', ...
+                'nonnan', ...
+                'scalar' ...
+                }, ...
+            fname, ...
+            'x' ...
+            );
+
+    endif;
+
+    if(1 == nargin)
+        controller.selected_item = controller.item_list{ ...
+            get(controller.ui_handles.item_title_field, 'value') ...
+            };
+
+    else
+        controller.selected_item = controller.item_list{item_index};
+        set(controller.ui_handles.item_title_field, 'value', item_index);
+
+    endif;
+
+    set( ...
+        controller.ui_handles.item_title_field, ...
+        'callback', @(src, evt)updateItemSelectView(controller) ...
+        );
+
+    if(0 == controller.parent.order)
+        set( ...
+            controller.parent.ui_handles.item_view_container, ...
+            'sizechangedfcn', @(src, evt)handleItemSelectViewSzChng(controller) ...
+            );
+
+    endif;
+
+    updateItemSelectView(controller);
+
+endfunction;
+
+% -----------------------------------------------------------------------------
+%
 % Function 'handleItemSelectViewSzChng':
 %
 % Use:
@@ -362,8 +461,8 @@ function handleItemSelectViewSzChng(controller)
 
     % Store function name into variable
     % for easier management of error messages ---------------------------------
-    fname = 'updateViewedList';
-    use_case = ' -- result = updateViewedList(controller, item_list)';
+    fname = 'handleItemSelectViewSzChng';
+    use_case = ' -- result = handleItemSelectViewSzChng(controller)';
 
     % Validate input arguments ------------------------------------------------
 

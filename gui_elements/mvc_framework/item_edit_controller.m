@@ -5,10 +5,10 @@ source('./item_edit_view.m');
 
 % -----------------------------------------------------------------------------
 %
-% Function: newItemEditController
+% Function 'newItemEditViewController':
 %
 % Use:
-%       -- controller = newItemEditController(item, parent_controller)
+%       -- controller = newItemEditViewController(item, parent_controller)
 %
 % Description:
 % Create new 'Item Edit View' ui displaying item fields, and assign controller
@@ -60,7 +60,7 @@ source('./item_edit_view.m');
 %                                      +--------------------------------+
 %
 % -----------------------------------------------------------------------------
-function controller = newItemEditController(item, parent_controller)
+function controller = newItemEditViewController(item, parent_controller)
 
     % Store function name into variable
     % for easier management of error messages ---------------------------------
@@ -195,16 +195,144 @@ endfunction;
 
 % -----------------------------------------------------------------------------
 %
+% Function 'isItemEditViewControllerObject':
+%
+% Use:
+%       -- isItemEditViewControllerObject(obj)
+%
+% Description:
+% Return true if passed object is a proper 'Item Edit View Controller'
+% data sructure.
+%
+% -----------------------------------------------------------------------------
+function result = isItemEditViewControllerObject(obj)
+
+    % Store function name into variable
+    % for easier management of error messages ---------------------------------
+    fname = 'isItemEditViewControllerObject';
+    use_case = ' -- result = isItemEditViewControllerObject(obj)';
+
+    % Validate input arguments ------------------------------------------------
+
+    % Validate number of input arguments
+    if(1 ~= nargin)
+        error( ...
+            'Invalid call to %s.  Correct usage is:\n%s\n%s\n%s', ...
+            fname, ...
+            use_case ...
+            );
+
+    endif;
+
+    % Initialize return value to default
+    result = false;
+
+    if( ...
+            isstruct(obj) ...
+            && isfield(obj, 'item') ...
+            && isItemDataStruct(obj.item_list)...
+            && isfield(obj, 'ui_handles') ...
+            && isstruct(obj.ui_handles) ...
+            && isfield(obj, 'parent') ...
+            && isstruct(obj.parent) ...
+            && isfield(obj.parent, 'order') ...
+            && ( ...
+                isequal(0, obj.parent.order) ...
+                || isequal(1, obj.parent.order) ...
+                ) ...
+            && isfield(obj.parent, 'layout') ...
+            && isstruct(obj.parent.layout) ...
+            && isfield(obj.parent.layout, 'padding_px') ...
+            && isscalar(obj.parent.layout.padding_px) ...
+            && isfloat(obj.parent.layout.padding_px) ...
+            && (0 < obj.parent.layout.padding_px) ...
+            && isfield(obj.parent.layout, 'row_height_px') ...
+            && isscalar(obj.parent.layout.row_height_px) ...
+            && isfloat(obj.parent.layout.row_height_px) ...
+            && (0 < obj.parent.layout.row_height_px) ...
+            && isfield(obj.parent.layout, 'btn_width_px') ...
+            && isscalar(obj.parent.layout.btn_width_px) ...
+            && isfloat(obj.parent.layout.btn_width_px) ...
+            && (0 < obj.parent.layout.btn_width_px) ...
+            && isfield(obj.parent, 'ui_handles') ...
+            && isstruct(obj.parent.ui_handles) ...
+            && isfield(obj.parent.ui_handles, 'item_view_container') ...
+            && ishandle(obj.parent.ui_handles.item_view_container) ...
+            )
+
+        % Check obj.ui_handles fields
+        idx = 1;
+        flds = fieldnames(obj.ui_handles);
+        while(numel(flds) >= idx)
+            if(~ishandle(getfield(obj.ui_handles, flds{idx})))
+                return;
+
+            endif;
+
+            idx = idx + 1;
+
+        endwhile;
+
+        result = true;
+
+    endif;
+
+endfunction;
+
+% -----------------------------------------------------------------------------
+%
 % Function 'updateEditedItem':
 %
 % Use:
+%       -- controller = updateEditedItem(controller)
 %       -- controller = updateEditedItem(controller, item)
 %
 % Description:
-% Update an 'Item Edit View' to the item supplied by user.
+% Update controller item to the values enetered by a user in the view or,
+% set the view to the item supplied by the user.
 %
 % -----------------------------------------------------------------------------
 function controller = updateEditedItem(controller, item)
+
+    % Store function name into variable
+    % for easier management of error messages ---------------------------------
+    fname = 'updateViewedItem';
+    use_case_a = ' -- result = updateViewedItem(controller)';
+    use_case_b = ' -- result = updateViewedItem(controller, item_list)';
+
+    % Validate input arguments ------------------------------------------------
+
+    % Validate number of input arguments
+    if(1 ~= nargin && 2 ~= nargin)
+        error( ...
+            'Invalid call to %s.  Correct usage is:\n%s\n%s\n%s', ...
+            fname, ...
+            use_case_a, ...
+            use_case_b ...
+            );
+
+    endif;
+
+    % Validate controller argument
+    if(~isItemViewControllerObject(controller))
+        error( ...
+            '%s:controller must be an instance of the Item Edit View Controller data structure', ...
+            fname ...
+            );
+
+    endif;
+
+    if(2 == nargin)
+        % Validate item argument
+        if(~isItemDataStruct(item_list))
+            error( ...
+                '%s:item must be an instance of the Item data structure', ...
+                fname ...
+                );
+
+        endif;
+
+    endif;
 
     if(1 == nargin)
 
@@ -242,6 +370,32 @@ endfunction;
 %
 % -----------------------------------------------------------------------------
 function handleItemEditViewSzChng(controller)
+
+    % Store function name into variable
+    % for easier management of error messages ---------------------------------
+    fname = 'updateViewedItem';
+    use_case = ' -- result = updateViewedItem(controller, item_list)';
+
+    % Validate input arguments ------------------------------------------------
+
+    % Validate number of input arguments
+    if(1 ~= nargin)
+        error( ...
+            'Invalid call to %s.  Correct usage is:\n%s\n%s\n%s', ...
+            fname, ...
+            use_case ...
+            );
+
+    endif;
+
+    % Validate controller argument
+    if(~isItemViewControllerObject(controller))
+        error( ...
+            '%s:controller must be an instance of the Item Edit View Controller data structure', ...
+            fname ...
+            );
+
+    endif;
 
     updateItemEditView(controller);
 

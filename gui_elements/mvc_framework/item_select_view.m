@@ -39,13 +39,6 @@ function controller = newItemSelectView(controller)
         'position', position(1, :) ...
         );
 
-    % Check if we deal with an empty list -------------------------------------
-    selected_item = newItem('Empty', 'None');
-    if(~isempty(controller.item_list))
-        selected_item = controller.item_list{1};
-
-    endif;
-
     % Create fields view elements ---------------------------------------------
 
     % Set 'Title' view elemets
@@ -81,7 +74,7 @@ function controller = newItemSelectView(controller)
         'parent', controller.ui_handles.main_container, ...
         'style', 'edit', ...
         'enable', 'inactive', ...
-        'string', selected_item.value, ...
+        'string', controller.selected_item.value, ...
         'tooltipstring', 'Item value', ...
         'horizontalalignment', 'left', ...
         'units', 'normalized', ...
@@ -107,15 +100,15 @@ endfunction;
 function updateItemSelectView(controller)
 
     % Get selection index -----------------------------------------------------
-    selected_item_index = get(controller.ui_handles.item_title_field, 'value');
+    selected_item_index = 1;
 
     % Check if we deal with an empty list -------------------------------------
-    selected_item = newItem('Empty', 'None');
-    if(isempty(controller.item_list))
-        selected_item_index = 1;
+    if(~isempty(controller.item_list))
+        selected_item_index = get(controller.ui_handles.item_title_field, 'value');
+        selected_item = controller.item_list{selected_item_index};
 
     else
-        selected_item = controller.item_list{selected_item_index};
+        selected_item = controller.selected_item;
 
     endif;
 
