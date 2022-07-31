@@ -109,7 +109,10 @@ function controller = newItemListViewController(item_list, parent_controller)
         % Initialize structure for storing app data
         controllers = struct();
         controllers.item_list_view = NaN;
-        guidata(controller.parent.ui_handles.item_list_view_container, controllers);
+        guidata( ...
+            controller.parent.ui_handles.item_list_view_container, ...
+            controllers ...
+            );
 
     else
         % Check if parent controller is proper parent for the
