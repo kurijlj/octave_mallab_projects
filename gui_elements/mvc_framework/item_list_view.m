@@ -7,7 +7,7 @@ source('./item_list_model.m');
 % Function 'newItemListView':
 %
 % Use:
-%       -- controller = newItemListView(controller)
+%       -- handle = newItemListView(controller)
 %
 % Description:
 % Create an new 'Item List View' and assign it to the parent container.

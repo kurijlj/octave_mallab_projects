@@ -1,75 +1,32 @@
 item_list_view_controller_version = '1.0';
 
+source('./app_data.m');
 source('./item_list_model.m');
 source('./item_list_view.m');
 
 % -----------------------------------------------------------------------------
 %
-% Function 'newItemListViewController':
+% Function 'newItemListView':
 %
 % Use:
-%       -- controller = newItemListViewController(item_list, parent_controller)
+%       -- handle = newItemListView(view_tag, item_list, hparent)
 %
 % Description:
-% Create new 'Item List View' ui displaying item fields, and assign
-% controller to it. If assigned 'parent controller' is a controller of a
-% container holding the view, and handling size changed events. If no
-% parent container is supplied 'Item List View Controller' will create a figure
-% containing the view.
 %
-% Parent controller must be a structure containing at least following fields:
-%       order;
-%       layout;
-%       ui_handles;
-% where: order is integer valu (0 or 1) indicating the order of a parent
-% controller. This data is used to determine proper invocation of the callback
-% for the size changed event.'layout; is a structure containing 'padding_px',
-% 'row_height_px', and 'btn_width_px' fields, and 'ui_handles' is a structure
-% containing field 'item_list_view_container' with a handle to the view's container:
-%
-%
-%        +===================+
-%        | parent_controller |
-%        +===================+
-%        | order             |
-%        +-------------------+
-%        | layout            | -----+
-%        +-------------------+      |
-%        | ui_handles        | -+   |
-%        +-------------------+  |   |
-%                               |   |
-%                               |   |  +=====================================+
-%                               |   +->| layout                              |
-%                               |      +=====================================+
-%                               |      | padding_px                          |
-%                               |      +-------------------------------------+
-%                               |      | column_width_px                     |
-%                               |      +-------------------------------------+
-%                               |      | row_height_px                       |
-%                               |      +-------------------------------------+
-%                               |      | btn_width_px                        |
-%                               |      +-------------------------------------+
-%                               |
-%                               |
-%                               |      +=====================================+
-%                               +----->| ui_handles                          |
-%                                      +=====================================+
-%                                      | item_list_view_container (uihandle) |
-%                                      +-------------------------------------+
-%
+% TODO: Add function description here
 % -----------------------------------------------------------------------------
-function controller = newItemListViewController(item_list, parent_controller)
+function handle = newItemListView(view_tag, item_list, hparent)
 
     % Store function name into variable
     % for easier management of error messages ---------------------------------
-    fname = 'newItemListViewController';
-    use_case_a = ' -- controller = newItemListViewController(item_list)';
-    use_case_b = ' -- controller = newItemListViewController(item_list, parent_controller)';
+    fname = 'newItemListView';
+    use_case_a = ' -- controller = newItemListView(view_tag, item_list)';
+    use_case_b = ' -- controller = newItemListView(view_tag, item_list, hparent)';
 
     % Validate input arguments ------------------------------------------------
 
     % Validate number of input arguments
-    if(1 ~= nargin && 2 ~= nargin)
+    if(2 ~= nargin && 3 ~= nargin)
         error( ...
             'Invalid call to %s.  Correct usage is:\n%s\n%s', ...
             fname, ...
@@ -79,84 +36,92 @@ function controller = newItemListViewController(item_list, parent_controller)
 
     endif;
 
-    controller = struct();
+    % Validate view_tag argument
+    if(~ischar(view_tag))
+        error( ...
+            '%s: view_tag must be a character array', ...
+            fname
+            );
+    endif;
+
+    % Validate item_list argument
+    if(~isItemListObject(item_list))
+        error( ...
+            '%s: item_list must be an instance of the Item List data structure', ...
+            fname
+            );
+
+    endif;
+
+    % Validate hparent argument
+    if(2 == nargin && ~ishandle(hparent))
+        error( ...
+            '%s: hparent must be handle to a graphics object', ...
+            fname
+            );
+
+    endif;
+
+    % Initialize variable for storing all relevant app data
+    app_data = NaN;
 
     if(1 == nargin)
-        % User did not supply parent controller and is running 'Item View' as
-        % standalone GUI app. Create supporting data structures
-        controller.parent = struct();
-
-        % Define order of the parent. Since we are creating figure just for
-        % showing this view we treat it as a 'first' order parent (value of
-        % zero). All other containers we treat as 'higher' order parent (value
-        % of 1).
-        controller.parent.order = 0;
-
-        % Define common layout parameters
-        controller.parent.layout = struct();
-        controller.parent.layout.padding_px = 6;
-        controller.parent.layout.column_width_px = 128;
-        controller.parent.layout.row_height_px = 24;
-        controller.parent.layout.btn_width_px = 128;
+        % We don't have handle to a parent UI container, so we need to run 'Item
+        % List View' as a standalone application, within it's own figure and
+        % with underlying app_data
 
         % Create figure and define it as parent to 'Item' view
-        controller.parent.ui_handles = struct();
-        controller.parent.ui_handles.item_list_view_container = figure( ...
+        hparent = figure( ...
             'name', 'Item List', ...
             'menubar', 'none' ...
             );
 
-        % Initialize structure for storing app data
-        controllers = struct();
-        controllers.item_list_view = NaN;
-        guidata( ...
-            controller.parent.ui_handles.item_list_view_container, ...
-            controllers ...
-            );
+        % Create new 'App Data' structure
+        app_data = newAppData(hparent);
 
     else
-        % Check if parent controller is proper parent for the
-        % 'Item List View' controller
-        if(~isItemListViewParentControllerObject(controller))
+        % We have a handle to the parent container. Get handle to the app
+        % figure and validate underlying app_data structure
+        app_data = guidata(gcf());
+
+        % Check if object returned by guidata() is an actual 'App Data'
+        % structure
+        if(~isAppDataStructure(app_data))
             error( ...
-                '%s:controller is not a proper parent controller', ...
-                fname ...
+                '%s: GUI data does not hold actual App Data structure', ...
+                fname
                 );
 
         endif;
 
-
-        % User supplied a valid parent controller
-        controller.parent = parent_controller;
-
     endif;
 
-    controller.data = struct();
-    controller.data.item_list = item_list;
-    controller.data.selected_item_idx = 1;
+    view_data = struct());
+    view_data.item_list = item_list;
+    view_data.selected_item = 1;
     if(isempty(item_list))
-        controller.data.selected_item = newItem('Empty', 'None');
-
-    else
-        controller.data.selected_item ...
-            = item_list{controller.data.selected_item_idx};
+        view_data.item_list = {newItem('Empty', 'None')};
 
     endif;
+    handle = newItemListView(hparent, view_data);
 
-    controller = newItemListView(controller);
+    app_data.data = setfield(app_data.data, 'view_tag', view_data);
+    app_data.ui_handles = setfield( ...
+        app_data.ui_handles, ...
+        'view_tag', ...
+        handle ...
+        );
 
     if(1 == nargin)
         % Define callbacks for events we handle
         set( ...
-            controller.parent.ui_handles.item_list_view_container, ...
-            'sizechangedfcn', @(src, evt)handleItemListViewSzChng(controller) ...
+            hparent, ...
+            'sizechangedfcn', @(src, evt)handleItemListViewSzChng(handle) ...
             );
 
     endif;
 
-    controllers = guidata(controller.parent.ui_handles.item_list_view_container);
-    controllers.item_list_view = controller;
-    guidata(controller.parent.ui_handles.item_list_view_container, controllers);
+    guidata(app_data.ui_handles.hfigure, app_data);
 
 endfunction;
 
