@@ -108,7 +108,7 @@ function handle = newItemListView(view_tag, item_list, hparent)
 
     layoutItemListView(view_tag, hparent);
 
-    if(1 == nargin)
+    if(2 == nargin)
         % Define callbacks for events we handle
         set( ...
             hparent, ...
@@ -116,8 +116,6 @@ function handle = newItemListView(view_tag, item_list, hparent)
             );
 
     endif;
-
-    guidata(app_data.ui_handles.hfigure, app_data);
 
 endfunction;
 
@@ -291,7 +289,6 @@ endfunction;
 %
 % -----------------------------------------------------------------------------
 function position = itemListViewElementsPosition(hfigure)
-    display('Update');
 
     % Store function name into variable
     % for easier management of error messages ---------------------------------
