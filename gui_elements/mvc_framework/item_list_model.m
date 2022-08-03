@@ -215,6 +215,57 @@ endfunction;
 
 % -----------------------------------------------------------------------------
 %
+% Function 'isItemListSelectionObject':
+%
+% Use:
+%       -- isItemListSelectionObject(obj)
+%
+% Description:
+% Return true if passed object is a proper 'Item List Selection' data sructure,
+% i.e. is cell array of 'Item' objects and holds index of selected item.
+%
+% -----------------------------------------------------------------------------
+function result = isItemListSelectionObject(obj)
+
+    % Store function name into variable
+    % for easier management of error messages ---------------------------------
+    fname = 'isItemListSelectionObject';
+    use_case = ' -- result = isItemListSelectionObject(obj)';
+
+    % Validate input arguments ------------------------------------------------
+
+    % Validate number of input arguments
+    if(1 ~= nargin)
+        error( ...
+            'Invalid call to %s.  Correct usage is:\n%s\n%s\n%s', ...
+            fname, ...
+            use_case ...
+            );
+
+    endif;
+
+    % Initialize return value to default
+    result = false;
+
+    % Check validity of all fields
+    if( ...
+            isstruct(obj) ...
+            && isfield(obj, 'item_list') ...
+            && isItemListObject(obj.item_list) ...
+            && isfield(obj, 'selected_item') ...
+            && isfloat(obj.selected_item) ...
+            && (1 <= obj.selected_item) ...
+            )
+
+        % Evrything is as should be, set return value to true
+        result = true;
+
+    endif;
+
+endfunction;
+
+% -----------------------------------------------------------------------------
+%
 % Function 'checkItemDatabaseIntegrity':
 %
 % Use:
@@ -262,7 +313,7 @@ function title_list = listItemTitles(item_list)
     % Validate if item_list is a 'Item List' object
     if(~isItemListObject(item_list))
         error( ...
-            '%s:item_list must be an instance of the Item List data structure', ...
+            '%s: item_list must be an instance of the Item List data structure', ...
             fname ...
             );
 
@@ -321,7 +372,7 @@ function item_cell_list = itemList2CellArray(item_list)
     % Validate if item_list is a 'Item List' object
     if(~isItemListObject(item_list))
         error( ...
-            '%s:item_list must be an instance of the Item List data structure', ...
+            '%s: item_list must be an instance of the Item List data structure', ...
             fname ...
             );
 

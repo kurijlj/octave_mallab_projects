@@ -1,5 +1,6 @@
 item_list_view_version = '1.0';
 
+source('./app_data.m');
 source('./item_list_model.m');
 
 % -----------------------------------------------------------------------------
@@ -7,18 +8,226 @@ source('./item_list_model.m');
 % Function 'newItemListView':
 %
 % Use:
-%       -- handle = newItemListView(controller)
+%       -- handle = newItemListView(view_tag, item_list, hparent)
 %
 % Description:
-% Create an new 'Item List View' and assign it to the parent container.
+% TODO: Add function description here
 %
 % -----------------------------------------------------------------------------
-function controller = newItemListView(controller)
+function handle = newItemListView(view_tag, item_list, hparent)
 
     % Store function name into variable
     % for easier management of error messages ---------------------------------
     fname = 'newItemListView';
-    use_case = ' -- result = newItemListView(controller)';
+    use_case_a = ' -- controller = newItemListView(view_tag, item_list)';
+    use_case_b = ' -- controller = newItemListView(view_tag, item_list, hparent)';
+
+    % Validate input arguments ------------------------------------------------
+
+    % Validate number of input arguments
+    if(2 ~= nargin && 3 ~= nargin)
+        error( ...
+            'Invalid call to %s.  Correct usage is:\n%s\n%s', ...
+            fname, ...
+            use_case_a, ...
+            use_case_b ...
+            );
+
+    endif;
+
+    % Validate view_tag argument
+    if(~ischar(view_tag))
+        error( ...
+            '%s: view_tag must be a character array', ...
+            fname
+            );
+    endif;
+
+    % Validate item_list argument
+    if(~isItemListObject(item_list))
+        error( ...
+            '%s: item_list must be an instance of the Item List data structure', ...
+            fname
+            );
+
+    endif;
+
+    % Validate hparent argument
+    if(3 == nargin && ~ishandle(hparent))
+        error( ...
+            '%s: hparent must be handle to a graphics object', ...
+            fname
+            );
+
+    endif;
+
+    % Initialize variable for storing all relevant app data
+    app_data = NaN;
+
+    if(2 == nargin)
+        % We don't have handle to a parent UI container, so we need to run 'Item
+        % List View' as a standalone application, within it's own figure and
+        % with underlying app_data
+
+        % Create figure and define it as parent to 'Item' view
+        hparent = figure( ...
+            'name', 'Item List', ...
+            'menubar', 'none' ...
+            );
+
+        % Create new 'App Data' structure
+        app_data = newAppData(hparent);
+
+    else
+        % We have a handle to the parent container. Get handle to the app
+        % figure and validate underlying app_data structure
+        app_data = guidata(gcf());
+
+        % Check if object returned by guidata() is an actual 'App Data'
+        % structure
+        if(~isAppDataStructure(app_data))
+            error( ...
+                '%s: GUI data does not hold actual App Data structure', ...
+                fname
+                );
+
+        endif;
+
+    endif;
+
+    view_data = struct();
+    view_data.item_list = item_list;
+    view_data.selected_item = 1;
+    if(isempty(item_list))
+        view_data.item_list = {newItem('Empty', 'None')};
+
+    endif;
+    app_data.data = setfield(app_data.data, view_tag, view_data);
+
+    guidata(app_data.ui_handles.hfigure, app_data);
+
+    layoutItemListView(view_tag, hparent);
+
+    if(1 == nargin)
+        % Define callbacks for events we handle
+        set( ...
+            hparent, ...
+            'sizechangedfcn', @(src, evt)updateItemListView(view_tag) ...
+            );
+
+    endif;
+
+    guidata(app_data.ui_handles.hfigure, app_data);
+
+endfunction;
+
+% -----------------------------------------------------------------------------
+%
+% Function 'layoutItemListView':
+%
+% Use:
+%       -- layoutItemListView(view_tag, hparent)
+%
+% Description:
+% TODO: Add function description here
+%
+% -----------------------------------------------------------------------------
+function layoutItemListView(view_tag, hparent)
+
+    % Store function name into variable
+    % for easier management of error messages ---------------------------------
+    fname = 'layoutItemListView';
+    use_case = ' -- layoutItemListView(view_tag, hparent)';
+
+    % Validate input arguments ------------------------------------------------
+
+    % Validate number of input arguments
+    if(2 ~= nargin)
+        error('Invalid call to %s.  Correct usage is:\n%s', fname, use_case);
+
+    endif;
+
+    % Validate view_tag argument
+    if(~ischar(view_tag))
+        error( ...
+            '%s: view_tag must be a character array', ...
+            fname
+            );
+    endif;
+
+    % Validate hparent argument
+    if(~ishandle(hparent))
+        error( ...
+            '%s: hparent must be handle to a graphics object', ...
+            fname
+            );
+
+    endif;
+
+    % Check if cureent figure holds valid app data
+    app_data = guidata(gcf());
+    if(~isAppDataStructure(app_data))
+        error( ...
+            '%s: GUI data does not hold actual App Data structure', ...
+            fname
+            );
+
+    endif;
+
+    % Initialize GUI elements positions ---------------------------------------
+    position = itemListViewElementsPosition(app_data.ui_handles.hfigure);
+
+    % Create 'Item List View' panel -------------------------------------------
+    app_data.ui_handles = setfield( ...
+        app_data.ui_handles, ...
+        view_tag, ...
+        uipanel( ...
+            'parent', hparent, ...
+            'title', 'Item List', ...
+            'position', position(1, :) ...
+            ) ...
+        );
+
+    % Create items table ------------------------------------------------------
+    item_list_selection = getfield(app_data.data, view_tag);
+    app_data.ui_handles = setfield( ...
+        app_data.ui_handles, ...
+        strjoin({view_tag, 'table'}, '_'), ...
+        uitable( ...
+            'parent', getfield(app_data.ui_handles, view_tag), ...
+            'Data', itemList2CellArray(item_list_selection.item_list), ...
+            'tooltipstring', 'Select row to select Item', ...
+            'ColumnName', {'Title', 'Value'}, ...
+            % 'CellSelectionCallback', @onItemListViewCellSelect, ...
+            % 'ButtonDownFcn', @onBtnDwn, ...
+            % 'ColumnEditable', true, ...
+            'units', 'normalized', ...
+            'position', position(2, :) ...
+            ) ...
+        );
+
+    guidata(app_data.ui_handles.hfigure, app_data);
+
+endfunction;
+
+% -----------------------------------------------------------------------------
+%
+% Function 'updateItemListView':
+%
+% Use:
+%       -- updateItemListView(view_tag)
+%
+% Description:
+% Update the view in response to the change of data or GUI elements
+% repositioning due to size changed event.
+%
+% -----------------------------------------------------------------------------
+function updateItemListView(view_tag)
+
+    % Store function name into variable
+    % for easier management of error messages ---------------------------------
+    fname = 'updateItemListView';
+    use_case = ' -- updateItemListView(view_tag)';
 
     % Validate input arguments ------------------------------------------------
 
@@ -28,57 +237,43 @@ function controller = newItemListView(controller)
 
     endif;
 
-    % Initialize struct to store GUI handles
-    controller.ui_handles = struct();
+    % Validate view_tag argument
+    if(~ischar(view_tag))
+        error( ...
+            '%s: view_tag must be a character array', ...
+            fname
+            );
+    endif;
 
-    % Create 'Item List View' panel -------------------------------------------
-    position = itemListViewElementsPosition(controller);
-    controller.ui_handles.main_container = uipanel( ...
-        'parent', controller.parent.ui_handles.item_list_view_container, ...
-        'title', 'Item List', ...
-        'position', position(1, :) ...
-        );
+    % Check if cureent figure holds valid app data
+    app_data = guidata(gcf());
+    if(~isAppDataStructure(app_data))
+        error( ...
+            '%s: GUI data does not hold actual App Data structure', ...
+            fname
+            );
 
-    % Create items table ------------------------------------------------------
-    controller.ui_handles.item_table = uitable( ...
-        'parent', controller.ui_handles.main_container, ...
-        'Data', itemList2CellArray(controller.data.item_list), ...
-        'tooltipstring', 'Select row to select Item', ...
-        'ColumnName', {'Title', 'Value'}, ...
-        'CellSelectionCallback', @onItemListViewCellSelect, ...
-        'ButtonDownFcn', @onBtnDwn, ...
-        % 'ColumnEditable', true, ...
-        'units', 'normalized', ...
-        'position', position(2, :) ...
-        );
+    endif;
 
-endfunction;
+    % Check if current figure holds our view
+    if(~isfield(app_data.ui_handles, view_tag))
+        error( ...
+            '%s: current figure does not contain view with given tag (%s)', ...
+            fname, ...
+            view_tag ...
+            );
 
-% -----------------------------------------------------------------------------
-%
-% Function 'updateItemSelectView':
-%
-% Use:
-%       -- updateItemSelectView(controller)
-%
-% Description:
-% Update the view in response to the change of data or GUI elements
-% repositioning due to size changed event. This function is meant to be called
-% by the controller. Calling this function on its own can lead to undefined
-% behavior.
-%
-% -----------------------------------------------------------------------------
-function updateItemListView(controller)
+    endif;
 
     % Get GUI elements postions
-    position = itemListViewElementsPosition(controller);
+    position = itemListViewElementsPosition(app_data.ui_handles.hfigure);
 
     set( ...
-        controller.ui_handles.main_container, ...
+        getfield(app_data.ui_handles, view_tag), ...
         'position', position(1, :) ...
         );
     set( ...
-        controller.ui_handles.item_table, ...
+        getfield(app_data.ui_handles, strjoin({view_tag, 'table'}, '_')), ...
         'position', position(2, :) ...
         );
 
@@ -89,24 +284,61 @@ endfunction;
 % Function 'itemListViewElementsPosition':
 %
 % Use:
-%       -- position = itemListViewElementsPosition(controller)
+%       -- position = itemListViewElementsPosition(hfigure)
 %
 % Description:
 % Calculate GUI elements position within set container.
 %
 % -----------------------------------------------------------------------------
-function position = itemListViewElementsPosition(controller)
+function position = itemListViewElementsPosition(hfigure)
+    display('Update');
+
+    % Store function name into variable
+    % for easier management of error messages ---------------------------------
+    fname = 'itemListViewElementsPosition';
+    use_case = ' -- position = itemListViewElementsPosition(hfigure)';
+
+    % Validate input arguments ------------------------------------------------
+
+    % Validate number of input arguments
+    if(1 ~= nargin)
+        error( ...
+            'Invalid call to %s.  Correct usage is:\n%s\n%s\n%s', ...
+            fname, ...
+            use_case ...
+            );
+
+    endif;
+
+    % Validate hfigure argument
+    if(~isfigure(hfigure))
+        error( ...
+            '%s: hfigure must be handle to a figure', ...
+            fname
+            );
+
+    endif;
+
+    % Check if given figure holds valid app data
+    app_data = guidata(hfigure);
+    if(~isAppDataStructure(app_data))
+        error( ...
+            '%s: GUI data does not hold actual App Data structure', ...
+            fname
+            );
+
+    endif;
 
     % Define return value as matrix -------------------------------------------
     position = [];
 
     % Calculate relative extents ----------------------------------------------
-    cexts = getpixelposition(controller.parent.ui_handles.item_list_view_container);
-    horpadabs = controller.parent.layout.padding_px / cexts(3);
-    verpadabs = controller.parent.layout.padding_px / cexts(4);
-    btnwdtabs = controller.parent.layout.btn_width_px / cexts(3);
-    clmwdtabs = controller.parent.layout.column_width_px / cexts(3);
-    rowhghabs = controller.parent.layout.row_height_px / cexts(4);
+    cexts = getpixelposition(hfigure);
+    horpadabs = app_data.ui_layout_guides.padding_px / cexts(3);
+    verpadabs = app_data.ui_layout_guides.padding_px / cexts(4);
+    btnwdtabs = app_data.ui_layout_guides.btn_width_px / cexts(3);
+    clmwdtabs = app_data.ui_layout_guides.column_width_px / cexts(3);
+    rowhghabs = app_data.ui_layout_guides.row_height_px / cexts(4);
 
     % Set padding for the main panel ------------------------------------------
     position = [ ...

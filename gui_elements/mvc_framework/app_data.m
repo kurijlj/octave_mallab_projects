@@ -33,8 +33,8 @@ function app_data = newAppData(hfigure)
     endif;
 
 
-    % Validate hparent argument
-    if(~ishandle(hfigure))
+    % Validate hfigure argument
+    if(~isfigure(hfigure))
         error( ...
             '%s: hfigure must be handle to a figure', ...
             fname
