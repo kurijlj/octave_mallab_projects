@@ -97,7 +97,7 @@ function handle = newItemListView(view_tag, item_list, hparent)
 
     view_data = struct();
     view_data.item_list = item_list;
-    view_data.selected_item = 1;
+    view_data.selected_item = 0;  % Indicates that no item is yet selected
     if(isempty(item_list))
         view_data.item_list = {newItem('Empty', 'None')};
 
@@ -112,7 +112,7 @@ function handle = newItemListView(view_tag, item_list, hparent)
         % Define callbacks for events we handle
         set( ...
             hparent, ...
-            'sizechangedfcn', @(src, evt)updateItemListView(view_tag) ...
+            'sizechangedfcn', {@updateItemListView, view_tag} ...
             );
 
     endif;
@@ -196,8 +196,8 @@ function layoutItemListView(view_tag, hparent)
             'Data', itemList2CellArray(item_list_selection.item_list), ...
             'tooltipstring', 'Select row to select Item', ...
             'ColumnName', {'Title', 'Value'}, ...
-            % 'CellSelectionCallback', @onItemListViewCellSelect, ...
-            % 'ButtonDownFcn', @onBtnDwn, ...
+            'CellSelectionCallback', {@onItemListViewCellSelect, view_tag}, ...
+            % 'ButtonDownFcn', {@onBtnDwn, view_tag}, ...
             % 'ColumnEditable', true, ...
             'units', 'normalized', ...
             'position', position(2, :) ...
@@ -220,7 +220,7 @@ endfunction;
 % repositioning due to size changed event.
 %
 % -----------------------------------------------------------------------------
-function updateItemListView(view_tag)
+function updateItemListView(hsrc, evt, view_tag)
 
     % Store function name into variable
     % for easier management of error messages ---------------------------------
@@ -230,7 +230,7 @@ function updateItemListView(view_tag)
     % Validate input arguments ------------------------------------------------
 
     % Validate number of input arguments
-    if(1 ~= nargin)
+    if(3 ~= nargin)
         error('Invalid call to %s.  Correct usage is:\n%s', fname, use_case);
 
     endif;
@@ -244,7 +244,7 @@ function updateItemListView(view_tag)
     endif;
 
     % Check if cureent figure holds valid app data
-    app_data = guidata(gcf());
+    app_data = guidata(hsrc);
     if(~isAppDataStructure(app_data))
         error( ...
             '%s: GUI data does not hold actual App Data structure', ...
@@ -264,7 +264,7 @@ function updateItemListView(view_tag)
     endif;
 
     % Get GUI elements postions
-    position = itemListViewElementsPosition(app_data.ui_handles.hfigure);
+    position = itemListViewElementsPosition(hsrc);
 
     set( ...
         getfield(app_data.ui_handles, view_tag), ...
@@ -285,7 +285,8 @@ endfunction;
 %       -- position = itemListViewElementsPosition(hfigure)
 %
 % Description:
-% Calculate GUI elements position within set container.
+% Calculate GUI elements position within set container respectively to figure
+% dimensions.
 %
 % -----------------------------------------------------------------------------
 function position = itemListViewElementsPosition(hfigure)
@@ -357,27 +358,116 @@ function position = itemListViewElementsPosition(hfigure)
 
 endfunction;
 
-function onItemListViewCellSelect(x, y)
-    controllers = guidata(gcbf());
-    controller = controllers.item_list_view;
-    idx = unique(y.Indices(:, 1));
-    if(2 == size(y.Indices)(1) && 1 == numel(idx))
-        controller.data.selected_item_idx = idx;
-        controller.data.selected_item = controller.data.item_list{idx};
+function onItemListViewCellSelect(hsrc, evt, view_tag)
 
-    else
-        controller.data.selected_item_idx = 0;
-        controller.data.selected_item = newItem('Empty', 'None');
+    % Store function name into variable
+    % for easier management of error messages ---------------------------------
+    fname = 'onItemListViewCellSelect';
+    use_case = ' -- onItemListViewCellSelect(hsrc, evt, view_tag)';
+
+    % Validate input arguments ------------------------------------------------
+
+    % Validate number of input arguments
+    if(3 ~= nargin)
+        error('Invalid call to %s.  Correct usage is:\n%s', fname, use_case);
 
     endif;
 
-    controllers.item_list_view = controller;
-    guidata(controller.parent.ui_handles.item_list_view_container, controllers);
+    % Validate view_tag argument
+    if(~ischar(view_tag))
+        error( ...
+            '%s: view_tag must be a character array', ...
+            fname
+            );
+    endif;
+
+    % Check if cureent figure holds valid app data
+    app_data = guidata(hsrc);
+    if(~isAppDataStructure(app_data))
+        error( ...
+            '%s: GUI data does not hold actual App Data structure', ...
+            fname
+            );
+
+    endif;
+
+    % Check if current figure holds our view
+    if(~isfield(app_data.ui_handles, view_tag))
+        error( ...
+            '%s: current figure does not contain view with given tag (%s)', ...
+            fname, ...
+            view_tag ...
+            );
+
+    endif;
+
+    % Process event -----------------------------------------------------------
+
+    % Get selected cells and view data
+    idx = unique(evt.Indices(:, 1));
+    view_data = getfield(app_data.data, view_tag);
+
+    % If user selected just a row idx will be a scalar holding row index
+    if(2 == size(evt.Indices)(1) && 1 == numel(idx))
+        % Row is selected, update selected item index
+        view_data.selected_item = idx;
+
+    else
+        % User selected a single cell or a column, set selected item index to
+        % 'no selection' (0)
+        view_data.selected_item = 0;
+
+    endif;
+
+    % Update global data structure and save data to figure
+    app_data.data = setfield(app_data.data, view_tag, view_data);
+    guidata(hsrc, app_data);
 
 endfunction;
 
-function onBtnDwn(src, evt)
-    display('Processing');
-    display(src);
-    display(evt);
+function onBtnDwn(hsrc, evt, view_tag)
+
+    % Store function name into variable
+    % for easier management of error messages ---------------------------------
+    fname = 'onItemListViewCellSelect';
+    use_case = ' -- onItemListViewCellSelect(hsrc, evt, view_tag)';
+
+    % Validate input arguments ------------------------------------------------
+
+    % Validate number of input arguments
+    if(3 ~= nargin)
+        error('Invalid call to %s.  Correct usage is:\n%s', fname, use_case);
+
+    endif;
+
+    % Validate view_tag argument
+    if(~ischar(view_tag))
+        error( ...
+            '%s: view_tag must be a character array', ...
+            fname
+            );
+    endif;
+
+    % Check if cureent figure holds valid app data
+    app_data = guidata(hsrc);
+    if(~isAppDataStructure(app_data))
+        error( ...
+            '%s: GUI data does not hold actual App Data structure', ...
+            fname
+            );
+
+    endif;
+
+    % Check if current figure holds our view
+    if(~isfield(app_data.ui_handles, view_tag))
+        error( ...
+            '%s: current figure does not contain view with given tag (%s)', ...
+            fname, ...
+            view_tag ...
+            );
+
+    endif;
+
+    % Process event -----------------------------------------------------------
+
 endfunction;
