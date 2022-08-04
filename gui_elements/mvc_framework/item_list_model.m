@@ -7,11 +7,11 @@ source('./item_data_model.m');
 % Function 'newItemList':
 %
 % Use:
-%       -- newItemList(item1, item2, ...)
+%       -- list = newItemList(item1, item2, ...)
 %
 % Description:
-% Generate a new Item data structure with given item_title and item_value
-% values.
+% Generate a new 'Item List' data structure with item1, item2, ... as list
+% items.
 %
 % -----------------------------------------------------------------------------
 function list = newItemList(varargin)
@@ -19,14 +19,14 @@ function list = newItemList(varargin)
     % Store function name into variable
     % for easier management of error messages ---------------------------------
     fname = 'newItemList';
-    use_case = ' -- item = newFilm(item1, item2, item3, ...)';
+    use_case = ' -- list = newItemList(item1, item2, item3, ...)';
 
     % Validate input arguments ------------------------------------------------
 
     % Validate number of input arguments
     if(1 > nargin)
         error( ...
-            'Invalid call to %s.  Correct usage is:\n%s\n%s\n%s', ...
+            'Invalid call to %s. Correct usage is:\n%s', ...
             fname, ...
             use_case ...
             );
@@ -53,7 +53,18 @@ function list = newItemList(varargin)
     list = {};
     idx = 1;
     while(nargin >= idx)
-        list = {list{:}, varargin{idx}};
+        % Check if list already contains the item
+        [tf, itidx] = itemListIsMemberItem(list, varargin{idx});
+
+        if(tf)
+            % Item already exists in the list. Update item's value
+            list{itidx}.value = varargin{idx}.value;
+
+        else
+            % Item does not exist in the list. Append it to the end of the list
+            list = {list{:}, varargin{idx}};
+
+        endif;
 
         idx = idx + 1;
 
@@ -66,7 +77,7 @@ endfunction;
 % Function 'loadItemListFromFile':
 %
 % Use:
-%       -- loadItemListFromFile(file_path)
+%       -- list = loadItemListFromFile(file_path)
 %
 % Description:
 % Load list of 'Item' objects from a file designated with file_path.
@@ -83,13 +94,20 @@ function list = loadItemListFromFile(file_path)
 
     % Validate number of input arguments
     if(1 ~= nargin)
-        error('Invalid call to %s.  Correct usage is:\n%s', fname, use_case);
+        error( ...
+            'Invalid call to %s. Correct usage is:\n%s', ...
+            fname, ...
+            use_case ...
+            );
 
     endif;
 
     % Validate file_path parameter value
     if(~ischar(file_path) || isempty(file_path))
-        error('%s: file_path must be a non-empty string containing the path to a file', fname);
+        error( ...
+            '%s: file_path must be a non-empty string containing the path to a file', ...
+            fname ...
+            );
 
     endif;
 
@@ -135,7 +153,19 @@ function list = loadItemListFromFile(file_path)
     idx = 2;  % We skip column headers
     while(size(db_entries, 1) >= idx)
         item = newItem(db_entries{idx, 1}, db_entries{idx, 2});
-        list = {list{:}, item};
+
+        % Check if list already contains the item
+        [tf, itidx] = itemListIsMemberItem(list, item);
+
+        if(tf)
+            % Item already exists in the list. Update item's value
+            list{itidx}.value = item.value;
+
+        else
+            % Item does not exist in the list. Append it to the end of the list
+            list = {list{:}, item};
+
+        endif;
 
         idx = idx + 1;
 
@@ -148,7 +178,7 @@ endfunction;
 % Function 'isItemListObject':
 %
 % Use:
-%       -- isItemListObject(obj)
+%       -- result = isItemListObject(obj)
 %
 % Description:
 % Return true if passed object is a proper 'Item List' data sructure, i.e. is
@@ -167,7 +197,7 @@ function result = isItemListObject(obj)
     % Validate number of input arguments
     if(1 ~= nargin)
         error( ...
-            'Invalid call to %s.  Correct usage is:\n%s\n%s\n%s', ...
+            'Invalid call to %s. Correct usage is:\n%s', ...
             fname, ...
             use_case ...
             );
@@ -208,59 +238,10 @@ function result = isItemListObject(obj)
 
     endwhile;
 
+    % Return result of validation ---------------------------------------------
+
     % If we got this far it must be an 'Item List' instance
     result = true;
-
-endfunction;
-
-% -----------------------------------------------------------------------------
-%
-% Function 'isItemListSelectionObject':
-%
-% Use:
-%       -- isItemListSelectionObject(obj)
-%
-% Description:
-% Return true if passed object is a proper 'Item List Selection' data sructure,
-% i.e. is cell array of 'Item' objects and holds index of selected item.
-%
-% -----------------------------------------------------------------------------
-function result = isItemListSelectionObject(obj)
-
-    % Store function name into variable
-    % for easier management of error messages ---------------------------------
-    fname = 'isItemListSelectionObject';
-    use_case = ' -- result = isItemListSelectionObject(obj)';
-
-    % Validate input arguments ------------------------------------------------
-
-    % Validate number of input arguments
-    if(1 ~= nargin)
-        error( ...
-            'Invalid call to %s.  Correct usage is:\n%s\n%s\n%s', ...
-            fname, ...
-            use_case ...
-            );
-
-    endif;
-
-    % Initialize return value to default
-    result = false;
-
-    % Check validity of all fields
-    if( ...
-            isstruct(obj) ...
-            && isfield(obj, 'item_list') ...
-            && isItemListObject(obj.item_list) ...
-            && isfield(obj, 'selected_item') ...
-            && isfloat(obj.selected_item) ...
-            && (0 <= obj.selected_item) ...
-            )
-
-        % Evrything is as should be, set return value to true
-        result = true;
-
-    endif;
 
 endfunction;
 
@@ -303,7 +284,7 @@ function title_list = listItemTitles(item_list)
     % Validate number of input arguments
     if(1 ~= nargin)
         error( ...
-            'Invalid call to %s.  Correct usage is:\n%s\n%s\n%s', ...
+            'Invalid call to %s. Correct usage is:\n%s', ...
             fname, ...
             use_case ...
             );
@@ -318,6 +299,8 @@ function title_list = listItemTitles(item_list)
             );
 
     endif;
+
+    % Traverse list and create cell array containing item titles --------------
 
     % Initialize title cell array
     title_list = {};
@@ -362,7 +345,7 @@ function item_cell_list = itemList2CellArray(item_list)
     % Validate number of input arguments
     if(1 ~= nargin)
         error( ...
-            'Invalid call to %s.  Correct usage is:\n%s\n%s\n%s', ...
+            'Invalid call to %s. Correct usage is:\n%s', ...
             fname, ...
             use_case ...
             );
@@ -377,6 +360,8 @@ function item_cell_list = itemList2CellArray(item_list)
             );
 
     endif;
+
+    % Convert list entries to cell array --------------------------------------
 
     % Initialize title cell array
     item_cell_list = {};
@@ -397,5 +382,175 @@ function item_cell_list = itemList2CellArray(item_list)
         item_cell_list = {'Empty', 'None';};
 
     endif;
+
+endfunction;
+
+% -----------------------------------------------------------------------------
+%
+% Function 'itemListAddItem':
+%
+% Use:
+%       -- result_list = itemListAddItem(input_list, item)
+%
+% Description:
+% Retrieve copy of input_list with item added to the end of the list.
+%
+% -----------------------------------------------------------------------------
+function result_list = itemListAddItem(input_list, item)
+
+    % Store function name into variable
+    % for easier management of error messages ---------------------------------
+    fname = 'itemListAddItem';
+    use_case = ' -- result_list = itemListAddItem(input_list, item)';
+
+    % Validate input arguments ------------------------------------------------
+
+    % Validate number of input arguments
+    if(2 ~= nargin)
+        error( ...
+            'Invalid call to %s. Correct usage is:\n%s', ...
+            fname, ...
+            use_case ...
+            );
+
+    endif;
+
+    % Validate if input_list is a 'Item List' object
+    if(~isItemListObject(input_list))
+        error( ...
+            '%s: input_list must be an instance of the Item List data structure', ...
+            fname ...
+            );
+
+    endif;
+
+    % Validate item argument
+    if(~isItemDataStruct(item))
+        error( ...
+            '%s: item must be an instance of the Item data structure', ...
+            fname ...
+            );
+
+    endif;
+
+    % Append new item to the list end -----------------------------------------
+    result_list = {input_list{:}, item};
+
+endfunction;
+
+% -----------------------------------------------------------------------------
+%
+% Function 'itemListRemoveItem':
+%
+% Use:
+%       -- result_list = itemListAddItem(input_list, idx)
+%
+% Description:
+% Retrieve copy of in_list with item with index idx removed from the list.
+%
+% -----------------------------------------------------------------------------
+function result_list = itemListRemoveItem(input_list, idx)
+
+    % Store function name into variable
+    % for easier management of error messages ---------------------------------
+    fname = 'itemListAddItem';
+    use_case = ' -- result_list = itemListAddItem(input_list, idx)';
+
+    % Validate input arguments ------------------------------------------------
+
+    % Validate number of input arguments
+    if(2 ~= nargin)
+        error( ...
+            'Invalid call to %s. Correct usage is:\n%s', ...
+            fname, ...
+            use_case ...
+            );
+
+    endif;
+
+    % Validate if input_list is a 'Item List' object
+    if(~isItemListObject(input_list))
+        error( ...
+            '%s: input_list must be an instance of the Item List data structure', ...
+            fname ...
+            );
+
+    endif;
+
+    % Validate idx argument
+    if(0 > idx || numel(input_list) < idx)
+        error( ...
+            '%s: input_list(%d): out of bound %d (dimensions are 1x%d)', ...
+            fname, ...
+            idx, ...
+            numel(input_list), ...
+            numel(input_list) ...
+            );
+
+    endif;
+
+    % Remove item from the list -----------------------------------------------
+    result_list = {input_list{1:idx - 1}, input_list{idx + 1:end}};
+
+endfunction;
+
+% -----------------------------------------------------------------------------
+%
+% Function 'itemListIsMemberItem':
+%
+% Use:
+%       -- TF = itemListIsMemberItem(input_list, item)
+%       -- [TF, S_IDX] = itemListIsMemberItem(input_list, item)
+%
+% Description:
+% Return a logical value which is true (1) if the item is found in input_list
+% and false (0) if it is not.
+%
+% If a second output argument is requested then the index into input_list of
+% item is also returned.
+%
+% -----------------------------------------------------------------------------
+function [TF, S_IDX] = itemListIsMemberItem(input_list, item)
+
+    % Store function name into variable
+    % for easier management of error messages ---------------------------------
+    fname = 'itemListIsMemberItem';
+    use_case_a = ' -- TF = itemListIsMemberItem(input_list, item)';
+    use_case_b = ' -- [TF, S_IDX] = itemListIsMemberItem(input_list, item)';
+
+    % Validate input arguments ------------------------------------------------
+
+    % Validate number of input arguments
+    if(2 ~= nargin)
+        error( ...
+            'Invalid call to %s. Correct usage is:\n%s\n%s', ...
+            fname, ...
+            use_case_a, ...
+            use_case_b ...
+            );
+
+    endif;
+
+    % Validate if input_list is a 'Item List' object
+    if(~isItemListObject(input_list))
+        error( ...
+            '%s: input_list must be an instance of the Item List data structure', ...
+            fname ...
+            );
+
+    endif;
+
+    % Validate item argument
+    if(~isItemDataStruct(item))
+        error( ...
+            '%s: item must be an instance of the Item data structure', ...
+            fname ...
+            );
+
+    endif;
+
+    % Search list for the given item ------------------------------------------ 
+    titles = listItemTitles(input_list);
+    [TF, S_IDX] = ismember(item.title, titles);
 
 endfunction;
