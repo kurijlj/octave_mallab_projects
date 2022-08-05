@@ -1,22 +1,22 @@
-ui_layout_guides_version = '1.0';
+app_uistyle_model_version = '1.0';
 
 % -----------------------------------------------------------------------------
 %
-% Function 'newUiLayoutGuides':
+% Function 'newAppUiStyle':
 %
 % Use:
-%       -- guides = newUiLayoutGuides()
+%       -- style = newAppUiStyle()
 %
 % Description:
 %
 % TODO: Add function description here
 % -----------------------------------------------------------------------------
-function guides = newUiLayoutGuides(pad=6, cwd=128, rhg=24, bwd=128)
+function style = newAppUiStyle(pad=6, cwd=128, rhg=24, bwd=128)
 
     % Store function name into variable
     % for easier management of error messages ---------------------------------
-    fname = 'newUiLayoutGuides';
-    use_case = ' -- guides = newUiLayoutGuides(pad, cwd, rhg, bwd)';
+    fname = 'newAppUiStyle';
+    use_case = ' -- style = newAppUiStyle(pad, cwd, rhg, bwd)';
 
     % Validate input arguments ------------------------------------------------
 
@@ -60,26 +60,26 @@ function guides = newUiLayoutGuides(pad=6, cwd=128, rhg=24, bwd=128)
         'bwd' ...
         );
 
-    guides = struct();
-    guides.padding_px = pad;
-    guides.column_width_px = cwd;
-    guides.row_height_px = rhg;
-    guides.btn_width_px = bwd;
+    style = struct();
+    style.padding_px = pad;
+    style.column_width_px = cwd;
+    style.row_height_px = rhg;
+    style.btn_width_px = bwd;
 
 endfunction;
 
 % -----------------------------------------------------------------------------
 %
-% Function 'isUiLayoutGuidesStructure':
+% Function 'isAppUiStyleObject':
 %
 % Use:
-%       -- result = isUiLayoutGuidesStructure(obj)
+%       -- result = isAppUiStyleObject(obj)
 %
 % Description:
 %
 % TODO: Add function description here
 % -----------------------------------------------------------------------------
-function result = isUiLayoutGuidesStructure(obj)
+function result = isAppUiStyleObject(obj)
 
     % Store function name into variable
     % for easier management of error messages ---------------------------------
@@ -91,7 +91,7 @@ function result = isUiLayoutGuidesStructure(obj)
     % Validate number of input arguments
     if(1 ~= nargin)
         error( ...
-            'Invalid call to %s.  Correct usage is:\n%s\n%s\n%s', ...
+            'Invalid call to %s. Correct usage is:\n%s', ...
             fname, ...
             use_case ...
             );
