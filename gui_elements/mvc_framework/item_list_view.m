@@ -5,23 +5,23 @@ source('./item_list_selection_model.m');
 
 % -----------------------------------------------------------------------------
 %
-% Function 'newItemListView':
+% Function 'itemListViewNewView':
 %
 % Use:
-%       -- hfig = newItemListView(view_tag, item_list)
-%       -- hfig = newItemListView(view_tag, item_list, huip)';
+%       -- hfig = itemListViewNewView(view_tag, item_list)
+%       -- hfig = itemListViewNewView(view_tag, item_list, huip)';
 %
 % Description:
 % TODO: Add function description here
 %
 % -----------------------------------------------------------------------------
-function hfig = newItemListView(view_tag, item_list, huip)
+function hfig = itemListViewNewView(view_tag, item_list, huip)
 
     % Store function name into variable
     % for easier management of error messages ---------------------------------
-    fname = 'newItemListView';
-    use_case_a = ' -- hfig = newItemListView(view_tag, item_list)';
-    use_case_b = ' -- hfig = newItemListView(view_tag, item_list, huip)';
+    fname = 'itemListViewNewView';
+    use_case_a = ' -- hfig = itemListViewNewView(view_tag, item_list)';
+    use_case_b = ' -- hfig = itemListViewNewView(view_tag, item_list, huip)';
 
     % Validate input arguments ------------------------------------------------
 
@@ -133,13 +133,13 @@ function hfig = newItemListView(view_tag, item_list, huip)
     gddtp.app_data = setfield(gddtp.app_data, view_tag, view_data);
     guidata(gduip.hdtp, gddtp);
 
-    layoutItemListView(huip, view_tag);
+    itemListViewLayoutView(huip, view_tag);
 
     if(2 == nargin)
         % define callbacks for events we handle
         set( ...
             huip, ...
-            'sizechangedfcn', {@updateItemListView, view_tag} ...
+            'sizechangedfcn', {@itemListViewUpdateView, view_tag} ...
             );
 
     endif;
@@ -148,21 +148,21 @@ endfunction;
 
 % -----------------------------------------------------------------------------
 %
-% function 'layoutItemListView':
+% function 'itemListViewLayoutView':
 %
 % use:
-%       -- layoutItemListView(hparent, view_tag)
+%       -- itemListViewLayoutView(hparent, view_tag)
 %
 % Description:
 % TODO: add function description here
 %
 % -----------------------------------------------------------------------------
-function layoutItemListView(hparent, view_tag)
+function itemListViewLayoutView(hparent, view_tag)
 
     % Store function name into variable
     % for easier management of error messages ---------------------------------
-    fname = 'layoutItemListView';
-    use_case = ' -- layoutItemListView(view_tag, hparent)';
+    fname = 'itemListViewLayoutView';
+    use_case = ' -- itemListViewLayoutView(view_tag, hparent)';
 
     % Validate input arguments ------------------------------------------------
 
@@ -189,7 +189,7 @@ function layoutItemListView(hparent, view_tag)
             );
     endif;
 
-    % get figure user data
+    % Get figure user data
     hfigure = gcf();
     gduip = guidata(hfigure);
 
@@ -225,7 +225,7 @@ function layoutItemListView(hparent, view_tag)
     % Create 'item list view' panel -------------------------------------------
     view_panel = uipanel( ...
         'parent', hparent, ...
-        'title', 'item list', ...
+        'title', 'Item List', ...
         'tag', view_tag, ...
         'position', position(1, :) ...
         );
@@ -238,7 +238,7 @@ function layoutItemListView(hparent, view_tag)
         'data', itemList2CellArray(item_list_selection.item_list), ...
         'tooltipstring', 'Select row to select item', ...
         'columnname', {'Title', 'Value'}, ...
-        % 'cellselectioncallback', {@onItemListViewCellSelect, view_tag}, ...
+        'cellselectioncallback', {@itemListViewOnCellSelect, view_tag}, ...
         'units', 'normalized', ...
         'position', position(2, :) ...
         );
@@ -255,15 +255,15 @@ function layoutItemListView(hparent, view_tag)
     uimenu( ...
         'parent', view_contex_menu, ...
         'tag', strjoin({view_tag, 'add_item'}, '_'), ...
-        'label', 'add item ...', ...
-        % 'callback', @onadditemmenu, ...
+        'label', 'Add Item ...', ...
+        'callback', {@itemListViewOnAddItem, view_tag}, ...
         'enable', 'on' ...
         );
     uimenu( ...
         'parent', view_contex_menu, ...
         'tag', strjoin({view_tag, 'remove_item'}, '_'), ...
-        'label', 'remove item ...', ...
-        % 'callback', @onremoveitemmenu, ...
+        'label', 'Remove Selected Item ...', ...
+        'callback', {@itemListViewOnRemoveSelectedItem, view_tag}, ...
         'enable', 'off' ...
         );
 
@@ -274,22 +274,24 @@ endfunction;
 
 % -----------------------------------------------------------------------------
 %
-% Function 'updateItemListView':
+% Function 'itemListViewUpdateView':
 %
 % Use:
-%       -- updateItemListView(view_tag)
+%       -- itemListViewUpdateView(hsrc, evt, view_tag)
 %
 % Description:
 % Update the view in response to the change of data or gui elements
 % repositioning due to size changed event.
 %
+% hsrc must be a handle to a figure.
+%
 % -----------------------------------------------------------------------------
-function updateItemListView(hsrc, evt, view_tag)
+function itemListViewUpdateView(hsrc, evt, view_tag)
 
     % Store function name into variable
     % for easier management of error messages ---------------------------------
-    fname = 'updateItemListView';
-    use_case = ' -- updateItemListView(view_tag)';
+    fname = 'itemListViewUpdateView';
+    use_case = ' -- itemListViewUpdateView(view_tag)';
 
     % Validate input arguments ------------------------------------------------
 
@@ -300,13 +302,15 @@ function updateItemListView(hsrc, evt, view_tag)
     endif;
 
     % Validate hsrc argument
-    if(~ishandle(hsrc))
+    if(~isfigure(hsrc))
         error( ...
-            '%s: hsrc must be handle to a graphics object', ...
+            '%s: hsrc must be handle to a figure', ...
             fname
             );
 
     endif;
+
+    % We ignore evt argument
 
     % Validate view_tag argument
     if(~ischar(view_tag))
@@ -317,30 +321,24 @@ function updateItemListView(hsrc, evt, view_tag)
     endif;
 
     % Get figure handles
-    hfigure = gcbf();
-    figure_handles = guihandles(hfigure);
+    figure_handles = guihandles(hsrc);
 
-    % Check if current figure holds our view
-    if(~isfield(figure_handles, view_tag))
-        error( ...
-            '%s: current figure does not contain view with given tag (%s)', ...
-            fname, ...
-            view_tag ...
+    % Check if the calling figure holds our view, else we ignore the signal
+    if(isfield(figure_handles, view_tag))
+
+        % Get GUI elements postions
+        position = itemListViewElementsPosition(hsrc);
+
+        set( ...
+            getfield(figure_handles, view_tag), ...
+            'position', position(1, :) ...
+            );
+        set( ...
+            getfield(figure_handles, strjoin({view_tag, 'table'}, '_')), ...
+            'position', position(2, :) ...
             );
 
     endif;
-
-    % Get GUI elements postions
-    position = itemListViewElementsPosition(hfigure);
-
-    set( ...
-        getfield(figure_handles, view_tag), ...
-        'position', position(1, :) ...
-        );
-    set( ...
-        getfield(figure_handles, strjoin({view_tag, 'table'}, '_')), ...
-        'position', position(2, :) ...
-        );
 
 endfunction;
 
@@ -432,24 +430,60 @@ endfunction;
 % Function 'itemListViewNewItemList':
 %
 % Use:
-%       -- itemListViewNewItemList(view_tag, item_list)
+%       -- itemListViewNewItemList(hfigure, view_tag, item_list)
 %
 % Description:
 % TODO: Add function description here.
 %
 % -----------------------------------------------------------------------------
-function itemListViewNewItemList(hsrc, evt, view_tag, item_list)
+function itemListViewNewItemList(hfigure, view_tag, item_list)
 
     % Store function name into variable
     % for easier management of error messages ---------------------------------
     fname = 'itemListViewNewItemList';
-    use_case = ' -- itemListViewNewItemList(hsrc, evt, view_tag, item_list)';
+    use_case = ' -- itemListViewNewItemList(hfigure, view_tag, item_list)';
 
     % Validate input arguments ------------------------------------------------
 
     % Validate number of input arguments
-    if(4 ~= nargin)
+    if(3 ~= nargin)
         error('Invalid call to %s.  Correct usage is:\n%s', fname, use_case);
+
+    endif;
+
+    % Validate hfigure argument
+    if(~isfigure(hfigure))
+        error( ...
+            '%s: hfigure must be handle to a figure', ...
+            fname
+            );
+
+    endif;
+
+    % Get figure user data
+    gduip = guidata(hfigure);
+
+    % Get figure handles to UI controls
+    figure_handles = guihandles(hfigure);
+
+    % Check if given figure holds valid app data
+    if(~isfield(gduip, 'hdtp') || ~isfigure(gduip.hdtp))
+        error( ...
+            '%s: figure does not contain handle to data storage figure', ...
+            fname
+            );
+
+    endif;
+
+    % Get data storage user data
+    gddtp = guidata(gduip.hdtp);
+
+    % Check if given figure holds valid app data
+    if(~isfield(gddtp, 'app_data') || ~isstruct(gddtp.app_data))
+        error( ...
+            '%s: data storage figure does not contain data storage', ...
+            fname
+            );
 
     endif;
 
@@ -459,6 +493,16 @@ function itemListViewNewItemList(hsrc, evt, view_tag, item_list)
             '%s: view_tag must be a character array', ...
             fname
             );
+    endif;
+
+    % Check if given figure holds our view
+    if(~isfield(figure_handles, view_tag))
+        error( ...
+            '%s: given figure does not contain view with given tag (%s)', ...
+            fname, ...
+            view_tag ...
+            );
+
     endif;
 
     % Validate item_list argument
@@ -470,64 +514,46 @@ function itemListViewNewItemList(hsrc, evt, view_tag, item_list)
 
     endif;
 
-    % Check if cureent figure holds valid app data
-    app_data = guidata(hsrc);
-    if(~isAppDataStructure(app_data))
-        error( ...
-            '%s: GUI data does not hold actual App Data structure', ...
-            fname
-            );
-
-    endif;
-
-    % Check if current figure holds our view
-    if(~isfield(app_data.ui_handles, view_tag))
-        error( ...
-            '%s: current figure does not contain view with given tag (%s)', ...
-            fname, ...
-            view_tag ...
-            );
-
-    endif;
-
+    % Update item list --------------------------------------------------------
     view_data = newItemListSelection({newItem('Empty', 'None')});
     if(~isempty(item_list))
         view_data = newItemListSelection(item_list);
 
     endif;
-    app_data.data = setfield(app_data.data, view_tag, view_data);
+    gddtp.app_data = setfield(gddtp.app_data, view_tag, view_data);
 
-    guidata(app_data.ui_handles.hfigure, app_data);
+    guidata(gduip.hdtp, gddtp);
 
+    % Update iew --------------------------------------------------------------
     set( ...
         getfield( ...
-            app_data.ui_handles, ...
+            figure_handles, ...
             strjoin({view_tag, 'table'}, '_') ...
             ), ...
         'Data', itemList2CellArray(item_list) ...
         );
 
-    updateItemListView(app_data.ui_handles.hfigure, [], view_tag);
+    itemListViewUpdateView(hfigure, [], view_tag);
 
 endfunction;
 
 % -----------------------------------------------------------------------------
 %
-% Function 'onItemListViewCellSelect':
+% Function 'itemListViewOnCellSelect':
 %
 % Use:
-%       -- onItemListViewCellSelect(hsrc, evt, view_tag)
+%       -- itemListViewOnCellSelect(hsrc, evt, view_tag)
 %
 % Description:
 % Callback to handle cell select events from the table view.
 %
 % -----------------------------------------------------------------------------
-function onItemListViewCellSelect(hsrc, evt, view_tag)
+function itemListViewOnCellSelect(hsrc, evt, view_tag)
 
     % Store function name into variable
     % for easier management of error messages ---------------------------------
-    fname = 'onItemListViewCellSelect';
-    use_case = ' -- onItemListViewCellSelect(hsrc, evt, view_tag)';
+    fname = 'itemListViewOnCellSelect';
+    use_case = ' -- itemListViewOnCellSelect(hsrc, evt, view_tag)';
 
     % Validate input arguments ------------------------------------------------
 
@@ -537,6 +563,35 @@ function onItemListViewCellSelect(hsrc, evt, view_tag)
 
     endif;
 
+    % Get figure user data
+    gduip = guidata(hsrc);
+
+    % Get figure handles to UI controls
+    figure_handles = guihandles(hsrc);
+
+    % Check if given figure holds valid app data
+    if(~isfield(gduip, 'hdtp') || ~isfigure(gduip.hdtp))
+        error( ...
+            '%s: figure does not contain handle to data storage figure', ...
+            fname
+            );
+
+    endif;
+
+    % Get data storage user data
+    gddtp = guidata(gduip.hdtp);
+
+    % Check if given figure holds valid app data
+    if(~isfield(gddtp, 'app_data') || ~isstruct(gddtp.app_data))
+        error( ...
+            '%s: data storage figure does not contain data storage', ...
+            fname
+            );
+
+    endif;
+
+    % We ignore evt argument
+
     % Validate view_tag argument
     if(~ischar(view_tag))
         error( ...
@@ -545,20 +600,10 @@ function onItemListViewCellSelect(hsrc, evt, view_tag)
             );
     endif;
 
-    % Check if cureent figure holds valid app data
-    app_data = guidata(hsrc);
-    if(~isAppDataStructure(app_data))
+    % Check if given figure holds our view
+    if(~isfield(figure_handles, view_tag))
         error( ...
-            '%s: GUI data does not hold actual App Data structure', ...
-            fname
-            );
-
-    endif;
-
-    % Check if current figure holds our view
-    if(~isfield(app_data.ui_handles, view_tag))
-        error( ...
-            '%s: current figure does not contain view with given tag (%s)', ...
+            '%s: given figure does not contain view with given tag (%s)', ...
             fname, ...
             view_tag ...
             );
@@ -567,42 +612,215 @@ function onItemListViewCellSelect(hsrc, evt, view_tag)
 
     % Process event -----------------------------------------------------------
 
-    % Get selected cells and view data
-    idx = unique(evt.Indices(:, 1));
-    view_data = getfield(app_data.data, view_tag);
+    % Check if the calling figure holds our view, else we ignore the signal
+    if(isfield(figure_handles, view_tag))
 
-    % If user selected just a row idx will be a scalar holding row index
-    if(2 == size(evt.Indices)(1) && 1 == numel(idx))
-        % Row is selected, update selected item index
-        view_data.selected_item = idx;
+        % Get selected cells and view data
+        idx = unique(evt.Indices(:, 1));
+        view_data = getfield(gddtp.app_data, view_tag);
 
-        % Enable 'Remove Item' option in the table's context menu
-        set( ...
-            getfield( ...
-                app_data.ui_handles, ...
-                strjoin({view_tag, 'remove_item'}, '_') ...
-                ), ...
-            'enable', 'on' ...
-            );
+        % If user selected just a row idx will be a scalar holding row index
+        if(2 == size(evt.Indices)(1) && 1 == numel(idx))
+            % Row is selected, update selected item index
+            view_data.selected_item = idx;
 
-    else
-        % User selected a single cell or a column, set selected item index to
-        % 'no selection' (0)
-        view_data.selected_item = 0;
+            % Enable 'Remove Item' option in the table's context menu
+            set( ...
+                getfield( ...
+                    figure_handles, ...
+                    strjoin({view_tag, 'remove_item'}, '_') ...
+                    ), ...
+                'enable', 'on' ...
+                );
 
-        % Disable 'Remove Item' option in the table's context menu
-        set( ...
-            getfield( ...
-                app_data.ui_handles, ...
-                strjoin({view_tag, 'remove_item'}, '_') ...
-                ), ...
-            'enable', 'off' ...
+        else
+            % User selected a single cell or a column, set selected item index
+            % to 'no selection' (0)
+            view_data.selected_item = 0;
+
+            % Disable 'Remove Item' option in the table's context menu
+            set( ...
+                getfield( ...
+                    figure_handles, ...
+                    strjoin({view_tag, 'remove_item'}, '_') ...
+                    ), ...
+                'enable', 'off' ...
+                );
+
+        endif;
+
+        % Update global data structure and save data to figure
+        gddtp.app_data = setfield(gddtp.app_data, view_tag, view_data);
+        guidata(gduip.hdtp, gddtp);
+
+    endif;
+
+endfunction;
+
+% -----------------------------------------------------------------------------
+%
+% Function 'itemListViewOnAddItem':
+%
+% Use:
+%       -- itemListViewOnAddItem(hsrc, evt, view_tag)
+%
+% Description:
+% Callback to handle 'Add Item' command from the table context menu
+%
+% -----------------------------------------------------------------------------
+function itemListViewOnAddItem(hsrc, evt, view_tag)
+
+    % Store function name into variable
+    % for easier management of error messages ---------------------------------
+    fname = 'itemListViewOnAddItem';
+    use_case = ' -- itemListViewOnAddItem(hsrc, evt, view_tag)';
+
+    % Validate input arguments ------------------------------------------------
+
+    % Validate number of input arguments
+    if(3 ~= nargin)
+        error('Invalid call to %s.  Correct usage is:\n%s', fname, use_case);
+
+    endif;
+
+    % Get figure user data
+    gduip = guidata(hsrc);
+
+    % Get figure handles to UI controls
+    figure_handles = guihandles(hsrc);
+
+    % Check if given figure holds valid app data
+    if(~isfield(gduip, 'hdtp') || ~isfigure(gduip.hdtp))
+        error( ...
+            '%s: figure does not contain handle to data storage figure', ...
+            fname
             );
 
     endif;
 
-    % Update global data structure and save data to figure
-    app_data.data = setfield(app_data.data, view_tag, view_data);
-    guidata(hsrc, app_data);
+    % Get data storage user data
+    gddtp = guidata(gduip.hdtp);
+
+    % Check if given figure holds valid app data
+    if(~isfield(gddtp, 'app_data') || ~isstruct(gddtp.app_data))
+        error( ...
+            '%s: data storage figure does not contain data storage', ...
+            fname
+            );
+
+    endif;
+
+    % We ignore evt argument
+
+    % Validate view_tag argument
+    if(~ischar(view_tag))
+        error( ...
+            '%s: view_tag must be a character array', ...
+            fname
+            );
+    endif;
+
+    % Check if given figure holds our view
+    if(~isfield(figure_handles, view_tag))
+        error( ...
+            '%s: given figure does not contain view with given tag (%s)', ...
+            fname, ...
+            view_tag ...
+            );
+
+    endif;
+
+    % Process event -----------------------------------------------------------
+
+    % Check if the calling figure holds our view, else we ignore the signal
+    if(isfield(figure_handles, view_tag))
+
+        display('Add item in progress ...');
+
+    endif;
+
+endfunction;
+
+% -----------------------------------------------------------------------------
+%
+% Function 'itemListViewOnRemoveSelectedItem':
+%
+% Use:
+%       -- itemListViewOnRemoveSelectedItem(hsrc, evt, view_tag)
+%
+% Description:
+% Callback to handle 'Add Item' command from the table context menu
+%
+% -----------------------------------------------------------------------------
+function itemListViewOnRemoveSelectedItem(hsrc, evt, view_tag)
+
+    % Store function name into variable
+    % for easier management of error messages ---------------------------------
+    fname = 'itemListViewOnRemoveSelectedItem';
+    use_case = ' -- itemListViewOnRemoveSelectedItem(hsrc, evt, view_tag)';
+
+    % Validate input arguments ------------------------------------------------
+
+    % Validate number of input arguments
+    if(3 ~= nargin)
+        error('Invalid call to %s.  Correct usage is:\n%s', fname, use_case);
+
+    endif;
+
+    % Get figure user data
+    gduip = guidata(hsrc);
+
+    % Get figure handles to UI controls
+    figure_handles = guihandles(hsrc);
+
+    % Check if given figure holds valid app data
+    if(~isfield(gduip, 'hdtp') || ~isfigure(gduip.hdtp))
+        error( ...
+            '%s: figure does not contain handle to data storage figure', ...
+            fname
+            );
+
+    endif;
+
+    % Get data storage user data
+    gddtp = guidata(gduip.hdtp);
+
+    % Check if given figure holds valid app data
+    if(~isfield(gddtp, 'app_data') || ~isstruct(gddtp.app_data))
+        error( ...
+            '%s: data storage figure does not contain data storage', ...
+            fname
+            );
+
+    endif;
+
+    % We ignore evt argument
+
+    % Validate view_tag argument
+    if(~ischar(view_tag))
+        error( ...
+            '%s: view_tag must be a character array', ...
+            fname
+            );
+    endif;
+
+    % Check if given figure holds our view
+    if(~isfield(figure_handles, view_tag))
+        error( ...
+            '%s: given figure does not contain view with given tag (%s)', ...
+            fname, ...
+            view_tag ...
+            );
+
+    endif;
+
+    % Process event -----------------------------------------------------------
+
+    % Check if the calling figure holds our view, else we ignore the signal
+    if(isfield(figure_handles, view_tag))
+
+        display('Remove selected item in progress ...');
+
+    endif;
 
 endfunction;
