@@ -1,57 +1,252 @@
 item_edit_view_version = '1.0';
 
+source('./app_uistyle_model.m');
+source('./item_data_model.m');
+
 % -----------------------------------------------------------------------------
 %
-% Function 'newItemEditView':
+% Function 'itemEditViewNewView':
 %
 % Use:
-%       -- controller = newItemEditView(controller)
+%       -- hfig = itemEditViewNewView(view_tag, item)
+%       -- hfig = itemEditViewNewView(view_tag, item, huip)';
 %
 % Description:
-% Create an new 'Item Edit View' and assign it to the parent container.
+% TODO: Add function description here
 %
 % -----------------------------------------------------------------------------
-function controller = newItemEditView(controller)
+function hfig = itemEditViewNewView(view_tag, item, huip)
 
     % Store function name into variable
     % for easier management of error messages ---------------------------------
-    fname = 'newItemEditView';
-    use_case = ' -- result = newItemEditView(controller)';
+    fname = 'itemEditViewNewView';
+    use_case_a = ' -- hfig = itemEditViewNewView(view_tag, item)';
+    use_case_b = ' -- hfig = itemEditViewNewView(view_tag, item, huip)';
 
     % Validate input arguments ------------------------------------------------
 
     % Validate number of input arguments
-    if(1 ~= nargin)
+    if(2 ~= nargin && 3 ~= nargin)
+        error( ...
+            'Invalid call to %s.  Correct usage is:\n%s\n%s', ...
+            fname, ...
+            use_case_a, ...
+            use_case_b ...
+            );
+
+    endif;
+
+    % Validate view_tag argument
+    if(~ischar(view_tag))
+        error( ...
+            '%s: view_tag must be a character array', ...
+            fname
+            );
+    endif;
+
+    % Validate item argument
+    if(~itemDataModelIsItemObject(item))
+        error( ...
+            '%s: item must be an instance of the Item data structure', ...
+            fname
+            );
+
+    endif;
+
+    % Validate huip argument
+    if(3 == nargin && ~ishandle(huip))
+        error( ...
+            '%s: huip must be handle to a graphics object', ...
+            fname
+            );
+
+    endif;
+
+    % Initialize variables for storing all relevant app data
+    gduip = NaN;
+    gddtp = NaN;
+
+    if(2 == nargin)
+        % We don't have handle to a parent UI container, so we need to run 'Item
+        % List View' as a standalone application, within it's own figure and
+        % with underlying app_data
+
+        % Initialize GUI toolkit
+        graphics_toolkit qt;
+
+        % Create figure and define it as parent to 'Item' view
+        huip = figure( ...
+            'name', 'Item Edit View', ...
+            'menubar', 'none', ...
+            'tag', 'main_figure' ...
+            );
+        hfig = huip;
+
+        % Initialize structures for storing application relevant data
+        gduip = struct();
+        gduip.hdtp = huip;  % Set main figure as data container too
+        gduip.app_uistyle = newAppUiStyle();
+        gddtp = gduip;
+        gddtp.app_data = struct();
+
+    else
+        % We have a handle to the parent container. get handle to the app
+        % figure and validate underlying app_data structure
+        hfig = gcf();
+        gduip = guidata(hfig);
+
+        % Check if object returned by guidata() contains all necessary fields
+        if(~isfield(gduip, 'hdtp') || ~isfigure(gduip.hdtp))
+            error( ...
+                '%s: figure does not contain handle to data storage figure', ...
+                fname
+                );
+
+        endif;
+        if(~isfield(gduip, 'app_uistyle') || ~isAppUiStyleObject(gduip.app_uistyle))
+            error( ...
+                '%s: figure does not contain valid app ui style object', ...
+                fname
+                );
+
+        endif;
+
+        gddtp = guidata(gduip.hdtp);
+
+        if(~isfield(gddtp, 'app_data') || ~isstruct(gddtp.app_data))
+            error( ...
+                '%s: data storage figure does not contain data storage', ...
+                fname
+                );
+
+        endif;
+
+    endif;
+
+    view_data = struct();
+    view_data.item = item;
+    gddtp.app_data = setfield(gddtp.app_data, view_tag, view_data);
+
+    % save app data to data storage figure
+    guidata(gduip.hdtp, gddtp);
+
+    itemEditViewLayoutView(huip, view_tag);
+
+    if(2 == nargin)
+        % define callbacks for events we handle
+        set( ...
+            huip, ...
+            'sizechangedfcn', {@itemEditViewUpdateView, view_tag} ...
+            );
+
+    endif;
+
+endfunction;
+
+% -----------------------------------------------------------------------------
+%
+% Function 'itemEditViewLayoutView':
+%
+% Use:
+%       -- itemEditViewLayoutView(hparent, view_tag)
+%
+% Description:
+% TODO: add function description here
+%
+% -----------------------------------------------------------------------------
+function itemEditViewLayoutView(hparent, view_tag)
+
+    % Store function name into variable
+    % for easier management of error messages ---------------------------------
+    fname = 'itemEditViewLayoutView';
+    use_case = ' -- itemEditViewLayoutView(hparent, view_tag)';
+
+    % Validate input arguments ------------------------------------------------
+
+    % Validate number of input arguments
+    if(2 ~= nargin)
         error('Invalid call to %s.  Correct usage is:\n%s', fname, use_case);
 
     endif;
 
-    controller.ui_handles = struct();
+    % Validate hparent argument
+    if(~ishandle(hparent))
+        error( ...
+            '%s: hparent must be handle to a graphics object', ...
+            fname
+            );
 
-    % Create 'Item' view panel ------------------------------------------------
-    position = itemEditViewElementsPosition(controller);
-    controller.ui_handles.main_container = uipanel( ...
-        'parent', controller.parent.ui_handles.item_edit_container, ...
+    endif;
+
+    % Validate view_tag argument
+    if(~ischar(view_tag))
+        error( ...
+            '%s: view_tag must be a character array', ...
+            fname
+            );
+    endif;
+
+    % Get figure user data
+    hfigure = gcf();
+    gduip = guidata(hfigure);
+
+    % Check if object returned by guidata() contains all necessary fields
+    if(~isfield(gduip, 'hdtp') || ~isfigure(gduip.hdtp))
+        error( ...
+            '%s: figure does not contain handle to data storage figure', ...
+            fname
+            );
+
+    endif;
+    if(~isfield(gduip, 'app_uistyle') || ~isAppUiStyleObject(gduip.app_uistyle))
+        error( ...
+            '%s: figure does not contain valid app ui style object', ...
+            fname
+            );
+
+    endif;
+
+    gddtp = guidata(gduip.hdtp);
+
+    if(~isfield(gddtp, 'app_data') || ~isstruct(gddtp.app_data))
+        error( ...
+            '%s: data storage figure does not contain data storage', ...
+            fname
+            );
+
+    endif;
+
+    % Initialize gui elements positions ---------------------------------------
+    position = itemEditViewElementsPosition(hfigure);
+
+    % Create 'Item Edit' view panel -------------------------------------------
+    view_panel = uipanel( ...
+        'parent', hparent, ...
         'title', 'Item Edit', ...
+        'tag', view_tag, ...
         'position', position(1, :) ...
         );
 
     % Create fields view elements ---------------------------------------------
+    view_data = getfield(gddtp.app_data, view_tag);
 
     % Set 'Title' view elemets ------------------------------------------------
-    controller.ui_handles.item_title_label = uicontrol( ...
-        'parent', controller.ui_handles.main_container, ...
+    item_title_label = uicontrol( ...
+        'parent', view_panel, ...
+        'tag', strjoin({view_tag, 'title_label'}, '_'), ...
         'style', 'text', ...
         'string', 'Item Title', ...
         'horizontalalignment', 'left', ...
         'units', 'normalized', ...
         'position', position(5, :) ...
         );
-    controller.ui_handles.item_title_field = uicontrol( ...
-        'parent', controller.ui_handles.main_container, ...
+    item_title_field = uicontrol( ...
+        'parent', view_panel, ...
+        'tag', strjoin({view_tag, 'title_field'}, '_'), ...
+        'callback', {@itemEditViewOnTitleEdit, view_tag}, ...
         'style', 'edit', ...
         'enable', 'on', ...
-        'string', controller.item.title, ...
+        'string', view_data.item.title, ...
         'tooltipstring', 'Item title', ...
         'horizontalalignment', 'left', ...
         'units', 'normalized', ...
@@ -59,19 +254,22 @@ function controller = newItemEditView(controller)
         );
 
     % Set 'Value' view elemets ------------------------------------------------
-    controller.ui_handles.item_value_label = uicontrol( ...
-        'parent', controller.ui_handles.main_container, ...
+    item_value_label = uicontrol( ...
+        'parent', view_panel, ...
+        'tag', strjoin({view_tag, 'value_label'}, '_'), ...
         'style', 'text', ...
         'string', 'Item Value', ...
         'horizontalalignment', 'left', ...
         'units', 'normalized', ...
         'position', position(3, :) ...
         );
-    controller.ui_handles.item_value_field = uicontrol( ...
-        'parent', controller.ui_handles.main_container, ...
+    item_value_field = uicontrol( ...
+        'parent', view_panel, ...
+        'tag', strjoin({view_tag, 'value_field'}, '_'), ...
+        'callback', {@itemEditViewOnValueEdit, view_tag}, ...
         'style', 'edit', ...
         'enable', 'on', ...
-        'string', controller.item.value, ...
+        'string', view_data.item.value, ...
         'tooltipstring', 'Item value', ...
         'horizontalalignment', 'left', ...
         'units', 'normalized', ...
@@ -82,43 +280,111 @@ endfunction;
 
 % -----------------------------------------------------------------------------
 %
-% Function 'updateItemEditView':
+% Function 'itemEditViewUpdateView':
 %
 % Use:
-%       -- updateItemEditView(controller)
+%       -- itemEditViewUpdateView(hsrc, evt, view_tag)
 %
 % Description:
 % Update the view in response to the change of data or GUI elements
-% repositioning due to size changed event. This function is meant to be called
-% by the controller. Calling this function on its own can lead to undefined
-% behavior.
+% repositioning due to size changed event.
+%
+% hsrc must be a handle to a figure.
 %
 % -----------------------------------------------------------------------------
-function updateItemEditView(controller)
+function itemEditViewUpdateView(hsrc, evt, view_tag)
 
-    position = itemEditViewElementsPosition(controller);
-    set( ...
-        controller.ui_handles.main_container, ...
-        'position', position(1, :) ...
-        );
-    set( ...
-        controller.ui_handles.item_value_field, ...
-        'position', position(2, :), ...
-        'string', controller.item.value ...
-        );
-    set( ...
-        controller.ui_handles.item_value_label, ...
-        'position', position(3, :) ...
-        );
-    set( ...
-        controller.ui_handles.item_title_field, ...
-        'position', position(4, :), ...
-        'string', controller.item.title ...
-        );
-    set( ...
-        controller.ui_handles.item_title_label, ...
-        'position', position(5, :) ...
-        );
+    % Store function name into variable
+    % for easier management of error messages ---------------------------------
+    fname = 'itemListViewUpdateView';
+    use_case = ' -- itemListViewUpdateView(view_tag)';
+
+    % Validate input arguments ------------------------------------------------
+
+    % Validate number of input arguments
+    if(3 ~= nargin)
+        error('Invalid call to %s. Correct usage is:\n%s', fname, use_case);
+
+    endif;
+
+    % Validate hsrc argument
+    if(~isfigure(hsrc))
+        error( ...
+            '%s: hsrc must be handle to a figure', ...
+            fname
+            );
+
+    endif;
+
+    % We ignore evt argument
+
+    % Validate view_tag argument
+    if(~ischar(view_tag))
+        error( ...
+            '%s: view_tag must be a character array', ...
+            fname
+            );
+    endif;
+
+    % Get figure handles
+    figure_handles = guihandles(hsrc);
+
+    % Check if the calling figure holds our view, else we ignore the signal
+    if(isfield(figure_handles, view_tag))
+
+        % Get figure user data
+        gduip = guidata(hsrc);
+
+        % Check if object returned by guidata() contains all necessary fields
+        if(~isfield(gduip, 'hdtp') || ~isfigure(gduip.hdtp))
+            error( ...
+                '%s: figure does not contain handle to data storage figure', ...
+                fname
+                );
+
+        endif;
+
+        % Get data container user data
+        gddtp = guidata(gduip.hdtp);
+
+        if(~isfield(gddtp, 'app_data') || ~isstruct(gddtp.app_data))
+            error( ...
+                '%s: data storage figure does not contain data storage', ...
+                fname
+                );
+
+        endif;
+
+        % Get view's data
+        view_data = getfield(gddtp.app_data, view_tag);
+
+        % Get GUI elements postions
+        position = itemEditViewElementsPosition(hsrc);
+
+        set( ...
+            getfield(figure_handles, view_tag), ...
+            'position', position(1, :) ...
+            );
+        set( ...
+            getfield(figure_handles, strjoin({view_tag, 'value_field'}, '_')), ...
+            'position', position(2, :), ...
+            'string', view_data.item.value ...
+            );
+        set( ...
+            getfield(figure_handles, strjoin({view_tag, 'value_label'}, '_')), ...
+            'position', position(3, :) ...
+            );
+        set( ...
+            getfield(figure_handles, strjoin({view_tag, 'title_field'}, '_')), ...
+            'position', position(4, :), ...
+            'string', view_data.item.title ...
+            );
+        set( ...
+            getfield(figure_handles, strjoin({view_tag, 'title_label'}, '_')), ...
+            'position', position(5, :) ...
+            );
+
+    endif;
 
 endfunction;
 
@@ -127,23 +393,62 @@ endfunction;
 % Function 'itemEditViewElementsPosition':
 %
 % Use:
-%       -- position = itemEditViewElementsPosition(controller)
+%       -- position = itemEditViewElementsPosition(hfigure)
 %
 % Description:
 % Calculate GUI elements position within set container.
 %
 % -----------------------------------------------------------------------------
-function position = itemEditViewElementsPosition(controller)
+function position = itemEditViewElementsPosition(hfigure)
+
+    % Store function name into variable
+    % for easier management of error messages ---------------------------------
+    fname = 'itemEditViewElementsPosition';
+    use_case = ' -- position = itemEditViewElementsPosition(hfigure)';
+
+    % Validate input arguments ------------------------------------------------
+
+    % Validate number of input arguments
+    if(1 ~= nargin)
+        error( ...
+            'Invalid call to %s.  Correct usage is:\n%s\n%s\n%s', ...
+            fname, ...
+            use_case ...
+            );
+
+    endif;
+
+    % Validate hfigure argument
+    if(~isfigure(hfigure))
+        error( ...
+            '%s: hfigure must be handle to a figure', ...
+            fname
+            );
+
+    endif;
+
+    % Check if given figure holds App Ui Style data. Get figure user data
+    gduip = guidata(hfigure);
+
+    % Check if object returned by guidata() contains all necessary fields
+    if(~isfield(gduip, 'app_uistyle') || ~isAppUiStyleObject(gduip.app_uistyle))
+        error( ...
+            '%s: figure does not contain valid App Ui Style object', ...
+            fname
+            );
+
+    endif;
 
     % Define return value as matrix -------------------------------------------
     position = [];
 
     % Calculate relative extents ----------------------------------------------
-    cexts = getpixelposition(controller.parent.ui_handles.item_edit_container);
-    horpadabs = controller.parent.layout.padding_px / cexts(3);
-    verpadabs = controller.parent.layout.padding_px / cexts(4);
-    btnwdtabs = controller.parent.layout.btn_width_px / cexts(3);
-    rowhghabs = controller.parent.layout.row_height_px / cexts(4);
+    cexts = getpixelposition(hfigure);
+    horpadabs = gduip.app_uistyle.padding_px / cexts(3);
+    verpadabs = gduip.app_uistyle.padding_px / cexts(4);
+    btnwdtabs = gduip.app_uistyle.btn_width_px / cexts(3);
+    clmwdtabs = gduip.app_uistyle.column_width_px / cexts(3);
+    rowhghabs = gduip.app_uistyle.row_height_px / cexts(4);
 
     % Set padding for the main panel ------------------------------------------
     position = [ ...
@@ -177,20 +482,300 @@ endfunction;
 
 % -----------------------------------------------------------------------------
 %
-% Function 'getEditViewFieldValues':
+% Function 'itemEditViewNewItem':
 %
 % Use:
-%       -- {title, value} = getEditViewFieldValues(controller)
+%       -- itemEditViewNewItem(hfigure, view_tag, item)
 %
 % Description:
-% Collect data typed into edit fields.
+% TODO: Add function description here.
 %
 % -----------------------------------------------------------------------------
-function values = getEditViewFieldValues(controller)
+function itemEditViewNewItem(hfigure, view_tag, item)
 
-    values = { ...
-        get(controller.ui_handles.item_title_field, 'string'), ...
-        get(controller.ui_handles.item_value_field, 'string') ...
-            };
+    % Store function name into variable
+    % for easier management of error messages ---------------------------------
+    fname = 'itemEditViewNewItem';
+    use_case = ' -- itemEditViewNewItem(hfigure, view_tag, item)';
+
+    % Validate input arguments ------------------------------------------------
+
+    % Validate number of input arguments
+    if(3 ~= nargin)
+        error('Invalid call to %s.  Correct usage is:\n%s', fname, use_case);
+
+    endif;
+
+    % Validate hfigure argument
+    if(~isfigure(hfigure))
+        error( ...
+            '%s: hfigure must be handle to a figure', ...
+            fname
+            );
+
+    endif;
+
+    % Get figure user data
+    gduip = guidata(hfigure);
+
+    % Get figure handles to UI controls
+    figure_handles = guihandles(hfigure);
+
+    % Check if given figure holds valid app data
+    if(~isfield(gduip, 'hdtp') || ~isfigure(gduip.hdtp))
+        error( ...
+            '%s: figure does not contain handle to data storage figure', ...
+            fname
+            );
+
+    endif;
+
+    % Get data storage user data
+    gddtp = guidata(gduip.hdtp);
+
+    % Check if given figure holds valid app data
+    if(~isfield(gddtp, 'app_data') || ~isstruct(gddtp.app_data))
+        error( ...
+            '%s: data storage figure does not contain data storage', ...
+            fname
+            );
+
+    endif;
+
+    % Validate view_tag argument
+    if(~ischar(view_tag))
+        error( ...
+            '%s: view_tag must be a character array', ...
+            fname
+            );
+    endif;
+
+    % Check if given figure holds our view
+    if(~isfield(figure_handles, view_tag))
+        error( ...
+            '%s: given figure does not contain view with given tag (%s)', ...
+            fname, ...
+            view_tag ...
+            );
+
+    endif;
+
+    % Validate item argument
+    if(~itemDataModelIsItemObject(item))
+        error( ...
+            '%s: item must be an instance of the Item data structure', ...
+            fname
+            );
+
+    endif;
+
+    % Update the item ---------------------------------------------------------
+    view_data = struct();
+    view_data.item = item;
+    gddtp.app_data = setfield(gddtp.app_data, view_tag, view_data);
+
+    % save app data to data storage figure
+    guidata(gduip.hdtp, gddtp);
+
+    % Update the view ---------------------------------------------------------
+    itemEditViewUpdateView(hfigure, [], view_tag);
+
+endfunction;
+
+% -----------------------------------------------------------------------------
+%
+% Function 'itemEditViewOnTitleEdit':
+%
+% Use:
+%       -- itemEditViewOnTitleEdit(hsrc, evt, view_tag)
+%
+% Description:
+% TODO: add function description here
+%
+% -----------------------------------------------------------------------------
+function itemEditViewOnTitleEdit(hsrc, evt, view_tag)
+
+    % Store function name into variable
+    % for easier management of error messages ---------------------------------
+    fname = 'itemEditViewOnTitleEdit';
+    use_case = ' -- itemEditViewOnTitleEdit(hsrc, evt, view_tag)';
+
+    % Validate input arguments ------------------------------------------------
+
+    % Validate number of input arguments
+    if(3 ~= nargin)
+        error('Invalid call to %s. Correct usage is:\n%s', fname, use_case);
+
+    endif;
+
+    % Validate hsrc argument
+    if(~ishandle(hsrc))
+        error( ...
+            '%s: huip must be handle to a graphics object', ...
+            fname
+            );
+
+    endif;
+
+    % We ignore evt argument
+
+    % Validate view_tag argument
+    if(~ischar(view_tag))
+        error( ...
+            '%s: view_tag must be a character array', ...
+            fname
+            );
+    endif;
+
+    % Get figure handles
+    hfigure = gcbf();
+    figure_handles = guihandles(hsrc);
+
+    % Check if the calling figure holds our view, else we ignore the signal
+    if(isfield(figure_handles, view_tag))
+
+        % Get figure user data
+        gduip = guidata(hfigure);
+
+        % Check if object returned by guidata() contains all necessary fields
+        if(~isfield(gduip, 'hdtp') || ~isfigure(gduip.hdtp))
+            error( ...
+                '%s: figure does not contain handle to data storage figure', ...
+                fname
+                );
+
+        endif;
+
+        % Get data container user data
+        gddtp = guidata(gduip.hdtp);
+
+        if(~isfield(gddtp, 'app_data') || ~isstruct(gddtp.app_data))
+            error( ...
+                '%s: data storage figure does not contain data storage', ...
+                fname
+                );
+
+        endif;
+
+        % % Get view's data
+        view_data = getfield(gddtp.app_data, view_tag);
+
+        % Set new item title --------------------------------------------------
+
+        % Get field value
+        view_data.item.title = get( ...
+            getfield( ...
+                figure_handles, ...
+                strjoin({view_tag, 'title_field'}, '_') ...
+                ), ...
+            'string' ...
+            );
+        gddtp.app_data = setfield(gddtp.app_data, view_tag, view_data);
+
+        % Save the data
+        guidata(gduip.hdtp, gddtp);
+
+    endif;
+
+    itemEditViewUpdateView(hfigure, [], view_tag);
+
+endfunction;
+
+% -----------------------------------------------------------------------------
+%
+% Function 'itemEditViewOnValueEdit':
+%
+% Use:
+%       -- itemEditViewOnValueEdit(hsrc, evt, view_tag)
+%
+% Description:
+% TODO: add function description here
+%
+% -----------------------------------------------------------------------------
+function itemEditViewOnValueEdit(hsrc, evt, view_tag)
+
+    % Store function name into variable
+    % for easier management of error messages ---------------------------------
+    fname = 'itemEditViewOnValueEdit';
+    use_case = ' -- itemEditViewOnValueEdit(hsrc, evt, view_tag)';
+
+    % Validate input arguments ------------------------------------------------
+
+    % Validate number of input arguments
+    if(3 ~= nargin)
+        error('Invalid call to %s. Correct usage is:\n%s', fname, use_case);
+
+    endif;
+
+    % Validate hsrc argument
+    if(~ishandle(hsrc))
+        error( ...
+            '%s: huip must be handle to a graphics object', ...
+            fname
+            );
+
+    endif;
+
+    % We ignore evt argument
+
+    % Validate view_tag argument
+    if(~ischar(view_tag))
+        error( ...
+            '%s: view_tag must be a character array', ...
+            fname
+            );
+    endif;
+
+    % Get figure handles
+    hfigure = gcbf();
+    figure_handles = guihandles(hsrc);
+
+    % Check if the calling figure holds our view, else we ignore the signal
+    if(isfield(figure_handles, view_tag))
+
+        % Get figure user data
+        gduip = guidata(hfigure);
+
+        % Check if object returned by guidata() contains all necessary fields
+        if(~isfield(gduip, 'hdtp') || ~isfigure(gduip.hdtp))
+            error( ...
+                '%s: figure does not contain handle to data storage figure', ...
+                fname
+                );
+
+        endif;
+
+        % Get data container user data
+        gddtp = guidata(gduip.hdtp);
+
+        if(~isfield(gddtp, 'app_data') || ~isstruct(gddtp.app_data))
+            error( ...
+                '%s: data storage figure does not contain data storage', ...
+                fname
+                );
+
+        endif;
+
+        % % Get view's data
+        view_data = getfield(gddtp.app_data, view_tag);
+
+        % Set new item value --------------------------------------------------
+
+        % Get field value
+        view_data.item.value = get( ...
+            getfield( ...
+                figure_handles, ...
+                strjoin({view_tag, 'value_field'}, '_') ...
+                ), ...
+            'string' ...
+            );
+        gddtp.app_data = setfield(gddtp.app_data, view_tag, view_data);
+
+        % Save the data
+        guidata(gduip.hdtp, gddtp);
+
+    endif;
+
+    itemEditViewUpdateView(hfigure, [], view_tag);
 
 endfunction;
