@@ -220,7 +220,7 @@ function itemListViewLayoutView(hparent, view_tag)
     endif;
 
     % Initialize gui elements positions ---------------------------------------
-    position = itemListViewElementsPosition(hfigure);
+    position = itemListViewElementsPosition(hparent);
 
     % Create 'Item List View' panel -------------------------------------------
     view_panel = uipanel( ...
@@ -327,8 +327,11 @@ function itemListViewUpdateView(hsrc, evt, view_tag)
     if(isfield(figure_handles, view_tag))
 
         % Get GUI elements postions
-        position = itemListViewElementsPosition(hsrc);
+        position = itemListViewElementsPosition( ...
+            get(getfield(figure_handles, view_tag), 'parent') ...
+            );
 
+        % Reset elements position
         set( ...
             getfield(figure_handles, view_tag), ...
             'position', position(1, :) ...
@@ -347,43 +350,43 @@ endfunction;
 % Function 'itemListViewElementsPosition':
 %
 % Use:
-%       -- position = itemListViewElementsPosition(hfigure)
+%       -- position = itemListViewElementsPosition(hcntr)
 %
 % Description:
 % Calculate GUI elements position within set container respectively to figure
 % dimensions.
 %
 % -----------------------------------------------------------------------------
-function position = itemListViewElementsPosition(hfigure)
+function position = itemListViewElementsPosition(hcntr)
 
     % Store function name into variable
     % for easier management of error messages ---------------------------------
     fname = 'itemListViewElementsPosition';
-    use_case = ' -- position = itemListViewElementsPosition(hfigure)';
+    use_case = ' -- position = itemListViewElementsPosition(hcntr)';
 
     % Validate input arguments ------------------------------------------------
 
     % Validate number of input arguments
     if(1 ~= nargin)
         error( ...
-            'Invalid call to %s.  Correct usage is:\n%s\n%s\n%s', ...
+            'Invalid call to %s. Correct usage is:\n%s', ...
             fname, ...
             use_case ...
             );
 
     endif;
 
-    % Validate hfigure argument
-    if(~isfigure(hfigure))
+    % Validate hsrc argument
+    if(~ishandle(hsrc))
         error( ...
-            '%s: hfigure must be handle to a figure', ...
+            '%s: hsrc must be handle to a graphics object', ...
             fname
             );
 
     endif;
 
     % Check if given figure holds App Ui Style data. Get figure user data
-    gduip = guidata(hfigure);
+    gduip = guidata(hcntr);
 
     % Check if object returned by guidata() contains all necessary fields
     if(~isfield(gduip, 'app_uistyle') || ~isAppUiStyleObject(gduip.app_uistyle))
@@ -398,7 +401,7 @@ function position = itemListViewElementsPosition(hfigure)
     position = [];
 
     % Calculate relative extents ----------------------------------------------
-    cexts = getpixelposition(hfigure);
+    cexts = getpixelposition(hcntr);
     horpadabs = gduip.app_uistyle.padding_px / cexts(3);
     verpadabs = gduip.app_uistyle.padding_px / cexts(4);
     btnwdtabs = gduip.app_uistyle.btn_width_px / cexts(3);

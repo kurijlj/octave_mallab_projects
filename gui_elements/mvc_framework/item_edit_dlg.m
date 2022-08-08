@@ -70,6 +70,7 @@ function hfig = itemEditDlgNewDlg(dlg_tag, hparent)
             'name', 'Edit Item', ...
             'menubar', 'none', ...
             'units', 'normalized', ...
+            'deletefcn', {@itemEditDlgOnClose, dlg_tag}, ...
             'sizechangedfcn', @itemEditDlgUpdateView ...
             );
 
@@ -103,6 +104,7 @@ function hfig = itemEditDlgNewDlg(dlg_tag, hparent)
             'name', 'Edit Item', ...
             'menubar', 'none', ...
             'units', 'normalized', ...
+            'deletefcn', {@itemEditDlgOnClose, dlg_tag}, ...
             'sizechangedfcn', @itemEditDlgUpdateView ...
             );
 
@@ -116,7 +118,7 @@ function hfig = itemEditDlgNewDlg(dlg_tag, hparent)
 
     endif;
 
-    itemEditDlgLayoutDlg(huip);
+    itemEditDlgLayoutDlg(huip, dlg_tag);
     hfig = huip;
 
 endfunction;
@@ -126,23 +128,23 @@ endfunction;
 % Function 'itemEditDlgLayoutDlg':
 %
 % Use:
-%       -- itemEditDlgLayoutDlg(hfig)
+%       -- itemEditDlgLayoutDlg(hfig, dlg_tag)
 %
 % Description:
 % TODO: add function description here
 %
 % -----------------------------------------------------------------------------
-function itemEditDlgLayoutDlg(hfig)
+function itemEditDlgLayoutDlg(hfig, dlg_tag)
 
     % Store function name into variable
     % for easier management of error messages ---------------------------------
     fname = 'itemEditDlgLayoutDlg';
-    use_case = ' -- itemEditDlgLayoutDlg(hfig)';
+    use_case = ' -- itemEditDlgLayoutDlg(hfig, dlg_tag)';
 
     % Validate input arguments ------------------------------------------------
 
     % Validate number of input arguments
-    if(1 ~= nargin)
+    if(2 ~= nargin)
         error('Invalid call to %s. Correct usage is:\n%s', fname, use_case);
 
     endif;
@@ -154,6 +156,14 @@ function itemEditDlgLayoutDlg(hfig)
             fname
             );
 
+    endif;
+
+    % Validate dlg_tag argument
+    if(~ischar(dlg_tag))
+        error( ...
+            '%s: view_tag must be a character array', ...
+            fname
+            );
     endif;
 
     % Initialize gui elements positions ---------------------------------------
@@ -178,8 +188,15 @@ function itemEditDlgLayoutDlg(hfig)
         );
 
     % Create views ------------------------------------------------------------
-    itemEditViewNewView('item_edit_view', itemDataModelNewItem('Item #A', 'A'), data_panel);
-    controlPanelViewNewView('controls', control_panel);
+    itemEditViewNewView( ...
+        strjoin({dlg_tag, 'item_edit_view'}, '_'), ...
+        itemDataModelNewItem('Item #A', 'A'), ...
+        data_panel ...
+        );
+    controlPanelViewNewView( ...
+        strjoin({dlg_tag, 'control_panel'}, '_'), ...
+        control_panel ...
+        );
 
 endfunction;
 
@@ -229,6 +246,7 @@ function itemEditDlgUpdateView(hsrc, evt)
     % Get GUI elements postions
     position = itemEditDlgElementsPosition(hsrc);
 
+    % Reset elements position
     set( ...
         getfield(figure_handles, 'data_panel'), ...
         'position', position(2, :) ...
@@ -239,8 +257,16 @@ function itemEditDlgUpdateView(hsrc, evt)
         );
 
     % Update iews too
-    itemEditViewUpdateView(hsrc, [], 'item_edit_view');
-    controlPanelViewUpdateView(hsrc, [], 'controls');
+    itemEditViewUpdateView( ...
+        hsrc, ...
+        [], ...
+        strjoin({dlg_tag, 'item_edit_view'}, '_') ...
+        );
+    controlPanelViewUpdateView( ...
+        hsrc, ...
+        [], ...
+        strjoin({dlg_tag, 'control_panel'}, '_') ...
+        );
 
 endfunction;
 
@@ -249,42 +275,42 @@ endfunction;
 % Function 'itemEditDlgElementsPosition':
 %
 % Use:
-%       -- position = itemEditDlgElementsPosition(hfig)
+%       -- position = itemEditDlgElementsPosition(hcntr)
 %
 % Description:
 % Calculate GUI elements position within set container.
 %
 % -----------------------------------------------------------------------------
-function position = itemEditDlgElementsPosition(hfig)
+function position = itemEditDlgElementsPosition(hcntr)
 
     % Store function name into variable
     % for easier management of error messages ---------------------------------
     fname = 'itemEditDlgElementsPosition';
-    use_case = ' -- position = itemEditDlgElementsPosition(hfig)';
+    use_case = ' -- position = itemEditDlgElementsPosition(hcntr)';
 
     % Validate input arguments ------------------------------------------------
 
     % Validate number of input arguments
     if(1 ~= nargin)
         error( ...
-            'Invalid call to %s.  Correct usage is:\n%s\n%s\n%s', ...
+            'Invalid call to %s. Correct usage is:\n%s', ...
             fname, ...
             use_case ...
             );
 
     endif;
 
-    % Validate hfigargument
-    if(~isfigure(hfig))
+    % Validate hsrc argument
+    if(~ishandle(hcntr))
         error( ...
-            '%s: hfigmust be handle to a figure', ...
+            '%s: hntr must be handle to a GUI control', ...
             fname
             );
 
     endif;
 
     % Check if given figure holds App Ui Style data. Get figure user data
-    gduip = guidata(hfig);
+    gduip = guidata(hcntr);
 
     % Check if object returned by guidata() contains all necessary fields
     if(~isfield(gduip, 'app_uistyle') || ~isAppUiStyleObject(gduip.app_uistyle))
@@ -299,7 +325,7 @@ function position = itemEditDlgElementsPosition(hfig)
     position = [];
 
     % Calculate relative extents ----------------------------------------------
-    cexts = getpixelposition(hfig);
+    cexts = getpixelposition(hcntr);
     horpadabs = gduip.app_uistyle.padding_px / cexts(3);
     verpadabs = gduip.app_uistyle.padding_px / cexts(4);
     btnwdtabs = gduip.app_uistyle.btn_width_px / cexts(3);
@@ -326,5 +352,113 @@ function position = itemEditDlgElementsPosition(hfig)
         1.00 - 2*horpadabs, ...
         (1.00 - 3*verpadabs)*0.75; ...
         ];
+
+endfunction;
+
+% -----------------------------------------------------------------------------
+%
+% Function 'itemEditDlgOnClose':
+%
+% Use:
+%       -- itemEditDlgOnClose(hsrc, evt, dlg_tag)
+%
+% Description:
+% TODO: add function description here
+%
+% -----------------------------------------------------------------------------
+function itemEditDlgOnClose(hsrc, evt, dlg_tag)
+
+    % Store function name into variable
+    % for easier management of error messages ---------------------------------
+    fname = 'itemEditDlgOnClose';
+    use_case = ' -- itemEditDlgOnClose(hsrc, evt, dlg_tag)';
+
+    % Validate input arguments ------------------------------------------------
+
+    % Validate number of input arguments
+    if(3 ~= nargin)
+        error('Invalid call to %s. Correct usage is:\n%s', fname, use_case);
+
+    endif;
+
+    % Validate hsrc argument
+    if(~isfigure(hsrc))
+        error( ...
+            '%s: hsrc must be handle to a figure', ...
+            fname
+            );
+
+    endif;
+
+    % We ignore evt argument
+
+    % Validate dlg_tag argument
+    if(~ischar(dlg_tag))
+        error( ...
+            '%s: dlg_tag must be a character array', ...
+            fname
+            );
+    endif;
+
+    % Get figure handles
+    figure_handles = guihandles(hsrc);
+
+    % Get figure user data
+    gduip = guidata(hsrc);
+
+    % Check if object returned by guidata() contains all necessary fields
+    if(~isfield(gduip, 'hdtp') || ~isfigure(gduip.hdtp))
+        error( ...
+            '%s: figure does not contain handle to data storage figure', ...
+            fname
+            );
+
+    endif;
+
+    % Get data container user data
+    gddtp = guidata(gduip.hdtp);
+
+    if( ...
+            ~isfield(gddtp, 'app_data') ...
+            || ~isstruct(gddtp.app_data) ...
+            || ~isfield( ...
+                gddtp.app_data, ...
+                strjoin({dlg_tag, 'control_panel'}, '_') ...
+                ) ...
+            || ~isstruct( ...
+                getfield( ...
+                    gddtp.app_data, ...
+                    strjoin({dlg_tag, 'control_panel'}, '_') ...
+                    ) ...
+                ) ...
+            )
+        error( ...
+            '%s: data storage figure does not contain data storage', ...
+            fname
+            );
+
+    endif;
+
+    % Get dialog result
+    cpdt = getfield(gddtp.app_data, strjoin({dlg_tag, 'control_panel'}, '_'));
+
+    if(0 == cpdt.accepted)
+
+        % User hit the cancel button. Invalidate item data
+        edit_data = getfield( ...
+            gddtp.app_data, ...
+            strjoin({dlg_tag, 'item_edit_view'}, '_') ...
+            );
+        edit_data.item = NaN;
+        gddtp.app_data = setfield( ...
+            gddtp.app_data, ...
+            strjoin({dlg_tag, 'item_edit_view'}, '_'), ...
+            edit_data ...
+            );
+
+        % Save data to container
+        guidata(gduip.hdtp, gddtp);
+
+    endif;
 
 endfunction;

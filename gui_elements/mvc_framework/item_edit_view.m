@@ -217,7 +217,7 @@ function itemEditViewLayoutView(hparent, view_tag)
     endif;
 
     % Initialize gui elements positions ---------------------------------------
-    position = itemEditViewElementsPosition(hfigure);
+    position = itemEditViewElementsPosition(hparent);
 
     % Create 'Item Edit' view panel -------------------------------------------
     view_panel = uipanel( ...
@@ -359,8 +359,11 @@ function itemEditViewUpdateView(hsrc, evt, view_tag)
         view_data = getfield(gddtp.app_data, view_tag);
 
         % Get GUI elements postions
-        position = itemEditViewElementsPosition(hsrc);
+        position = itemEditViewElementsPosition( ...
+            get(getfield(figure_handles, view_tag), 'parent') ...
+            );
 
+        % Reset elements position
         set( ...
             getfield(figure_handles, view_tag), ...
             'position', position(1, :) ...
@@ -393,18 +396,18 @@ endfunction;
 % Function 'itemEditViewElementsPosition':
 %
 % Use:
-%       -- position = itemEditViewElementsPosition(hfigure)
+%       -- position = itemEditViewElementsPosition(hcntr)
 %
 % Description:
 % Calculate GUI elements position within set container.
 %
 % -----------------------------------------------------------------------------
-function position = itemEditViewElementsPosition(hfigure)
+function position = itemEditViewElementsPosition(hcntr)
 
     % Store function name into variable
     % for easier management of error messages ---------------------------------
     fname = 'itemEditViewElementsPosition';
-    use_case = ' -- position = itemEditViewElementsPosition(hfigure)';
+    use_case = ' -- position = itemEditViewElementsPosition(hcntr)';
 
     % Validate input arguments ------------------------------------------------
 
@@ -418,17 +421,17 @@ function position = itemEditViewElementsPosition(hfigure)
 
     endif;
 
-    % Validate hfigure argument
-    if(~isfigure(hfigure))
+    % Validate hsrc argument
+    if(~ishandle(hcntr))
         error( ...
-            '%s: hfigure must be handle to a figure', ...
+            '%s: hntr must be handle to a GUI control', ...
             fname
             );
 
     endif;
 
     % Check if given figure holds App Ui Style data. Get figure user data
-    gduip = guidata(hfigure);
+    gduip = guidata(hcntr);
 
     % Check if object returned by guidata() contains all necessary fields
     if(~isfield(gduip, 'app_uistyle') || ~isAppUiStyleObject(gduip.app_uistyle))
@@ -443,7 +446,7 @@ function position = itemEditViewElementsPosition(hfigure)
     position = [];
 
     % Calculate relative extents ----------------------------------------------
-    cexts = getpixelposition(hfigure);
+    cexts = getpixelposition(hcntr);
     horpadabs = gduip.app_uistyle.padding_px / cexts(3);
     verpadabs = gduip.app_uistyle.padding_px / cexts(4);
     btnwdtabs = gduip.app_uistyle.btn_width_px / cexts(3);

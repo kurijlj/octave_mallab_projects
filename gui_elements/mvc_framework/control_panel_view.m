@@ -208,7 +208,7 @@ function controlPanelViewLayoutView(hparent, view_tag)
     endif;
 
     % Initialize gui elements positions ---------------------------------------
-    position = controlPanelViewElementsPosition(hfigure);
+    position = controlPanelViewElementsPosition(hparent);
 
     % Create 'Item' view panel ------------------------------------------------
     control_panel = uipanel( ...
@@ -299,8 +299,11 @@ function controlPanelViewUpdateView(hsrc, evt, view_tag)
     if(isfield(figure_handles, view_tag))
 
         % Get GUI elements postions
-        position = controlPanelViewElementsPosition(hsrc);
+        position = controlPanelViewElementsPosition( ...
+            get(getfield(figure_handles, view_tag), 'parent') ...
+            );
 
+        % Reset elements position
         set( ...
             getfield(figure_handles, view_tag), ...
             'position', position(1, :) ...
@@ -323,42 +326,42 @@ endfunction;
 % Function 'controlPanelViewElementsPosition':
 %
 % Use:
-%       -- position = controlPanelViewElementsPosition(hfigure)
+%       -- position = controlPanelViewElementsPosition(hcntr)
 %
 % Description:
 % Calculate GUI elements position within set container.
 %
 % -----------------------------------------------------------------------------
-function position = controlPanelViewElementsPosition(hfigure)
+function position = controlPanelViewElementsPosition(hcntr)
 
     % Store function name into variable
     % for easier management of error messages ---------------------------------
     fname = 'controlPanelViewElementsPosition';
-    use_case = ' -- position = controlPanelViewElementsPosition(hfigure)';
+    use_case = ' -- position = controlPanelViewElementsPosition(hcntr)';
 
     % Validate input arguments ------------------------------------------------
 
     % Validate number of input arguments
     if(1 ~= nargin)
         error( ...
-            'Invalid call to %s.  Correct usage is:\n%s\n%s\n%s', ...
+            'Invalid call to %s. Correct usage is:\n%s', ...
             fname, ...
             use_case ...
             );
 
     endif;
 
-    % Validate hfigure argument
-    if(~isfigure(hfigure))
+    % Validate hsrc argument
+    if(~ishandle(hcntr))
         error( ...
-            '%s: hfigure must be handle to a figure', ...
+            '%s: hntr must be handle to a GUI control', ...
             fname
             );
 
     endif;
 
     % Check if given figure holds App Ui Style data. Get figure user data
-    gduip = guidata(hfigure);
+    gduip = guidata(hcntr);
 
     % Check if object returned by guidata() contains all necessary fields
     if(~isfield(gduip, 'app_uistyle') || ~isAppUiStyleObject(gduip.app_uistyle))
@@ -373,7 +376,7 @@ function position = controlPanelViewElementsPosition(hfigure)
     position = [];
 
     % Calculate relative extents ----------------------------------------------
-    cexts = getpixelposition(hfigure);
+    cexts = getpixelposition(hcntr);
     horpadabs = gduip.app_uistyle.padding_px / cexts(3);
     verpadabs = gduip.app_uistyle.padding_px / cexts(4);
     btnwdtabs = gduip.app_uistyle.btn_width_px / cexts(3);
