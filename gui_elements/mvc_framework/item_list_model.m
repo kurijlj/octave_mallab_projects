@@ -4,22 +4,22 @@ source('./item_data_model.m');
 
 % -----------------------------------------------------------------------------
 %
-% Function 'newItemList':
+% Function 'itemListModelNewList':
 %
 % Use:
-%       -- list = newItemList(item1, item2, ...)
+%       -- list = itemListModelNewList(item1, item2, ...)
 %
 % Description:
 % Generate a new 'Item List' data structure with item1, item2, ... as list
 % items.
 %
 % -----------------------------------------------------------------------------
-function list = newItemList(varargin)
+function list = itemListModelNewList(varargin)
 
     % Store function name into variable
     % for easier management of error messages ---------------------------------
-    fname = 'newItemList';
-    use_case = ' -- list = newItemList(item1, item2, item3, ...)';
+    fname = 'itemListModelNewList';
+    use_case = ' -- list = itemListModelNewList(item1, item2, item3, ...)';
 
     % Validate input arguments ------------------------------------------------
 
@@ -36,7 +36,7 @@ function list = newItemList(varargin)
     % Validate user supplied arguments value
     idx = 1;
     while(nargin >= idx)
-        if(~isItemDataStruct(varargin{idx}))
+        if(~itemDataModelIsItemObject(varargin{idx}))
             error( ...
                 '%s: varargin{%d} must be an instance of the Item data structure', ...
                 fname, ...
@@ -54,7 +54,7 @@ function list = newItemList(varargin)
     idx = 1;
     while(nargin >= idx)
         % Check if list already contains the item
-        [tf, itidx] = itemListIsMemberItem(list, varargin{idx});
+        [tf, itidx] = itemListModelIsListMember(list, varargin{idx});
 
         if(tf)
             % Item already exists in the list. Update item's value
@@ -74,21 +74,21 @@ endfunction;
 
 % -----------------------------------------------------------------------------
 %
-% Function 'loadItemListFromFile':
+% Function 'itemListModelLoadFromFile':
 %
 % Use:
-%       -- list = loadItemListFromFile(file_path)
+%       -- list = itemListModelLoadFromFile(file_path)
 %
 % Description:
 % Load list of 'Item' objects from a file designated with file_path.
 %
 % -----------------------------------------------------------------------------
-function list = loadItemListFromFile(file_path)
+function list = itemListModelLoadFromFile(file_path)
 
     % Store function name into variable
     % for easier management of error messages ---------------------------------
-    fname = 'loadListFromFile';
-    use_case = ' -- list = loadListFromFile(file_path)';
+    fname = 'itemListModelLoadFromFile';
+    use_case = ' -- list = itemListModelLoadFromFile(file_path)';
 
     % Validate input arguments ------------------------------------------------
 
@@ -129,7 +129,7 @@ function list = loadItemListFromFile(file_path)
 
     % Given file exist, check if it is actual 'Item' database file --
     % try
-    %     checkItemDatabaseIntegrity(file_path);
+    %     itemListModelCheckDBIntegrity(file_path);
 
     % catch err
     %     % Database integrity failed. Print error message and return empty list
@@ -152,10 +152,10 @@ function list = loadItemListFromFile(file_path)
     % Popuate 'Item List'
     idx = 2;  % We skip column headers
     while(size(db_entries, 1) >= idx)
-        item = newItem(db_entries{idx, 1}, db_entries{idx, 2});
+        item = itemDataModelNewItem(db_entries{idx, 1}, db_entries{idx, 2});
 
         % Check if list already contains the item
-        [tf, itidx] = itemListIsMemberItem(list, item);
+        [tf, itidx] = itemListModelIsListMember(list, item);
 
         if(tf)
             % Item already exists in the list. Update item's value
@@ -175,22 +175,22 @@ endfunction;
 
 % -----------------------------------------------------------------------------
 %
-% Function 'isItemListObject':
+% Function 'itemListModelIsItemListObj':
 %
 % Use:
-%       -- result = isItemListObject(obj)
+%       -- result = itemListModelIsItemListObj(obj)
 %
 % Description:
 % Return true if passed object is a proper 'Item List' data sructure, i.e. is
 % cell array of 'Item' objects.
 %
 % -----------------------------------------------------------------------------
-function result = isItemListObject(obj)
+function result = itemListModelIsItemListObj(obj)
 
     % Store function name into variable
     % for easier management of error messages ---------------------------------
-    fname = 'isItemListObject';
-    use_case = ' -- result = isItemListObject(obj)';
+    fname = 'itemListModelIsItemListObj';
+    use_case = ' -- result = itemListModelIsItemListObj(obj)';
 
     % Validate input arguments ------------------------------------------------
 
@@ -229,7 +229,7 @@ function result = isItemListObject(obj)
     % Check if list entries are instances of 'List' data sructure
     idx = 1;
     while(numel(obj) >= idx)
-        if(~isItemDataStruct(obj{idx}))
+        if(~itemDataModelIsItemObject(obj{idx}))
             return;
 
         endif;
@@ -247,37 +247,37 @@ endfunction;
 
 % -----------------------------------------------------------------------------
 %
-% Function 'checkItemDatabaseIntegrity':
+% Function 'itemListModelCheckDBIntegrity':
 %
 % Use:
-%       -- checkItemDatabaseIntegrity(file_path)
+%       -- itemListModelCheckDBIntegrity(file_path)
 %
 % Description:
 %       TODO: Put function description here
 %
 % -----------------------------------------------------------------------------
-function result = checkItemDatabaseIntegrity(file_path)
+function result = itemListModelCheckDBIntegrity(file_path)
     % TODO: Add function implementation here.
 
 endfunction;
 
 % -----------------------------------------------------------------------------
 %
-% Function 'listItemTitles':
+% Function 'itemListModelListTitles':
 %
 % Use:
-%       -- title_list = listItemTitles(item_list)
+%       -- title_list = itemListModelListTitles(item_list)
 %
 % Description:
 % Retrieve cell array of item titles of the passed item_list.
 %
 % -----------------------------------------------------------------------------
-function title_list = listItemTitles(item_list)
+function title_list = itemListModelListTitles(item_list)
 
     % Store function name into variable
     % for easier management of error messages ---------------------------------
-    fname = 'listItemTitles';
-    use_case = ' -- title_list = listItemTitles(item_list)';
+    fname = 'itemListModelListTitles';
+    use_case = ' -- title_list = itemListModelListTitles(item_list)';
 
     % Validate input arguments ------------------------------------------------
 
@@ -292,7 +292,7 @@ function title_list = listItemTitles(item_list)
     endif;
 
     % Validate if item_list is a 'Item List' object
-    if(~isItemListObject(item_list))
+    if(~itemListModelIsItemListObj(item_list))
         error( ...
             '%s: item_list must be an instance of the Item List data structure', ...
             fname ...
@@ -302,7 +302,7 @@ function title_list = listItemTitles(item_list)
 
     % Traverse list and create cell array containing item titles --------------
 
-    % Initialize title cell array
+    % Initialize title cell array to default value
     title_list = {};
 
     if(~isempty(item_list))
@@ -314,31 +314,29 @@ function title_list = listItemTitles(item_list)
 
         endwhile;
 
-    else
-        % We are dealing with an empty list so return default value
-        title_list = {title_list{:}, 'Empty'};
-
     endif;
+
+    % We are dealing with an empty list so return default value
 
 endfunction;
 
 % -----------------------------------------------------------------------------
 %
-% Function 'itemList2CellArray':
+% Function 'itemListModel2CellArray':
 %
 % Use:
-%       -- item_cell_list = itemList2CellArray(item_list)
+%       -- item_cell_list = itemListModel2CellArray(item_list)
 %
 % Description:
 % Retrieve item list as cell array of item fields.
 %
 % -----------------------------------------------------------------------------
-function item_cell_list = itemList2CellArray(item_list)
+function item_cell_list = itemListModel2CellArray(item_list)
 
     % Store function name into variable
     % for easier management of error messages ---------------------------------
-    fname = 'itemList2CellArray';
-    use_case = ' -- title_list = itemList2CellArray(item_list)';
+    fname = 'itemListModel2CellArray';
+    use_case = ' -- title_list = itemListModel2CellArray(item_list)';
 
     % Validate input arguments ------------------------------------------------
 
@@ -353,7 +351,7 @@ function item_cell_list = itemList2CellArray(item_list)
     endif;
 
     % Validate if item_list is a 'Item List' object
-    if(~isItemListObject(item_list))
+    if(~itemListModelIsItemListObj(item_list))
         error( ...
             '%s: item_list must be an instance of the Item List data structure', ...
             fname ...
@@ -387,21 +385,21 @@ endfunction;
 
 % -----------------------------------------------------------------------------
 %
-% Function 'itemListAddItem':
+% Function 'itemListModelAddItem':
 %
 % Use:
-%       -- result_list = itemListAddItem(input_list, item)
+%       -- result_list = itemListModelAddItem(input_list, item)
 %
 % Description:
 % Retrieve copy of input_list with item added to the end of the list.
 %
 % -----------------------------------------------------------------------------
-function result_list = itemListAddItem(input_list, item)
+function result_list = itemListModelAddItem(input_list, item)
 
     % Store function name into variable
     % for easier management of error messages ---------------------------------
-    fname = 'itemListAddItem';
-    use_case = ' -- result_list = itemListAddItem(input_list, item)';
+    fname = 'itemListModelAddItem';
+    use_case = ' -- result_list = itemListModelAddItem(input_list, item)';
 
     % Validate input arguments ------------------------------------------------
 
@@ -416,7 +414,7 @@ function result_list = itemListAddItem(input_list, item)
     endif;
 
     % Validate if input_list is a 'Item List' object
-    if(~isItemListObject(input_list))
+    if(~itemListModelIsItemListObj(input_list))
         error( ...
             '%s: input_list must be an instance of the Item List data structure', ...
             fname ...
@@ -425,7 +423,7 @@ function result_list = itemListAddItem(input_list, item)
     endif;
 
     % Validate item argument
-    if(~isItemDataStruct(item))
+    if(~itemDataModelIsItemObject(item))
         error( ...
             '%s: item must be an instance of the Item data structure', ...
             fname ...
@@ -440,21 +438,21 @@ endfunction;
 
 % -----------------------------------------------------------------------------
 %
-% Function 'itemListRemoveItem':
+% Function 'itemListModelRemoveItem':
 %
 % Use:
-%       -- result_list = itemListAddItem(input_list, idx)
+%       -- result_list = itemListModelRemoveItem(input_list, idx)
 %
 % Description:
 % Retrieve copy of in_list with item with index idx removed from the list.
 %
 % -----------------------------------------------------------------------------
-function result_list = itemListRemoveItem(input_list, idx)
+function result_list = itemListModelRemoveItem(input_list, idx)
 
     % Store function name into variable
     % for easier management of error messages ---------------------------------
-    fname = 'itemListAddItem';
-    use_case = ' -- result_list = itemListAddItem(input_list, idx)';
+    fname = 'itemListModelRemoveItem';
+    use_case = ' -- result_list = itemListModelRemoveItem(input_list, idx)';
 
     % Validate input arguments ------------------------------------------------
 
@@ -469,7 +467,7 @@ function result_list = itemListRemoveItem(input_list, idx)
     endif;
 
     % Validate if input_list is a 'Item List' object
-    if(~isItemListObject(input_list))
+    if(~itemListModelIsItemListObj(input_list))
         error( ...
             '%s: input_list must be an instance of the Item List data structure', ...
             fname ...
@@ -496,11 +494,11 @@ endfunction;
 
 % -----------------------------------------------------------------------------
 %
-% Function 'itemListIsMemberItem':
+% Function 'itemListModelIsListMember':
 %
-% Use:
-%       -- TF = itemListIsMemberItem(input_list, item)
-%       -- [TF, S_IDX] = itemListIsMemberItem(input_list, item)
+% Use:proton%20business%20validator
+%       -- TF = itemListModelIsListMember(input_list, item)
+%       -- [TF, S_IDX] = itemListModelIsListMember(input_list, item)
 %
 % Description:
 % Return a logical value which is true (1) if the item is found in input_list
@@ -510,13 +508,13 @@ endfunction;
 % item is also returned.
 %
 % -----------------------------------------------------------------------------
-function [TF, S_IDX] = itemListIsMemberItem(input_list, item)
+function [TF, S_IDX] = itemListModelIsListMember(input_list, item)
 
     % Store function name into variable
     % for easier management of error messages ---------------------------------
-    fname = 'itemListIsMemberItem';
-    use_case_a = ' -- TF = itemListIsMemberItem(input_list, item)';
-    use_case_b = ' -- [TF, S_IDX] = itemListIsMemberItem(input_list, item)';
+    fname = 'itemListModelIsListMember';
+    use_case_a = ' -- TF = itemListModelIsListMember(input_list, item)';
+    use_case_b = ' -- [TF, S_IDX] = itemListModelIsListMember(input_list, item)';
 
     % Validate input arguments ------------------------------------------------
 
@@ -532,7 +530,7 @@ function [TF, S_IDX] = itemListIsMemberItem(input_list, item)
     endif;
 
     % Validate if input_list is a 'Item List' object
-    if(~isItemListObject(input_list))
+    if(~itemListModelIsItemListObj(input_list))
         error( ...
             '%s: input_list must be an instance of the Item List data structure', ...
             fname ...
@@ -541,7 +539,7 @@ function [TF, S_IDX] = itemListIsMemberItem(input_list, item)
     endif;
 
     % Validate item argument
-    if(~isItemDataStruct(item))
+    if(~itemDataModelIsItemObject(item))
         error( ...
             '%s: item must be an instance of the Item data structure', ...
             fname ...
@@ -550,7 +548,7 @@ function [TF, S_IDX] = itemListIsMemberItem(input_list, item)
     endif;
 
     % Search list for the given item ------------------------------------------ 
-    titles = listItemTitles(input_list);
+    titles = itemListModelListTitles(input_list);
     [TF, S_IDX] = ismember(item.title, titles);
 
 endfunction;

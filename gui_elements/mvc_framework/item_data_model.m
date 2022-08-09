@@ -16,8 +16,8 @@ function item = itemDataModelNewItem(item_title, item_value)
 
     % Store function name into variable
     % for easier management of error messages ---------------------------------
-    fname = 'newItem';
-    use_case = ' -- item = newFilm(item_title, item_value)';
+    fname = 'itemDataModelNewItem';
+    use_case = ' -- item = itemDataModelNewItem(item_title, item_value)';
 
     % Validate input arguments ------------------------------------------------
 

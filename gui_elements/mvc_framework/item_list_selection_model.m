@@ -4,24 +4,24 @@ source('./item_list_model.m');
 
 % -----------------------------------------------------------------------------
 %
-% Function 'newItemListSelection':
+% Function 'itemListSelectionModelNewSelection':
 %
 % Use:
-%       -- list_selection = newItemListSelection(item_list)
-%       -- list_selection = newItemListSelection(item_list, idx)
+%       -- list_selection = itemListSelectionModelNewSelection(item_list)
+%       -- list_selection = itemListSelectionModelNewSelection(item_list, idx)
 %
 % Description:
 % Generate a new 'Item List Selection' data structure with given item_list and
 % idx representing the index of the selected item in the list.
 %
 % -----------------------------------------------------------------------------
-function list_selection = newItemListSelection(item_list, idx=0)
+function list_selection = itemListSelectionModelNewSelection(item_list, idx=0)
 
     % Store function name into variable
     % for easier management of error messages ---------------------------------
-    fname = 'newItemListSelection';
-    use_case_a = ' -- list_selection = newItemListSelection(item_list)';
-    use_case_b = ' -- list_selection = newItemListSelection(item_list, idx)';
+    fname = 'itemListSelectionModelNewSelection';
+    use_case_a = ' -- list_selection = itemListSelectionModelNewSelection(item_list)';
+    use_case_b = ' -- list_selection = itemListSelectionModelNewSelection(item_list, idx)';
 
     % Validate input arguments ------------------------------------------------
 
@@ -37,7 +37,7 @@ function list_selection = newItemListSelection(item_list, idx=0)
     endif;
 
     % Validate if item_list is a 'Item List' object
-    if(~isItemListObject(item_list))
+    if(~itemListModelIsItemListObj(item_list))
         error( ...
             '%s: item_list must be an instance of the Item List data structure', ...
             fname ...
@@ -67,22 +67,22 @@ endfunction;
 
 % -----------------------------------------------------------------------------
 %
-% Function 'isItemListSelectionObject':
+% Function 'itemListSelectionModelIsSelectionObj':
 %
 % Use:
-%       -- isItemListSelectionObject(obj)
+%       -- itemListSelectionModelIsSelectionObj(obj)
 %
 % Description:
 % Return true if passed object is a proper 'Item List Selection' data sructure,
 % i.e. is cell array of 'Item' objects and holds index of selected item.
 %
 % -----------------------------------------------------------------------------
-function result = isItemListSelectionObject(obj)
+function result = itemListSelectionModelIsSelectionObj(obj)
 
     % Store function name into variable
     % for easier management of error messages ---------------------------------
-    fname = 'isItemListSelectionObject';
-    use_case = ' -- result = isItemListSelectionObject(obj)';
+    fname = 'itemListSelectionModelIsSelectionObj';
+    use_case = ' -- result = itemListSelectionModelIsSelectionObj(obj)';
 
     % Validate input arguments ------------------------------------------------
 
@@ -103,7 +103,7 @@ function result = isItemListSelectionObject(obj)
     if( ...
             isstruct(obj) ...
             && isfield(obj, 'item_list') ...
-            && isItemListObject(obj.item_list) ...
+            && itemListModelIsItemListObj(obj.item_list) ...
             && isfield(obj, 'selected_item') ...
             && isfloat(obj.selected_item) ...
             && (0 <= obj.selected_item) ...
