@@ -63,22 +63,22 @@ endfunction;
 
 % -----------------------------------------------------------------------------
 %
-% Function 'itemDataModelIsItemObject':
+% Function 'itemDataModelIsItemObj':
 %
 % Use:
-%       -- itemDataModelIsItemObject(obj)
+%       -- itemDataModelIsItemObj(obj)
 %
 % Description:
 % Return true if passed object is a proper 'Item' data sructure, i.e. is
 % a structure, has fields 'title' and 'value' which are nonempty string.
 %
 % -----------------------------------------------------------------------------
-function result = itemDataModelIsItemObject(obj)
+function result = itemDataModelIsItemObj(obj)
 
     % Store function name into variable
     % for easier management of error messages ---------------------------------
-    fname = 'itemDataModelIsItemObject';
-    use_case = ' -- result = itemDataModelIsItemObject(film_obj)';
+    fname = 'itemDataModelIsItemObj';
+    use_case = ' -- result = itemDataModelIsItemObj(film_obj)';
 
     % Validate input arguments
     if(1 ~= nargin)
