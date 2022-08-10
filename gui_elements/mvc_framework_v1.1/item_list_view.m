@@ -60,13 +60,13 @@ function hview = itemListViewNewView(varargin)
         view_tag, ...
         uistyle, ...
         hparent, ...
-        callback ...
+        item_selection_callback ...
         ] = parseparams( ...
         varargin, ...
         'view_tag', 'item_list_view', ...
         'uistyle', appUiStyleModelNewUiStyle(), ...  % Use default UI style
         'parent', NaN, ...  %WARNING: do not set this to 0 it is the result of groot()!
-        'callback', NaN ...
+        'ItemSelectionCallback', NaN ...
         );
 
     % Validate the number of positional parameters
@@ -119,10 +119,13 @@ function hview = itemListViewNewView(varargin)
 
     endif;
 
-    % Validate callback argument
-    if(~is_function_handle(callback) && ~isnan(callback))
+    % Validate item_selection_callback argument
+    if( ...
+            ~is_function_handle(item_selection_callback) ...
+            && ~isnan(item_selection_callback) ...
+            )
         error( ...
-            '%s: callback must be handle to a function', ...
+            '%s: item_selection_callback must be handle to a function or NaN', ...
             fname
             );
 
@@ -144,6 +147,10 @@ function hview = itemListViewNewView(varargin)
             'tag', 'main_figure' ...
             );
 
+        % Since we are running in our own figure connect selected item change
+        % signal to the default callback
+        item_selection_callback = @itemListViewSetSelectedItem;
+
     endif;
 
     % If we got an empty item list create some dummy data for display
@@ -155,13 +162,28 @@ function hview = itemListViewNewView(varargin)
     endif;
 
     % Create new view
-    hview = itemListViewLayoutView(item_list, view_tag, hparent, uistyle);
+    hview = itemListViewLayoutView( ...
+        hparent, ...
+        item_list, ...
+        'view_tag', view_tag, ...
+        'uistyle', uistyle, ...
+        'ItemSelectionCallback', item_selection_callback ...
+        );
 
-    % Connect size changed signal to it slot
+    % Connect size changed signal to it's slot
     set( ...
         ancestor(hparent, 'figure'), ...
         'sizechangedfcn', {@itemListViewUpdateView, view_tag, uistyle} ...
         );
+
+    % Save required app data
+    app_data = guidata(hparent);
+    app_data = setfield( ...
+        app_data, ...
+        strjoin({view_tag, 'data'}, '_'), ...
+        itemListSelectionModelNewSelection(item_list) ...
+        );
+    guidata(hparent, app_data);
 
 endfunction;
 
@@ -170,13 +192,15 @@ endfunction;
 % function 'itemListViewLayoutView':
 %
 % use:
-%       -- hview = itemListViewLayoutView(hparent, view_tag, item_list, uistyle)
+%       -- itemListViewLayoutView(hparent, item_list)
+%       -- itemListViewNewView(..., "PROPERTY", VALUE, ...)
+%       -- hview = itemListViewNewView(...)
 %
 % Description:
-% TODO: add function description here
+%          TODO: Add function description here
 %
 % -----------------------------------------------------------------------------
-function hview = itemListViewLayoutView(item_list, view_tag, hparent, uistyle)
+function hview = itemListViewLayoutView(varargin)
 
     % Store function name into variable
     % for easier management of error messages ---------------------------------
@@ -184,18 +208,69 @@ function hview = itemListViewLayoutView(item_list, view_tag, hparent, uistyle)
     use_case_a = strjoin({ ...
         ' -- hview = ', ...
         fname, ...
-        '(view_tag, hparent, item_list, uistyle)' ...
+        '(hparent, item_list)' ...
         }, '');
+    use_case_b = strjoin({ ...
+        ' -- ', ...
+        fname, ...
+        '(..., "PROPERTY", VALUE, ...)' ...
+        }, '');
+    use_case_c = strjoin({ ...
+        ' -- hview = ', ...
+        fname, ...
+        '(...)' ...
+        }, '');
+
+    % Define number of supported positional parameters ------------------------
+
+    % Define number of supported positional (numerical) parameters
+    numpos = 2;
+
+    % Define number of supported optional parameters
+    numopt = 3;
 
     % Validate input arguments ------------------------------------------------
 
     % Validate number of input arguments
-    if(4 ~= nargin)
-        error('Invalid call to %s. Correct usage is:\n%s', fname, use_case_a);
+    narginchk(numpos, numpos + 2*numopt);
+
+    % Parse arguments
+    [ ...
+        pos, ...
+        view_tag, ...
+        uistyle, ...
+        item_selection_callback ...
+        ] = parseparams( ...
+        varargin, ...
+        'view_tag', 'item_list_view', ...
+        'uistyle', appUiStyleModelNewUiStyle(), ...  % Use default UI style
+        'ItemSelectionCallback', NaN ...
+        );
+
+    % Validate the number of positional parameters
+    if(numpos ~= numel(pos))
+        error( ...
+            'Invalid call to %s. Correct usage is:\n%s\n%s\n%s', ...
+            fname, ...
+            use_case_a, ...
+            use_case_b, ...
+            use_case_c ...
+            );
+
+    endif;
+
+    % Validate hparent argument
+    hparent = pos{1};
+    if(~ishghandle(hparent))
+        error( ...
+            '%s: hparent must be handle to a graphics object', ...
+            fname
+            );
 
     endif;
 
     % Validate item_list argument
+    item_list = pos{2};
     if(~itemListModelIsItemListObj(item_list))
         error( ...
             '%s: item_list must be an instance of the Item List data structure', ...
@@ -212,19 +287,22 @@ function hview = itemListViewLayoutView(item_list, view_tag, hparent, uistyle)
             );
     endif;
 
-    % Validate hparent argument
-    if(~ishghandle(hparent))
+    % Validate uistyle argument
+    if(~appUiStyleModelIsUiStyleObj(uistyle))
         error( ...
-            '%s: hparent must be handle to a graphics object', ...
+            '%s: uistyle must be an instance of the App UI Style data structure', ...
             fname
             );
 
     endif;
 
-    % Validate uistyle argument
-    if(~appUiStyleModelIsUiStyleObj(uistyle))
+    % Validate callback argument
+    if( ...
+            ~is_function_handle(item_selection_callback) ...
+            && ~isnan(item_selection_callback) ...
+            )
         error( ...
-            '%s: uistyle must be an instance of the App UI Style data structure', ...
+            '%s: callback must be handle to a function or NaN', ...
             fname
             );
 
@@ -251,7 +329,6 @@ function hview = itemListViewLayoutView(item_list, view_tag, hparent, uistyle)
         'data', itemListModel2CellArray(item_list), ...
         'tooltipstring', 'Select row to select item', ...
         'columnname', {'Title', 'Value'}, ...
-        % 'cellselectioncallback', {@itemListViewOnCellSelect, view_panel}, ...
         'units', 'normalized', ...
         'position', position(2, :) ...
         );
@@ -272,7 +349,7 @@ function hview = itemListViewLayoutView(item_list, view_tag, hparent, uistyle)
         % 'callback', {@itemListViewOnAddItem, view_tag}, ...
         'enable', 'on' ...
         );
-    uimenu( ...
+    remove_item = uimenu( ...
         'parent', view_contex_menu, ...
         'tag', strjoin({view_tag, 'remove_item'}, '_'), ...
         'label', 'Remove Selected Item ...', ...
@@ -282,6 +359,16 @@ function hview = itemListViewLayoutView(item_list, view_tag, hparent, uistyle)
 
     % Assign context menu to the table
     set(view_table, 'uicontextmenu', view_contex_menu);
+
+    % Set callbacks
+    set( ...
+        view_table, ...
+        'cellselectioncallback', { ...
+            @itemListViewOnCellSelect, ...
+            remove_item, ...
+            item_selection_callback ...
+            } ...
+        );
 
     hview = view_panel;
 
@@ -295,10 +382,7 @@ endfunction;
 %       -- itemListViewUpdateView(hsrc, evt, view_tag, uistyle)
 %
 % Description:
-% Update the view in response to the change of data or gui elements
-% repositioning due to size changed event.
-%
-% hsrc must be a handle to a figure.
+%          TODO: Add function description here
 %
 % -----------------------------------------------------------------------------
 function itemListViewUpdateView(hsrc, evt, view_tag, uistyle)
@@ -382,8 +466,7 @@ endfunction;
 %       -- position = itemListViewElementsPosition(hcntr, uistyle)
 %
 % Description:
-% Calculate GUI elements position within set container respectively to figure
-% dimensions.
+%          TODO: Add function description here
 %
 % -----------------------------------------------------------------------------
 function position = itemListViewElementsPosition(hcntr, uistyle)
@@ -458,3 +541,243 @@ function position = itemListViewElementsPosition(hcntr, uistyle)
 
 endfunction;
 
+% -----------------------------------------------------------------------------
+%
+% Function 'itemListViewOnCellSelect':
+%
+% Use:
+%       -- itemListViewOnCellSelect(hsrc, evt, hmenuitem, callback)
+%
+% Description:
+%          TODO: Add function description here
+%
+% -----------------------------------------------------------------------------
+function itemListViewOnCellSelect(hsrc, evt, hmenuitem, callback=NaN)
+
+    % Store function name into variable
+    % for easier management of error messages ---------------------------------
+    fname = 'itemListViewOnCellSelect';
+    use_case_a = strjoin({ ...
+        ' -- ', ...
+        fname, ...
+        '(hsrc, evt, hmenuitem, callback)' ...
+        }, '');
+
+    % Validate input arguments ------------------------------------------------
+
+    % Validate number of input arguments
+    if(3 ~= nargin && 4 ~= nargin)
+        error('Invalid call to %s. Correct usage is:\n%s', fname, use_case_a);
+
+    endif;
+
+    % Validate hsrc argument
+    if(~ishghandle(hsrc))
+        error( ...
+            '%s: hsrc must be handle to a graphics object', ...
+            fname
+            );
+
+    endif;
+
+    % Validate evt argument
+    if(~isstruct(evt) || ~isfield(evt, 'Indices'))
+        error( ...
+            '%s: evt does not contain complete data to execute callback', ...
+            fname
+            );
+
+    endif;
+
+    % Validate hmenuitem argument
+    if(~ishghandle(hmenuitem))
+        error( ...
+            '%s: hemnuitem must be handle to a graphics object', ...
+            fname
+            );
+
+    endif;
+
+    % Validate callback argument
+    if(~is_function_handle(callback) && ~isnan(callback))
+        error( ...
+            '%s: callback must be handle to a function or NaN', ...
+            fname
+            );
+
+    endif;
+
+    % Process event -----------------------------------------------------------
+
+    % Get selected cells
+    idx = unique(evt.Indices(:, 1));
+
+    % If user selected just a row idx will be a scalar holding row index
+    if(2 == size(evt.Indices)(1) && 1 == numel(idx))
+
+        % Execute callback for the selected item change
+        if(is_function_handle(callback))
+            callback(get(hsrc, 'parent'), idx);
+
+        endif;
+
+        % Enable 'Remove Item' option in the table's context menu
+        set(hmenuitem, 'enable', 'on');
+
+    else
+        % User selected a single cell or a column, set selected item index
+        % to 'no selection' (0)
+
+        % Execute callback for the selected item change
+        if(is_function_handle(callback))
+            callback(get(hsrc, 'parent'), 0);
+
+        endif;
+
+        % Disable 'Remove Item' option in the table's context menu
+        set(hmenuitem, 'enable', 'off');
+
+    endif;
+
+endfunction;
+
+% -----------------------------------------------------------------------------
+%
+% Function 'itemListViewSetSelectedItem':
+%
+% Use:
+%       -- itemListViewSetSelectedItem(hview, idx)
+%
+% Description:
+%          TODO: Add function description here
+%
+% -----------------------------------------------------------------------------
+function itemListViewSetSelectedItem(hview, idx)
+
+    % Store function name into variable
+    % for easier management of error messages ---------------------------------
+    fname = 'itemListViewSetSelectedItem';
+    use_case_a = strjoin({ ...
+        ' -- ', ...
+        fname, ...
+        '(hview, idx)' ...
+        }, '');
+
+    % Validate input arguments ------------------------------------------------
+
+    % Validate number of input arguments
+    if(2 ~= nargin)
+        error('Invalid call to %s. Correct usage is:\n%s', fname, use_case_a);
+
+    endif;
+
+    % Validate hview argument
+    if(~ishghandle(hview))
+        error( ...
+            '%s: hview must be handle to a graphics object', ...
+            fname
+            );
+
+    endif;
+
+    % Validate idx argument
+    validateattributes( ...
+        idx, ...
+        {'numeric'}, ...
+        { ...
+            '>=', 0, ...
+            'finite', ...
+            'integer', ...
+            'nonempty', ...
+            'nonnan', ...
+            'scalar' ...
+            }, ...
+        fname, ...
+        'idx' ...
+        );
+
+    % Change and save selected item index -------------------------------------
+
+    % Get view tag
+    view_tag = guiObjectTag(hview);
+
+    % Get app data
+    app_data = guidata(hview);
+    selection = getfield( ...
+        app_data, ...
+        strjoin({view_tag, 'data'}, '_') ...
+        );
+
+    selection.selected_item = idx;
+
+    % Save changes
+    app_data = setfield( ...
+        app_data, ...
+        strjoin({view_tag, 'data'}, '_'), ...
+        selection ...
+        );
+    guidata(hview, app_data);
+
+    % Nothing has changed in the view, so don't update it
+
+endfunction;
+
+% -----------------------------------------------------------------------------
+%
+% Function 'guiObjectTag':
+%
+% Use:
+%       -- tag = guiObjectTag(hsrc)
+%
+% Description:
+%          TODO: Add function description here
+%
+% -----------------------------------------------------------------------------
+function tag = guiObjectTag(hsrc)
+
+    % Store function name into variable
+    % for easier management of error messages ---------------------------------
+    fname = 'guiObjectTag';
+    use_case_a = strjoin({ ...
+        ' -- ', ...
+        fname, ...
+        '(hsrc)' ...
+        }, '');
+
+    % Validate input arguments ------------------------------------------------
+
+    % Validate number of input arguments
+    if(1 ~= nargin)
+        error('Invalid call to %s. Correct usage is:\n%s', fname, use_case_a);
+
+    endif;
+
+    % Validate hsrc argument
+    if(~ishghandle(hsrc))
+        error( ...
+            '%s: hsrc must be handle to a graphics object', ...
+            fname
+            );
+
+    endif;
+
+    tag = NaN;
+
+    % Get containing figure and handles to all children GUI objects
+    hfig = ancestor(hsrc, 'figure');
+    handles = guihandles(hfig);
+    fn = fieldnames(handles);
+
+    % Traverse fieldnames and match tag by object handle
+    idx = 1;
+    while(numel(fn) >= idx)
+        if(isequal(hsrc, getfield(handles, fn{idx})))
+            tag = fn{idx};
+
+        endif;
+
+        idx = idx + 1;
+
+    endwhile;
+
+endfunction;
