@@ -44,7 +44,7 @@ function hview = itemEditViewNewView(varargin)
     numpos = 1;
 
     % Define number of supported optional parameters
-    numopt = 4;
+    numopt = 5;
 
     % Validate input arguments ------------------------------------------------
 
@@ -316,7 +316,7 @@ function hview = itemEditViewLayoutView(varargin)
             && ~isnan(item_modified_callback) ...
             )
         error( ...
-            '%s: callback must be handle to a function or NaN', ...
+            '%s: item_modified_callback must be handle to a function or NaN', ...
             fname
             );
 
@@ -799,7 +799,7 @@ function itemEditViewOnItemModified(hsrc, evt, callback=NaN)
     % Validate input arguments ------------------------------------------------
 
     % Validate number of input arguments
-    if(3 ~= nargin)
+    if(2 ~= nargin && 3 ~= nargin)
         error('Invalid call to %s. Correct usage is:\n%s', fname, use_case_a);
 
     endif;
