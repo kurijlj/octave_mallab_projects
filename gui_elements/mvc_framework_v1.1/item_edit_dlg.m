@@ -124,9 +124,9 @@ function hdlg = itemEditDlgNewDlg(varargin)
     endif;
 
     % Validate hparent argument
-    if(~isnan(hparent) && ~ishghandle(hparent))
+    if(~isfigure(hparent))
         error( ...
-            '%s: parent must be handle to a graphics object', ...
+            '%s: hparent must be handle to a figure', ...
             fname
             );
 
@@ -172,14 +172,37 @@ function hdlg = itemEditDlgNewDlg(varargin)
     endif;
 
     % Create new view
-    hview = itemEditDlgLayoutView( ...
-        hdlg, ...
-        item, ...
-        'dlg_tag', dlg_tag, ...
-        'title', 'Edit Item', ...
-        'uistyle', uistyle ...
-        % 'OnBtnPushCallback', @itemDlgViewOnBtnPush ...
-        );
+    if(is_function_handle(on_dlg_result_callback))
+        itemEditDlgLayoutView( ...
+            hdlg, ...
+            item, ...
+            'dlg_tag', dlg_tag, ...
+            'title', 'Edit Item', ...
+            'uistyle', uistyle, ...
+            'OnBtnPushCallback', itemEditDlgGenerateOnBtnPushCallback( ...
+                hdlg, ...
+                dlg_tag, ...
+                hparent, ...
+                on_dlg_result_callback ...
+                ) ...
+            );
+
+    else
+        itemEditDlgLayoutView( ...
+            hdlg, ...
+            item, ...
+            'dlg_tag', dlg_tag, ...
+            'title', 'Edit Item', ...
+            'uistyle', uistyle, ...
+            'OnBtnPushCallback', itemEditDlgGenerateOnBtnPushCallback( ...
+                hdlg, ...
+                dlg_tag, ...
+                NaN, ...
+                NaN ...
+                ) ...
+            );
+
+    endif;
 
     % Connect size changed signal to it's slot
     set( ...
@@ -426,3 +449,122 @@ function itemEditDlgUpdateView(hsrc, evt, dlg_tag, uistyle)
 
 endfunction;
 
+
+% -----------------------------------------------------------------------------
+%
+% Function 'itemEditDlgSetItem':
+%
+% Use:
+%       -- itemEditDlgSetItem(hdlg, dlg_tag, item)
+%
+% Description:
+% TODO: Add function description here.
+%
+% -----------------------------------------------------------------------------
+function itemEditDlgSetItem(hdlg, dlg_tag, item)
+
+    % Store function name into variable
+    % for easier management of error messages ---------------------------------
+    fname = 'itemEditDlgSetItem';
+    use_case_a = strjoin({ ...
+        ' -- ', ...
+        fname, ...
+        '(hdlg, dlg_tag, item)' ...
+        }, '');
+
+    % Validate input arguments ------------------------------------------------
+
+    % Validate number of input arguments
+    if(3 ~= nargin)
+        error('Invalid call to %s. Correct usage is:\n%s', fname, use_case_a);
+
+    endif;
+
+    % Validate hdlg argument
+    if(~isfigure(hdlg))
+        error( ...
+            '%s: hdlg must be handle to a figure', ...
+            fname
+            );
+
+    endif;
+
+    % Validate dlg_tag argument
+    if(~ischar(dlg_tag))
+        error( ...
+            '%s: dlg_tag must be a character array', ...
+            fname
+            );
+    endif;
+
+    % Validate item argument
+    if(~itemDataModelIsItemObj(item))
+        error( ...
+            '%s: item must be an instance of the Item Data Model data structure', ...
+            fname
+            );
+
+    endif;
+
+    % Get view handle ---------------------------------------------------------
+    hview = getfield(guihandles(hdlg), strjoin({dlg_tag, 'data_view'}, '_'));
+
+    % Update view -------------------------------------------------------------
+    itemEditViewSetItem(hview, item)
+
+endfunction;
+
+% -----------------------------------------------------------------------------
+%
+% Function 'itemEditDlgGetItem':
+%
+% Use:
+%       -- item = itemEditDlgGetItem(hdlg, dlg_tag)
+%
+% Description:
+% TODO: Add function description here.
+%
+% -----------------------------------------------------------------------------
+function item = itemEditDlgGetItem(hdlg, dlg_tag)
+
+    % Store function name into variable
+    % for easier management of error messages ---------------------------------
+    fname = 'itemEditDlgGetItem';
+    use_case_a = strjoin({ ...
+        ' -- item = ', ...
+        fname, ...
+        '(hdlg, dlg_tag)' ...
+        }, '');
+
+    % Validate input arguments ------------------------------------------------
+
+    % Validate number of input arguments
+    if(2 ~= nargin)
+        error('Invalid call to %s. Correct usage is:\n%s', fname, use_case_a);
+
+    endif;
+
+    % Validate hdlg argument
+    if(~isfigure(hdlg))
+        error( ...
+            '%s: hdlg must be handle to a figure', ...
+            fname
+            );
+
+    endif;
+
+    % Validate dlg_tag argument
+    if(~ischar(dlg_tag))
+        error( ...
+            '%s: dlg_tag must be a character array', ...
+            fname
+            );
+    endif;
+
+    % Get view handle ---------------------------------------------------------
+    hview = getfield(guihandles(hdlg), strjoin({dlg_tag, 'data_view'}, '_'));
+
+    % Retuen field values as item object --------------------------------------
+    item = itemEditViewGetItem(hview);
+
+endfunction;

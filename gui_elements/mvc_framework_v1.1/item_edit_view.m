@@ -636,7 +636,7 @@ function itemEditViewSetItem(hview, item)
     htitle = getfield(guihandles(hfig), strjoin({view_tag, 'title_field'}, '_'));
     hvalue = getfield(guihandles(hfig), strjoin({view_tag, 'value_field'}, '_'));
 
-    % Update ifields ----------------------------------------------------------
+    % Update fields -----------------------------------------------------------
     set(htitle, 'string', item.title);
     set(hvalue, 'string', item.value);
 

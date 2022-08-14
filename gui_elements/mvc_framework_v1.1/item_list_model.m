@@ -36,7 +36,7 @@ function list = itemListModelNewList(varargin)
     % Validate user supplied arguments value
     idx = 1;
     while(nargin >= idx)
-        if(~itemDataModelIsItemObject(varargin{idx}))
+        if(~itemDataModelIsItemObj(varargin{idx}))
             error( ...
                 '%s: varargin{%d} must be an instance of the Item data structure', ...
                 fname, ...
@@ -229,7 +229,7 @@ function result = itemListModelIsItemListObj(obj)
     % Check if list entries are instances of 'List' data sructure
     idx = 1;
     while(numel(obj) >= idx)
-        if(~itemDataModelIsItemObject(obj{idx}))
+        if(~itemDataModelIsItemObj(obj{idx}))
             return;
 
         endif;
@@ -423,7 +423,7 @@ function result_list = itemListModelAddItem(input_list, item)
     endif;
 
     % Validate item argument
-    if(~itemDataModelIsItemObject(item))
+    if(~itemDataModelIsItemObj(item))
         error( ...
             '%s: item must be an instance of the Item data structure', ...
             fname ...
@@ -431,8 +431,22 @@ function result_list = itemListModelAddItem(input_list, item)
 
     endif;
 
-    % Append new item to the list end -----------------------------------------
-    result_list = {input_list{:}, item};
+    % Append new item to the list end or update existing value if
+    % already member ----------------------------------------------------------
+
+    % Check if already memeber
+    [tf, itidx] = itemListModelIsListMember(input_list, item);
+
+    if(tf)
+        % Item already exists in the list. Update item's value
+        result_list = input_list;
+        result_list{itidx}.value = item.value;
+
+    else
+        % Item does not exist in the list. Append it to the end of the list
+        result_list = {input_list{:}, item};
+
+    endif;
 
 endfunction;
 
@@ -539,7 +553,7 @@ function [TF, S_IDX] = itemListModelIsListMember(input_list, item)
     endif;
 
     % Validate item argument
-    if(~itemDataModelIsItemObject(item))
+    if(~itemDataModelIsItemObj(item))
         error( ...
             '%s: item must be an instance of the Item data structure', ...
             fname ...
