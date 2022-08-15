@@ -134,7 +134,7 @@ function result = itemEditDlgGenerateOnBtnPushCallback( ...
             item = itemEditViewGetItem(hdataview);
 
             % Save item into the workspace's namespace
-            assignin('base', 'new_item', item)
+            assignin('base', strjoin({dlg_tag, 'new_item'}, '_'), item)
 
         endif;
 
