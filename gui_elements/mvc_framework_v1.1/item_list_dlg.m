@@ -1,29 +1,29 @@
-item_edit_dlg_version = '1.0';
+item_list_dlg_version = '1.0';
 
 source('./gui_commons.m');
 source('./app_uistyle_model.m');
-source('./item_data_model.m');
-source('./item_edit_view.m');
+source('./item_list_model.m');
+source('./item_list_view.m');
 source('./control_panel_view.m');
 
 % -----------------------------------------------------------------------------
 %
-% Function 'itemEditDlgNewDlg':
+% Function 'itemListDlgNewDlg':
 %
 % Use:
-%       -- itemEditDlgNewDlg(item)
-%       -- itemEditDlgNewDlg(..., "PROPERTY", VALUE, ...)
-%       -- hdlg = itemEditDlgNewDlg(...)
+%       -- itemListDlgNewDlg(item_list)
+%       -- itemListDlgNewDlg(..., "PROPERTY", VALUE, ...)
+%       -- hdlg = itemListDlgNewDlg(...)
 %
 % Description:
 %          TODO: Add function description here
 %
 % -----------------------------------------------------------------------------
-function hdlg = itemEditDlgNewDlg(varargin)
+function hdlg = itemListDlgNewDlg(varargin)
 
     % Store function name into variable
     % for easier management of error messages ---------------------------------
-    fname = 'itemEditDlgNewDlg';
+    fname = 'itemListDlgNewDlg';
     use_case_a = strjoin({ ...
         ' -- ', ...
         fname, ...
@@ -68,7 +68,7 @@ function hdlg = itemEditDlgNewDlg(varargin)
         ] = parseparams( ...
         varargin, ...
         'dlg_tag', 'item_edit_dlg', ...
-        'title', 'Item Edit View', ...
+        'title', 'Item List View', ...
         'uistyle', appUiStyleModelNewUiStyle(), ...  % Use default UI style
         'parent', NaN, ...  %WARNING: do not set this to 0 it is the result of groot()!
         'OnDlgResultCallback', NaN ...
@@ -89,10 +89,10 @@ function hdlg = itemEditDlgNewDlg(varargin)
     % Validate argument values ------------------------------------------------
 
     % Validate item argument
-    item = pos{1};
-    if(~itemDataModelIsItemObj(item))
+    item_list = pos{1};
+    if(~itemListModelIsItemListObj(item_list))
         error( ...
-            '%s: item must be an instance of the Item Data Model data structure', ...
+            '%s: item_list must be an instance of the Item List Model data structure', ...
             fname
             );
 
@@ -155,7 +155,7 @@ function hdlg = itemEditDlgNewDlg(varargin)
         % Initialize GUI toolkit
         graphics_toolkit qt;
 
-        % Create figure and define it as parent to 'Item' view
+        % Create figure and define it as parent to the 'Item List' view
         hdlg = figure( ...
             'name', title, ...
             'menubar', 'none', ...
@@ -173,20 +173,34 @@ function hdlg = itemEditDlgNewDlg(varargin)
 
     endif;
 
-    % Create dialog view ------------------------------------------------------
+    % Save item_list data -----------------------------------------------------
+    fig_data = guidata(hdlg);
+    fig_data.item_list = item_list;
+    guidata(hdlg, fig_data);
 
-    itemEditDlgLayoutView( ...
+    % Save required app data
+    app_data = guidata(hparent);
+    app_data = setfield( ...
+        app_data, ...
+        strjoin({view_tag, 'data'}, '_'), ...
+        itemListSelectionModelNewSelection(item_list) ...
+        );
+    guidata(hparent, app_data);
+
+    % Create dialog view ------------------------------------------------------
+    itemListDlgLayoutView( ...
         hdlg, ...
-        item, ...
+        item_list, ...
         'dlg_tag', dlg_tag, ...
-        'title', 'Edit Item', ...
+        'title', 'Items', ...
         'uistyle', uistyle, ...
-        'OnBtnPushCallback', itemEditDlgGenerateOnBtnPushCallback( ...
-            hdlg, ...
-            dlg_tag, ...
-            hparent, ...
-            on_dlg_result_callback ...
-            ) ...
+        'OnBtnPushCallback', NaN ...
+        % 'OnBtnPushCallback', itemListDlgGenerateOnBtnPushCallback( ...
+        %     hdlg, ...
+        %     dlg_tag, ...
+        %     hparent, ...
+        %     on_dlg_result_callback ...
+        %     ) ...
         );
 
     % Connect signals ---------------------------------------------------------
@@ -194,25 +208,25 @@ function hdlg = itemEditDlgNewDlg(varargin)
     % Connect size changed signal to it's slot
     set( ...
         hdlg, ...
-        'sizechangedfcn', {@itemEditDlgUpdateView, dlg_tag, uistyle} ...
+        'sizechangedfcn', {@itemListDlgUpdateView, dlg_tag, uistyle} ...
         );
 
 endfunction;
 
 % -----------------------------------------------------------------------------
 %
-% function 'itemEditDlgLayoutView':
+% Function 'itemListDlgLayoutView':
 %
-% use:
-%       -- itemEditDlgLayoutViewiew(hparent, item)
-%       -- itemEditDlgLayoutView(..., "PROPERTY", VALUE, ...)
-%       -- hview = itemEditDlgLayoutView(...)
+% Use:
+%       -- itemListDlgLayoutView(hparent)
+%       -- itemListDlgLayoutView(..., "PROPERTY", VALUE, ...)
+%       -- hview = itemListDlgLayoutView()
 %
 % Description:
 %          TODO: Add function description here
 %
 % -----------------------------------------------------------------------------
-function hview = itemEditDlgLayoutView(varargin)
+function hview = itemListDlgLayoutView(varargin)
 
     % Store function name into variable
     % for easier management of error messages ---------------------------------
@@ -220,7 +234,7 @@ function hview = itemEditDlgLayoutView(varargin)
     use_case_a = strjoin({ ...
         ' -- hview = ', ...
         fname, ...
-        '(hparent, item)' ...
+        '(hparent)' ...
         }, '');
     use_case_b = strjoin({ ...
         ' -- ', ...
@@ -236,7 +250,7 @@ function hview = itemEditDlgLayoutView(varargin)
     % Define number of supported positional parameters ------------------------
 
     % Define number of supported positional (numerical) parameters
-    numpos = 2;
+    numpos = 1;
 
     % Define number of supported optional parameters
     numopt = 4;
@@ -255,8 +269,8 @@ function hview = itemEditDlgLayoutView(varargin)
         on_btn_push_callback ...
         ] = parseparams( ...
         varargin, ...
-        'dlg_tag', 'item_edit_dlg', ...
-        'title', 'Edit Item', ...
+        'dlg_tag', 'item_list_dlg', ...
+        'title', 'Manage Items', ...
         'uistyle', appUiStyleModelNewUiStyle(), ...  % Use default UI style
         'OnBtnPushCallback', NaN ...
         );
@@ -278,16 +292,6 @@ function hview = itemEditDlgLayoutView(varargin)
     if(~isfigure(hparent))
         error( ...
             '%s: hparent must be handle to a figure', ...
-            fname
-            );
-
-    endif;
-
-    % Validate item argument
-    item = pos{2};
-    if(~itemDataModelIsItemObj(item))
-        error( ...
-            '%s: item must be an instance of the Item Data Model data structure', ...
             fname
             );
 
@@ -330,6 +334,16 @@ function hview = itemEditDlgLayoutView(varargin)
 
     endif;
 
+    % Validate gui data
+    fig_data = guidata(hparent);
+    if(~isfield(fig_data, 'item_list'))
+        error( ...
+            '%s: given figure does not contain item_list data', ...
+            fname
+            );
+
+    endif;
+
     % Create containers for the views -----------------------------------------
     data_cntr = uipanel( ...
         'parent', hparent, ...
@@ -343,12 +357,15 @@ function hview = itemEditDlgLayoutView(varargin)
         );
 
     % Create views ------------------------------------------------------------
-    hdataview = itemEditViewNewView( ...
-        item, ...
+    hdataview = itemListViewNewView( ...
+        fig_data.item_list, ...
         'view_tag', strjoin({dlg_tag, 'data_view'}, '_'), ...
         'title', title, ...
         'uistyle', uistyle, ...
-        'parent', data_cntr ...
+        'parent', data_cntr, ...
+        'ItemSelectionCallback', NaN, ...
+        'ItemAddCallback', NaN, ...
+        'ItemRemoveCallback', NaN ...
         );
     hcontrolsview = controlPanelViewNewView( ...
         'view_tag', strjoin({dlg_tag, 'controls_view'}, '_'), ...
@@ -364,20 +381,20 @@ endfunction;
 
 % -----------------------------------------------------------------------------
 %
-% Function 'itemEditDlgUpdateView':
+% Function 'itemListDlgUpdateView':
 %
 % Use:
-%       -- itemEditDlgUpdateView(hsrc, evt, dlg_tag, uistyle)
+%       -- itemListDlgUpdateView(hsrc, evt, dlg_tag, uistyle)
 %
 % Description:
 %          TODO: Add function description here
 %
 % -----------------------------------------------------------------------------
-function itemEditDlgUpdateView(hsrc, evt, dlg_tag, uistyle)
+function itemListDlgUpdateView(hsrc, evt, dlg_tag, uistyle)
 
     % Store function name into variable
     % for easier management of error messages ---------------------------------
-    fname = 'itemEditDlgUpdateView';
+    fname = 'itemListDlgUpdateView';
     use_case_a = strjoin({ ...
         ' -- ', ...
         fname, ...
@@ -429,98 +446,33 @@ function itemEditDlgUpdateView(hsrc, evt, dlg_tag, uistyle)
     hndls = guihandles(hsrc);
     if(isfield(hndls, dvtag) && isfield(hndls, cvtag))
 
-        itemEditViewUpdateView(hsrc, [], dvtag, uistyle);
+        itemListViewUpdateView(hsrc, [], dvtag, uistyle);
         controlPanelViewUpdateView(hsrc, [], cvtag, uistyle);
 
     endif;
 
 endfunction;
 
-
 % -----------------------------------------------------------------------------
 %
-% Function 'itemEditDlgSetItem':
+% Function 'itemListDlgOnItemSelectCallback':
 %
 % Use:
-%       -- itemEditDlgSetItem(hdlg, dlg_tag, item)
+%       -- itemListDlgOnItemSelectCallback(hview, view_tag, idx)
 %
 % Description:
-% TODO: Add function description here.
+%          TODO: Add function description here
 %
 % -----------------------------------------------------------------------------
-function itemEditDlgSetItem(hdlg, dlg_tag, item)
+function itemListDlgOnItemSelectCallback(hview, view_tag, idx)
 
     % Store function name into variable
     % for easier management of error messages ---------------------------------
-    fname = 'itemEditDlgSetItem';
+    fname = 'itemListDlgOnItemSelectCallback';
     use_case_a = strjoin({ ...
         ' -- ', ...
         fname, ...
-        '(hdlg, dlg_tag, item)' ...
-        }, '');
-
-    % Validate input arguments ------------------------------------------------
-
-    % Validate number of input arguments
-    if(3 ~= nargin)
-        error('Invalid call to %s. Correct usage is:\n%s', fname, use_case_a);
-
-    endif;
-
-    % Validate hdlg argument
-    if(~isfigure(hdlg))
-        error( ...
-            '%s: hdlg must be handle to a figure', ...
-            fname
-            );
-
-    endif;
-
-    % Validate dlg_tag argument
-    if(~ischar(dlg_tag))
-        error( ...
-            '%s: dlg_tag must be a character array', ...
-            fname
-            );
-    endif;
-
-    % Validate item argument
-    if(~itemDataModelIsItemObj(item))
-        error( ...
-            '%s: item must be an instance of the Item Data Model data structure', ...
-            fname
-            );
-
-    endif;
-
-    % Get view handle ---------------------------------------------------------
-    hview = getfield(guihandles(hdlg), strjoin({dlg_tag, 'data_view'}, '_'));
-
-    % Update view -------------------------------------------------------------
-    itemEditViewSetItem(hview, item)
-
-endfunction;
-
-% -----------------------------------------------------------------------------
-%
-% Function 'itemEditDlgGetItem':
-%
-% Use:
-%       -- item = itemEditDlgGetItem(hdlg, dlg_tag)
-%
-% Description:
-% TODO: Add function description here.
-%
-% -----------------------------------------------------------------------------
-function item = itemEditDlgGetItem(hdlg, dlg_tag)
-
-    % Store function name into variable
-    % for easier management of error messages ---------------------------------
-    fname = 'itemEditDlgGetItem';
-    use_case_a = strjoin({ ...
-        ' -- item = ', ...
-        fname, ...
-        '(hdlg, dlg_tag)' ...
+        '(hview, view_tag, idx)' ...
         }, '');
 
     % Validate input arguments ------------------------------------------------
@@ -531,27 +483,65 @@ function item = itemEditDlgGetItem(hdlg, dlg_tag)
 
     endif;
 
-    % Validate hdlg argument
-    if(~isfigure(hdlg))
+    % Validate hview argument
+    if(~ishghandle(hview))
         error( ...
-            '%s: hdlg must be handle to a figure', ...
+            '%s: hview must be handle to a graphics object', ...
             fname
             );
 
     endif;
 
-    % Validate dlg_tag argument
-    if(~ischar(dlg_tag))
+    % Validate view_tag argument
+    if(~ischar(view_tag))
         error( ...
-            '%s: dlg_tag must be a character array', ...
+            '%s: view_tag must be a character array', ...
+            fname
+            );
+    endif;
+    hfig = ancestor(hview, 'figure');
+    if(~isfield(guihandles(hfig), view_tag))
+        error( ...
+            '%s: given view_tag does not belong to parent figure', ...
             fname
             );
     endif;
 
-    % Get view handle ---------------------------------------------------------
-    hview = getfield(guihandles(hdlg), strjoin({dlg_tag, 'data_view'}, '_'));
+    % Validate idx argument
+    validateattributes( ...
+        idx, ...
+        {'numeric'}, ...
+        { ...
+            '>=', 0, ...
+            'finite', ...
+            'integer', ...
+            'nonempty', ...
+            'nonnan', ...
+            'scalar' ...
+            }, ...
+        fname, ...
+        'idx' ...
+        );
 
-    % Retuen field values as item object --------------------------------------
-    item = itemEditViewGetItem(hview);
+    % Change and save selected item index -------------------------------------
+
+    % Get app data
+    app_data = guidata(hfig);
+    selection = getfield( ...
+        app_data, ...
+        strjoin({view_tag, 'data'}, '_') ...
+        );
+
+    selection.selected_item = idx;
+
+    % Save changes
+    app_data = setfield( ...
+        app_data, ...
+        strjoin({view_tag, 'data'}, '_'), ...
+        selection ...
+        );
+    guidata(hview, app_data);
+
+    % Nothing has changed in the view, so don't update it
 
 endfunction;

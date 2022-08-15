@@ -705,13 +705,13 @@ endfunction;
 % Function 'itemListViewSetSelectedItem':
 %
 % Use:
-%       -- itemListViewSetSelectedItem(hview, idx)
+%       -- itemListViewSetSelectedItem(hview, view_tag, idx)
 %
 % Description:
 %          TODO: Add function description here
 %
 % -----------------------------------------------------------------------------
-function itemListViewSetSelectedItem(hview, idx)
+function itemListViewSetSelectedItem(hview, view_tag, idx)
 
     % Store function name into variable
     % for easier management of error messages ---------------------------------
@@ -719,13 +719,13 @@ function itemListViewSetSelectedItem(hview, idx)
     use_case_a = strjoin({ ...
         ' -- ', ...
         fname, ...
-        '(hview, idx)' ...
+        '(hview, view_tag, idx)' ...
         }, '');
 
     % Validate input arguments ------------------------------------------------
 
     % Validate number of input arguments
-    if(2 ~= nargin)
+    if(3 ~= nargin)
         error('Invalid call to %s. Correct usage is:\n%s', fname, use_case_a);
 
     endif;
@@ -737,6 +737,21 @@ function itemListViewSetSelectedItem(hview, idx)
             fname
             );
 
+    endif;
+
+    % Validate view_tag argument
+    if(~ischar(view_tag))
+        error( ...
+            '%s: view_tag must be a character array', ...
+            fname
+            );
+    endif;
+    hfig = ancestor(hview, 'figure');
+    if(~isfield(guihandles(hfig), view_tag))
+        error( ...
+            '%s: given view_tag does not belong to parent figure', ...
+            fname
+            );
     endif;
 
     % Validate idx argument
@@ -756,9 +771,6 @@ function itemListViewSetSelectedItem(hview, idx)
         );
 
     % Change and save selected item index -------------------------------------
-
-    % Get view tag
-    view_tag = guiObjectTag(hview);
 
     % Get app data
     app_data = guidata(hview);
@@ -872,7 +884,7 @@ function itemListViewOnCellSelect(hsrc, evt, view_tag, hmenuitem, callback=NaN)
 
         % Execute callback for the selected item change
         if(is_function_handle(callback))
-            callback(get(hsrc, 'parent'), idx);
+            callback(get(hsrc, 'parent'), view_tag, idx);
 
         endif;
 
@@ -885,7 +897,7 @@ function itemListViewOnCellSelect(hsrc, evt, view_tag, hmenuitem, callback=NaN)
 
         % Execute callback for the selected item change
         if(is_function_handle(callback))
-            callback(get(hsrc, 'parent'), 0);
+            callback(get(hsrc, 'parent'), view_tag, 0);
 
         endif;
 
