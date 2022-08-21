@@ -522,7 +522,7 @@ endfunction;
 % item is also returned.
 %
 % -----------------------------------------------------------------------------
-function [TF, S_IDX] = itemListModelIsListMember(input_list, item)
+function [tf, s_idx] = itemListModelIsListMember(input_list, item)
 
     % Store function name into variable
     % for easier management of error messages ---------------------------------
@@ -563,6 +563,6 @@ function [TF, S_IDX] = itemListModelIsListMember(input_list, item)
 
     % Search list for the given item ------------------------------------------ 
     titles = itemListModelListTitles(input_list);
-    [TF, S_IDX] = ismember(item.title, titles);
+    [tf, s_idx] = ismember(item.title, titles);
 
 endfunction;
