@@ -3,21 +3,50 @@
 % Class 'ItemList':
 %
 % Description:
-%       TODO: Put class description here
+%       Represents an unordered set of 'Item' instances. Two lists are
+%       equivalent if they have same number of items with same names. Two lists
+%       are equal if they are equivalent and their items have same values too.
 %
 % -----------------------------------------------------------------------------
 classdef ItemList
+
+% -----------------------------------------------------------------------------
+%
+% Public properties section
+%
+% -----------------------------------------------------------------------------
     properties (Access = public)
         items = {};
 
     endproperties;
 
-    methods
+% -----------------------------------------------------------------------------
+%
+% Public methods section
+%
+% -----------------------------------------------------------------------------
+    methods (Access = public)
+
+% -----------------------------------------------------------------------------
+%
+% Method 'ItemList':
+%
+% Use:
+%       -- list = ItemList()
+%       -- list = ItemList(item1, item2, ...)
+%       -- list = ItemList("DB_FILE_PATH")
+%       -- list_copy = ItemList(list)
+%
+% Description:
+%          Class constructor.
+%
+% -----------------------------------------------------------------------------
         function list = ItemList(varargin)
             fname = 'ItemList';
             use_case_a = ' -- list = ItemList()';
-            use_case_b = ' -- list = ItemList(obj)';
-            use_case_c = ' -- list = ItemList(...)';
+            use_case_b = ' -- list = ItemList(item1, item2, ...)';
+            use_case_b = ' -- list = ItemList("DB_FILE_PATH")';
+            use_case_c = ' -- list_copy = ItemList(list)';
 
             if(0 == nargin)
                 % Default constructor invoked
@@ -68,11 +97,12 @@ classdef ItemList
 
                 else
                     error( ...
-                        'Invalid call to %s. Correct usage is:\n%s\n%s\n%s', ...
+                        'Invalid call to %s. Correct usage is:\n%s\n%s\n%s\n%s', ...
                         fname, ...
                         use_case_a, ...
                         use_case_b, ...
-                        use_case_c ...
+                        use_case_c, ...
+                        use_case_d ...
                         );
 
                 endif;
@@ -101,10 +131,19 @@ classdef ItemList
 
         endfunction;
 
+% -----------------------------------------------------------------------------
+%
+% Method 'disp':
+%
+% Use:
+%       -- list.disp()
+%
+% Description:
+%          The disp method is used by Octave whenever a class should be
+%          displayed on the screen.
+%
+% -----------------------------------------------------------------------------
         function disp(list)
-            fname = 'disp';
-            use_case_a = ' -- disp(list)';
-
             printf('ItemList(\n');
             idx = 1;
             while(numel(list.items) >= idx)
@@ -121,8 +160,47 @@ classdef ItemList
 
         endfunction;
 
-        function [tf, idx] = ismember(list, item)
+% -----------------------------------------------------------------------------
+%
+% Method 'ismember':
+%
+% Use:
+%       -- result = list.ismember(item)
+%
+% Description:
+%          Return 'true' if item with name item.name exists in the list.
+%          Otherwise return 'false'.
+%
+% -----------------------------------------------------------------------------
+        function result = ismember(list, item)
             fname = 'ismember';
+
+            if(~isa(item, 'Item'))
+                error( ...
+                    '%s: item must be an instance of the "Item" class', ...
+                    fname ...
+                    );
+
+            endif;
+
+            [result, idx] = ismember(item.name, list.names());
+
+        endfunction;
+
+% -----------------------------------------------------------------------------
+%
+% Method 'index':
+%
+% Use:
+%       -- idx = list.index(item)
+%
+% Description:
+%          Search for item with name item.name in the list. If item exists in
+%          the list return item index, otherwise return 0.
+%
+% -----------------------------------------------------------------------------
+        function idx = index(list, item)
+            fname = 'index';
 
             if(~isa(item, 'Item'))
                 error( ...
@@ -136,6 +214,17 @@ classdef ItemList
 
         endfunction;
 
+% -----------------------------------------------------------------------------
+%
+% Method 'names':
+%
+% Use:
+%       -- name_list = list.names()
+%
+% Description:
+%          Return list of name values of all the items in the list.
+%
+% -----------------------------------------------------------------------------
         function name_list = names(list)
             name_list = {};
             idx = 1;
@@ -148,6 +237,19 @@ classdef ItemList
 
         endfunction;
 
+% -----------------------------------------------------------------------------
+%
+% Method 'add':
+%
+% Use:
+%       -- list = list.add(item)
+%
+% Description:
+%          Append item to teh end of the list. If ietm with given item.name
+%          already exists in the list update item value to the item.value of the
+%          given item.
+%
+% -----------------------------------------------------------------------------
         function list = add(list, item)
             fname = 'add';
 
@@ -159,8 +261,7 @@ classdef ItemList
 
             endif;
 
-            [tf, idx] = list.ismember(item);
-            if(tf)
+            if(list.ismember(item))
                 list.items{idx}.value = item.value;
 
             else
@@ -170,6 +271,17 @@ classdef ItemList
 
         endfunction;
 
+% -----------------------------------------------------------------------------
+%
+% Method 'remove':
+%
+% Use:
+%       -- list = list.remove(idx)
+%
+% Description:
+%          Remove item with the given index idx from the list.
+%
+% -----------------------------------------------------------------------------
         function list = remove(list, idx)
             fname = 'remove';
 
@@ -194,11 +306,49 @@ classdef ItemList
 
         endfunction;
 
+% -----------------------------------------------------------------------------
+%
+% Method 'numel':
+%
+% Use:
+%       -- n = list.numel()
+%
+% Description:
+%          Return number of items (elements) in the list.
+%
+% -----------------------------------------------------------------------------
         function n = numel(list)
             n = numel(list.items);
 
         endfunction;
 
+% -----------------------------------------------------------------------------
+%
+% Method 'isempty':
+%
+% Use:
+%       -- result = list.isempty()
+%
+% Description:
+%          Return whether the list contains any item or not.
+%
+% -----------------------------------------------------------------------------
+        function result = isempty(list)
+            result = isempty(list.items);
+
+        endfunction;
+
+% -----------------------------------------------------------------------------
+%
+% Method 'at':
+%
+% Use:
+%       -- item = list.at(idx)
+%
+% Description:
+%          Return item with index idx from the list.
+%
+% -----------------------------------------------------------------------------
         function item = at(list, idx)
             fname = 'at';
 
@@ -220,28 +370,52 @@ classdef ItemList
 
         endfunction;
 
-        function result = isequivalent(obj, list)
+% -----------------------------------------------------------------------------
+%
+% Method 'isequivalent':
+%
+% Use:
+%       -- result = list.isequivalent(other)
+%
+% Description:
+%          Return whether or not two lists are equivalent. Two list are
+%          equivalent if if they have same number of items with same names.
+%
+% -----------------------------------------------------------------------------
+        function result = isequivalent(list, other)
             fname = 'isequivalent';
 
-            if(~isa(list, 'ItemList'))
+            if(~isa(other, 'ItemList'))
                 error( ...
-                    '%s: list must be an instance of the "ItemList" class', ...
+                    '%s: other must be an instance of the "ItemList" class', ...
                     fname ...
                     );
 
             endif;
 
             % Initialize result to a default value
-            result = isequal(sort(obj.names()), sort(list.names()));
+            result = isequal(sort(list.names()), sort(other.names()));
 
         endfunction;
 
-        function result = isequal(obj, list)
+% -----------------------------------------------------------------------------
+%
+% Method 'isequal':
+%
+% Use:
+%       -- result = list.isequal(other)
+%
+% Description:
+%          Return whether or not two lists are equal. Two list are equal if
+%          they are equivalent and their items have same values too.
+%
+% -----------------------------------------------------------------------------
+        function result = isequal(list, other)
             fname = 'isequal';
 
-            if(~isa(list, 'ItemList'))
+            if(~isa(other, 'ItemList'))
                 error( ...
-                    '%s: list must be an instance of the "ItemList" class', ...
+                    '%s: other must be an instance of the "ItemList" class', ...
                     fname ...
                     );
 
@@ -250,10 +424,10 @@ classdef ItemList
             % Initialize result to a default value
             result = false;
 
-            if(obj.isequivalent(list))
+            if(list.isequivalent(other))
                 idx = 1;
-                while(obj.numel() >= idx)
-                    if(~obj.items{idx}.isequal(list.items{idx}))
+                while(list.numel() >= idx)
+                    if(~list.items{idx}.isequal(other.items{idx}))
                         return;
 
                     endif;
