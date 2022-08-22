@@ -146,7 +146,7 @@ classdef ItemList
         function disp(list)
             printf('ItemList(\n');
             idx = 1;
-            while(numel(list.items) >= idx)
+            while(list.numel() >= idx)
                 printf( ...
                     '\tItem("%s\", "%s"), ...\n', ...
                     list.items{idx}.name, ...
@@ -379,7 +379,7 @@ classdef ItemList
 %
 % Description:
 %          Return whether or not two lists are equivalent. Two list are
-%          equivalent if if they have same number of items with same names.
+%          equivalent if they have same number of items with same names.
 %
 % -----------------------------------------------------------------------------
         function result = isequivalent(list, other)
@@ -393,7 +393,6 @@ classdef ItemList
 
             endif;
 
-            % Initialize result to a default value
             result = isequal(sort(list.names()), sort(other.names()));
 
         endfunction;
