@@ -144,11 +144,11 @@ classdef ItemList
 %
 % -----------------------------------------------------------------------------
         function disp(list)
-            printf('ItemList(\n');
+            printf('\tItemList( ...\n');
             idx = 1;
             while(list.numel() >= idx)
                 printf( ...
-                    '\tItem("%s\", "%s"), ...\n', ...
+                    '\t\tItem("%s\", "%s"), ...\n', ...
                     list.items{idx}.name, ...
                     list.items{idx}.value ...
                     );
@@ -156,7 +156,7 @@ classdef ItemList
                 idx = idx + 1;
 
             endwhile;
-            printf(')\n');
+            printf('\t)\n');
 
         endfunction;
 

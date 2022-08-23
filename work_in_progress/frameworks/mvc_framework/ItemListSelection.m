@@ -36,7 +36,7 @@ classdef ItemListSelection
 %       -- selec = ItemListSelection()
 %       -- selec = ItemListSelection(list)
 %       -- selec = ItemListSelection(list, idx)
-%       -- selec_copy = ItemListSelection(selec)
+%       -- selec = ItemListSelection(other)
 %
 % Description:
 %          Class constructor.
@@ -47,7 +47,7 @@ classdef ItemListSelection
             use_case_a = ' -- selec = ItemListSelection()';
             use_case_b = ' -- selec = ItemListSelection(list)';
             use_case_c = ' -- selec = ItemListSelection(list, idx)';
-            use_case_d = ' -- selec_copy = ItemListSelection(selec)';
+            use_case_d = ' -- selec = ItemListSelection(other)';
 
             if(0 == nargin)
                 % Default constructor invoked
@@ -139,14 +139,14 @@ classdef ItemListSelection
 %
 % -----------------------------------------------------------------------------
         function disp(selec)
-            printf('ItemListSelection(\n');
+            printf('\tItemListSelection( ...\n');
             idx = 1;
             while(selec.list.numel() >= idx)
                 name = selec.list.items{idx}.name;
                 value = selec.list.items{idx}.value;
                 if(idx == selec.idx)
                     printf( ...
-                        '%6s[ Item("%s\", "%s") ], ...\n', ...
+                        '\t%6s[ Item("%s\", "%s") ], ...\n', ...
                         ' ', ...
                         selec.list.items{idx}.name, ...
                         selec.list.items{idx}.value ...
@@ -154,7 +154,7 @@ classdef ItemListSelection
 
                 else
                     printf( ...
-                        '\tItem("%s\", "%s"), ...\n', ...
+                        '\t\tItem("%s\", "%s"), ...\n', ...
                         selec.list.items{idx}.name, ...
                         selec.list.items{idx}.value ...
                         );
@@ -164,7 +164,7 @@ classdef ItemListSelection
                 idx = idx + 1;
 
             endwhile;
-            printf(')\n');
+            printf('\t)\n');
 
         endfunction;
 

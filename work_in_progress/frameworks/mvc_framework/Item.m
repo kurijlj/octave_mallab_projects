@@ -36,7 +36,7 @@ classdef Item
 % Use:
 %       -- item = Item()
 %       -- item = Item(name, value)
-%       -- item = ItemList(other)
+%       -- item = Item(other)
 %
 % Description:
 %          Class constructor.
@@ -117,7 +117,7 @@ classdef Item
 %
 % -----------------------------------------------------------------------------
         function disp(item)
-            printf('Item("%s\", "%s")\n', item.name, item.value);
+            printf('\tItem("%s\", "%s")\n', item.name, item.value);
 
         endfunction;
 
