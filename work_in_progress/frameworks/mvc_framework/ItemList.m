@@ -144,19 +144,25 @@ classdef ItemList
 %
 % -----------------------------------------------------------------------------
         function disp(list)
-            printf('\tItemList( ...\n');
-            idx = 1;
-            while(list.numel() >= idx)
-                printf( ...
-                    '\t\tItem("%s\", "%s"), ...\n', ...
-                    list.items{idx}.name, ...
-                    list.items{idx}.value ...
-                    );
+            if(list.isempty())
+                printf('\tItemList( ...\n\t\t{}(0x0), ...\n\t)\n');
 
-                idx = idx + 1;
+            else
+                printf('\tItemList( ...\n');
+                idx = 1;
+                while(list.numel() >= idx)
+                    printf( ...
+                        '\t\tItem("%s\", "%s"), ...\n', ...
+                        list.items{idx}.name, ...
+                        list.items{idx}.value ...
+                        );
 
-            endwhile;
-            printf('\t)\n');
+                    idx = idx + 1;
+
+                endwhile;
+                printf('\t)\n');
+
+            endif;
 
         endfunction;
 

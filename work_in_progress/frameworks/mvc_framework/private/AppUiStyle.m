@@ -17,11 +17,11 @@ classdef AppUiStyle
 %
 % -----------------------------------------------------------------------------
     properties (Access = public)
-        padding = 6;
+        padding      = 6;
         column_width = 128;
-        row_height = 24;
-        btn_width = 128;
-        btn_height = 32;
+        row_height   = 24;
+        btn_width    = 128;
+        btn_height   = 32;
 
     endproperties;
 
@@ -196,6 +196,48 @@ classdef AppUiStyle
             printf('\t\t"ButtonWidth": %d, ...\n', style.btn_width);
             printf('\t\t"ButtonHeight": %d, ...\n', style.btn_height);
             printf('\t)\n');
+
+        endfunction;
+
+% -----------------------------------------------------------------------------
+%
+% Method 'normalized':
+%
+% Use:
+%       -- nstyle = style.normalized(ref_ext)
+%
+% Description:
+%          Return the UI style parameters normalized to given reference extents
+%          ref_ext. ref_ext is a 4-element vector with values [ lower_left_X,
+%          lower_left_Y, width, height ] obtained with getpixelposition
+%          function.
+%
+% -----------------------------------------------------------------------------
+        function nstyle = normalized(style, ref_ext)
+            fname = 'normalized';
+
+            validateattributes( ...
+                ref_ext, ...
+                {'numeric'}, ...
+                { ...
+                    'vector', ...
+                    'row', ...
+                    'numel', 4, ...
+                    'nonnan', ...
+                    'integer', ...
+                    '>=', 0 ...
+                    }, ...
+                fname, ...
+                'ref_ext' ...
+                );
+
+            nstyle              = struct();
+            nstyle.padding_hor  = style.padding / ref_ext(3);
+            nstyle.padding_ver  = style.padding / ref_ext(4);
+            nstyle.column_width = style.column_width / ref_ext(3);
+            nstyle.row_height   = style.row_height / ref_ext(4);
+            nstyle.btn_width    = style.btn_width / ref_ext(3);
+            nstyle.btn_height   = style.btn_height / ref_ext(4);
 
         endfunction;
 

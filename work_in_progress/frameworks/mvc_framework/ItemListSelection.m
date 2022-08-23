@@ -139,32 +139,38 @@ classdef ItemListSelection
 %
 % -----------------------------------------------------------------------------
         function disp(selec)
-            printf('\tItemListSelection( ...\n');
-            idx = 1;
-            while(selec.list.numel() >= idx)
-                name = selec.list.items{idx}.name;
-                value = selec.list.items{idx}.value;
-                if(idx == selec.idx)
-                    printf( ...
-                        '\t%6s[ Item("%s\", "%s") ], ...\n', ...
-                        ' ', ...
-                        selec.list.items{idx}.name, ...
-                        selec.list.items{idx}.value ...
-                        );
+            if(selec.isempty())
+                printf('\tItemListSelection( ...\n\t\t{}(0x0), ...\n\t)\n');
 
-                else
-                    printf( ...
-                        '\t\tItem("%s\", "%s"), ...\n', ...
-                        selec.list.items{idx}.name, ...
-                        selec.list.items{idx}.value ...
-                        );
+            else
+                printf('\tItemListSelection( ...\n');
+                idx = 1;
+                while(selec.list.numel() >= idx)
+                    name = selec.list.items{idx}.name;
+                    value = selec.list.items{idx}.value;
+                    if(idx == selec.idx)
+                        printf( ...
+                            '\t%6s[ Item("%s\", "%s") ], ...\n', ...
+                            ' ', ...
+                            selec.list.items{idx}.name, ...
+                            selec.list.items{idx}.value ...
+                            );
 
-                endif;
+                    else
+                        printf( ...
+                            '\t\tItem("%s\", "%s"), ...\n', ...
+                            selec.list.items{idx}.name, ...
+                            selec.list.items{idx}.value ...
+                            );
 
-                idx = idx + 1;
+                    endif;
 
-            endwhile;
-            printf('\t)\n');
+                    idx = idx + 1;
+
+                endwhile;
+                printf('\t)\n');
+
+            endif;
 
         endfunction;
 

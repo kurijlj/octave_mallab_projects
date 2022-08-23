@@ -17,8 +17,8 @@ classdef Item
 %
 % -----------------------------------------------------------------------------
     properties (Access = public)
-        name  = 'Item #A';
-        value = 'A';
+        name  = NaN;
+        value = NaN;
 
     endproperties;
 
@@ -59,7 +59,7 @@ classdef Item
 
                 else
                     error( ...
-                        '%s: obj must be an instance of the "Item" class', ...
+                        '%s: other must be an instance of the "Item" class', ...
                         fname ...
                         );
 
@@ -118,6 +118,27 @@ classdef Item
 % -----------------------------------------------------------------------------
         function disp(item)
             printf('\tItem("%s\", "%s")\n', item.name, item.value);
+
+        endfunction;
+
+% -----------------------------------------------------------------------------
+%
+% Method 'isnan':
+%
+% Use:
+%       -- item.isnan()
+%
+% Description:
+%          Check if given item is a NaN item. Item instance is NaN if name
+%          field has value NaN. Value field is ignored.
+%
+% -----------------------------------------------------------------------------
+        function result = isnan(item)
+            result = false;
+            if(isnan(item.name))
+                result = true;
+
+            endif;
 
         endfunction;
 
