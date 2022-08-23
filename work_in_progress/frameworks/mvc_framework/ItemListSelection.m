@@ -4,6 +4,8 @@
 %
 % Description:
 %       TODO: Put class description here
+%       Represents an item selected from the list of items. Two selections are
+%       equivalent if ... Two selections are equal if ...
 %
 % -----------------------------------------------------------------------------
 classdef ItemListSelection
@@ -79,7 +81,7 @@ classdef ItemListSelection
                 % Regular constructor invoked
                 if(~isa(varargin{1}, 'ItemList'))
                     error( ...
-                        '%s: varargin{1} must be an instance of the "ItemList" class', ...
+                        '%s: list must be an instance of the "ItemList" class', ...
                         fname ...
                         );
 
@@ -89,15 +91,23 @@ classdef ItemListSelection
                     varargin{2}, ...
                     {'numeric'}, ...
                     { ...
-                        '>=', 1, ...
-                        '<=', varargin{1}.numel(), ...
                         'integer', ...
                         'nonnan', ...
                         'scalar' ...
                         }, ...
                     fname, ...
-                    'varargin{2}' ...
+                    'idx' ...
                     );
+
+                if(1 > varargin{2} || varargin{1}.numel() < varargin{2})
+                    error( ...
+                        '%s: idx out of bounds ([1, %d] <> %d)', ...
+                        fname, ...
+                        varargin{1}.numel(), ...
+                        varargin{2} ...
+                        );
+
+                endif;
 
                 selec.list = varargin{1};
                 selec.idx = varargin{2};
@@ -156,7 +166,81 @@ classdef ItemListSelection
             endwhile;
             printf(')\n');
 
-        endfucntion;
+        endfunction;
+
+% -----------------------------------------------------------------------------
+%
+% Method 'numel':
+%
+% Use:
+%       -- n = selec.numel()
+%
+% Description:
+%          Return number of items (elements) in the selection list.
+%
+% -----------------------------------------------------------------------------
+        function n = numel(selec)
+            n = selec.list.numel();
+
+        endfunction;
+
+% -----------------------------------------------------------------------------
+%
+% Method 'isempty':
+%
+% Use:
+%       -- result = selec.isempty()
+%
+% Description:
+%          Return whether the selection is empty or not. Selection is empty if
+%          the selection list is an empty list.
+%
+% -----------------------------------------------------------------------------
+        function result = isempty(selec)
+            result = selec.list.isempty();
+
+        endfunction;
+
+% -----------------------------------------------------------------------------
+%
+% Method 'select_index':
+%
+% Use:
+%       -- selec.select_index(idx)
+%
+% Description:
+%          Changes selection to the item with index idx if item with such index
+%          exists in the list. Otherwise it returns an error.
+%
+% -----------------------------------------------------------------------------
+        function selec = select_index(selec, idx)
+            fname = 'select_index';
+
+            validateattributes( ...
+                idx, ...
+                {'numeric'}, ...
+                { ...
+                    'integer', ...
+                    'nonnan', ...
+                    'scalar' ...
+                    }, ...
+                fname, ...
+                'varargin{2}' ...
+                );
+
+            if(1 > idx || selec.numel() < idx)
+                error( ...
+                    '%s: idx out of bounds ([1, %d] <> %d)', ...
+                    fname, ...
+                    selec.numel(), ...
+                    idx ...
+                    );
+
+            endif;
+
+            selec.idx = idx;
+
+        endfunction;
 
 % -----------------------------------------------------------------------------
 %
@@ -167,7 +251,8 @@ classdef ItemListSelection
 %
 % Description:
 %          If given item is member of the selection list, set selection index to
-%          value of the index of a given item in the selection list.
+%          value of the index of a given item in the selection list. Otherwise
+%          it returns an error.
 %
 % -----------------------------------------------------------------------------
         function selec = select_item(selec, item)
@@ -183,6 +268,12 @@ classdef ItemListSelection
 
             if(selec.list.ismember(item))
                 selec.idx = selec.list.index(item);
+
+            else
+                error( ...
+                    '%s: item is not a member of the selection list', ...
+                    fname ...
+                    );
 
             endif;
 
@@ -200,7 +291,7 @@ classdef ItemListSelection
 %
 % -----------------------------------------------------------------------------
         function item = selected_item(selec)
-            item = selec.list{selec.idx};
+            item = selec.list.at(selec.idx);
 
         endfunction;
 

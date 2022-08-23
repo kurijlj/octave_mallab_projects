@@ -3,22 +3,50 @@
 % Class 'Item':
 %
 % Description:
-%       TODO: Put class description here
+%       Represents a simple database recordset where name is a uniq identifier
+%       and value represents data stored in the recordset. Two items are
+%       equivalent if they have common name (e.g. unique ID), whtether two items
+%       are equal if they have common name and identical values.
 %
 % -----------------------------------------------------------------------------
 classdef Item
+
+% -----------------------------------------------------------------------------
+%
+% Public properties section
+%
+% -----------------------------------------------------------------------------
     properties (Access = public)
         name  = 'Item #A';
         value = 'A';
 
     endproperties;
 
-    methods
+% -----------------------------------------------------------------------------
+%
+% Public methods section
+%
+% -----------------------------------------------------------------------------
+    methods (Access = public)
+
+% -----------------------------------------------------------------------------
+%
+% Method 'Item':
+%
+% Use:
+%       -- item = Item()
+%       -- item = Item(name, value)
+%       -- item = ItemList(other)
+%
+% Description:
+%          Class constructor.
+%
+% -----------------------------------------------------------------------------
         function item = Item(varargin)
             fname = 'Item';
             use_case_a = ' -- item = Item()';
-            use_case_b = ' -- item = Item(obj)';
-            use_case_c = ' -- item = Item(name, value)';
+            use_case_b = ' -- item = Item(name, value)';
+            use_case_c = ' -- item = Item(other)';
 
             if(0 == nargin)
                 % Default constructor invoked
@@ -76,17 +104,41 @@ classdef Item
 
         endfunction;
 
+% -----------------------------------------------------------------------------
+%
+% Method 'disp':
+%
+% Use:
+%       -- item.disp()
+%
+% Description:
+%          The disp method is used by Octave whenever a class should be
+%          displayed on the screen.
+%
+% -----------------------------------------------------------------------------
         function disp(item)
             printf('Item("%s\", "%s")\n', item.name, item.value);
 
         endfunction;
 
-        function result = isequivalent(obj, item)
+% -----------------------------------------------------------------------------
+%
+% Method 'isequivalent':
+%
+% Use:
+%       -- result = item.isequivalent(other)
+%
+% Description:
+%          Return whether or not two items are equivalent. Two items are
+%          equivalent if they have common name (unique ID).
+%
+% -----------------------------------------------------------------------------
+        function result = isequivalent(item, other)
             fname = 'isequivalent';
 
             if(~isa(item, 'Item'))
                 error( ...
-                    '%s: item must be an instance of the "Item" class', ...
+                    '%s: other must be an instance of the "Item" class', ...
                     fname ...
                     );
 
@@ -94,14 +146,26 @@ classdef Item
 
             % Initialize result to a default value
             result = false;
-            if(isequal(obj.name, item.name));
+            if(isequal(item.name, other.name));
                 result = true;
 
             endif;
 
         endfunction;
 
-        function result = isequal(obj, item)
+% -----------------------------------------------------------------------------
+%
+% Method 'isequal':
+%
+% Use:
+%       -- result = item.isequal(other)
+%
+% Description:
+%          Return whether or not two items are equal. Two items are equal if
+%          they are equivalent and their values are identical.
+%
+% -----------------------------------------------------------------------------
+        function result = isequal(item, other)
             fname = 'isequal';
 
             if(~isa(item, 'Item'))
@@ -115,8 +179,8 @@ classdef Item
             % Initialize result to a default value
             result = false;
             if( ...
-                    isequal(obj.name, item.name) ...
-                    && isequal(obj.value, item.value) ...
+                    item.isequivalent(other) ...
+                    && isequal(item.value, other.value) ...
                     );
                 result = true;
 
