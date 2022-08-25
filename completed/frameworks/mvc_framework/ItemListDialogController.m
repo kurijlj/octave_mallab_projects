@@ -10,6 +10,19 @@
 %
 % -----------------------------------------------------------------------------
 function ItemListDialogController(list)
+    fname = 'ItemListDialogController';
+
+    % Validate input arguments ------------------------------------------------
+
+    if(~isa(list, 'ItemList'))
+        error( ...
+            '%s: list must be an instance of the "ItemList" class', ...
+            fname ...
+            );
+
+    endif;
+
+    % Initialize global variables ---------------------------------------------
     global uistyle;
     global handles;
     global models;
@@ -17,9 +30,12 @@ function ItemListDialogController(list)
     uistyle = AppUiStyle();
     models = struct();
     models.selec = ItemListSelection(list);
+
+    % Create dialog -----------------------------------------------------------
     handles.dlg_list = ItemListDialog('Item List Dialog', uistyle, models.selec.list);
     handles.dlg_edit = NaN;
 
+    % Connect signals to corresponding callbacks ------------------------------
     set(handles.dlg_list.list_view.tbl_items, 'cellselectioncallback', @onCellSelect);
     set(handles.dlg_list.list_view.mnu_add, 'callback', @onCntxMnuOptSelect);
     set(handles.dlg_list.list_view.mnu_remove, 'callback', @onCntxMnuOptSelect);

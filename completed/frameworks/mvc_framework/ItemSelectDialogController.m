@@ -1,25 +1,46 @@
 % -----------------------------------------------------------------------------
 %
-% Function 'ItemEditDialogController':
+% Function 'ItemSelectDialogController':
 %
 % Use:
-%       -- ItemEditDialogController()
+%       -- ItemSelectDialogController()
 %
 % Description:
-%          Demo and functionality test controller for the ItemEditView.
+%          Demo and functionality test controller for the ItemSelectView.
 %
 % -----------------------------------------------------------------------------
-function ItemEditDialogController(item)
+function ItemSelectDialogController(list)
+    fname = 'ItemSelectDialogController';
+
+    % Validate input arguments ------------------------------------------------
+
+    if(~isa(list, 'ItemList'))
+        error( ...
+            '%s: list must be an instance of the "ItemList" class', ...
+            fname ...
+            );
+
+    endif;
+
+    % Initialize global variables ---------------------------------------------
     global handles;
     global models
 
     uistyle = AppUiStyle();
     models = struct();
-    models.item = item;
-    handles = ItemEditDialog('Item Edit Dialog', uistyle, models.item);
+    if(list.isempty())
+        models.selec = ItemListSelection(ItemList(Item('N/A', 'N/A')), 1);
 
-    set(handles.edit_view.fld_name, 'callback', @onFieldEdit);
-    set(handles.edit_view.fld_value, 'callback', @onFieldEdit);
+    else
+        models.selec = ItemListSelection(list, 1);
+
+    endif;
+
+    % Create dialog -----------------------------------------------------------
+    handles = ItemSelectDialog('Item Select Dialog', uistyle, models.selec.list);
+
+    % Connect signals to corresponding callbacks ------------------------------
+    set(handles.select_view.fld_name, 'callback', @onItemSelect);
     set(handles.control_panel.btn_ok, 'callback', @onPushOk);
     set(handles.control_panel.btn_cancel, 'callback', @onPushCancel);
     set(handles.figure, 'deletefcn', @onDeleteFigure);
@@ -35,23 +56,27 @@ endfunction;
 
 % -----------------------------------------------------------------------------
 %
-% Callback 'onFieldEdit':
+% Callback 'onItemSelect':
 %
 % Use:
-%       -- onFieldEdit(hsrc, evt)
+%       -- onItemSelect(hsrc, evt)
 %
 % Description:
-%          Callback to be called when user enters texte in one of the dialog's
-%          fields.
+%          Callback to be called when user picks one of item names from the
+%          dropdown list.
 %
 % -----------------------------------------------------------------------------
-function onFieldEdit(hsrc, evt)
+function onItemSelect(hsrc, evt)
     global handles;
     global models;
 
-    name = get(handles.edit_view.fld_name, 'string');
-    value = get(handles.edit_view.fld_value, 'string');
-    models.item = Item(name, value);
+    models.selec = models.selec.select_index( ...
+        get(handles.select_view.fld_name, 'value') ...
+        );
+    set( ...
+        handles.select_view.fld_value, ...
+        'string', models.selec.selected_item().value ...
+        );
 
 endfunction;
 
@@ -69,10 +94,6 @@ endfunction;
 function onPushOk(hsrc, evt)
     global handles;
     global models;
-
-    name = get(handles.edit_view.fld_name, 'string');
-    value = get(handles.edit_view.fld_value, 'string');
-    models.item = Item(name, value);
 
     close(handles.figure);
 
@@ -94,7 +115,7 @@ function onPushCancel(hsrc, evt)
     global handles;
     global models;
 
-    models.item = Item();
+    models.selec = models.selec.select_index(0);
 
     close(handles.figure);
 
@@ -112,8 +133,9 @@ endfunction;
 %
 % -----------------------------------------------------------------------------
 function onDeleteFigure(hsrc, evt)
+    global handles;
     global models;
 
-    models.item.disp();
+    models.selec.selected_item().disp();
 
 endfunction;
