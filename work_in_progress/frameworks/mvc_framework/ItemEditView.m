@@ -3,7 +3,7 @@
 % Function 'ItemEditView':
 %
 % Use:
-%       -- handles = ItemEditView(hparent)
+%       -- handles = ItemEditView(hparent, name, uistyle, item)
 %
 % Description:
 %          Panel containing fields for editing items.
@@ -11,7 +11,7 @@
 % -----------------------------------------------------------------------------
 function handles = ItemEditView(hparent, name, uistyle, item)
     fname = 'ItemEditView';
-    use_case_a = ' -- handles = ItemEditView(hparent)';
+    use_case_a = ' -- handles = ItemEditView(hparent, name, uistyle, item)';
 
     % Validate input arguments ------------------------------------------------
     if(~ishghandle(hparent))

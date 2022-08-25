@@ -245,6 +245,40 @@ classdef ItemList
 
 % -----------------------------------------------------------------------------
 %
+% Method 'cellarray':
+%
+% Use:
+%       -- cell_list = list.cellarry()
+%
+% Description:
+%          Return list as cell array.
+%
+% -----------------------------------------------------------------------------
+        function cell_list = cellarray(list)
+            cell_list = {};
+
+            if(list.isempty())
+                % cell_list = {'', '';};
+                cell_list = Item().cellarray();
+
+            else
+                cell_list = cell(numel(list), 2);
+                idx = 1;
+                while(numel(list) >= idx)
+                %     cell_list{idx, 1} = list.at(idx).name;
+                %     cell_list{idx, 2} = list.at(idx).value;
+                    cell_list(idx, :) = list.at(idx).cellarray();
+
+                    idx = idx + 1;
+
+                endwhile;
+
+            endif;
+
+        endfunction;
+
+% -----------------------------------------------------------------------------
+%
 % Method 'add':
 %
 % Use:

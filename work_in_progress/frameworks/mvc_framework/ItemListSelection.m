@@ -234,9 +234,9 @@ classdef ItemListSelection
                 'varargin{2}' ...
                 );
 
-            if(1 > idx || selec.numel() < idx)
+            if(0 > idx || selec.numel() < idx)
                 error( ...
-                    '%s: idx out of bounds ([1, %d] <> %d)', ...
+                    '%s: idx out of bounds ([0, %d] <> %d)', ...
                     fname, ...
                     selec.numel(), ...
                     idx ...
@@ -297,7 +297,13 @@ classdef ItemListSelection
 %
 % -----------------------------------------------------------------------------
         function item = selected_item(selec)
-            item = selec.list.at(selec.idx);
+            if(0 == selec.idx)
+                item = Item();
+
+            else
+                item = selec.list.at(selec.idx);
+
+            endif;
 
         endfunction;
 

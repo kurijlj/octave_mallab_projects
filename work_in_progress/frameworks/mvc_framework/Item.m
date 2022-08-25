@@ -123,6 +123,30 @@ classdef Item
 
 % -----------------------------------------------------------------------------
 %
+% Method 'cellarray':
+%
+% Use:
+%       -- cell_item = list.cellarry()
+%
+% Description:
+%          Return item as cell array.
+%
+% -----------------------------------------------------------------------------
+        function cell_item = cellarray(item)
+            cell_item = {};
+
+            if(item.isnan())
+                cell_item = {'', '';};
+
+            else
+                cell_item = {item.name, item.value;};
+
+            endif;
+
+        endfunction;
+
+% -----------------------------------------------------------------------------
+%
 % Method 'isnan':
 %
 % Use:

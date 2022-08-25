@@ -1,17 +1,17 @@
 % -----------------------------------------------------------------------------
 %
-% Function 'OkCancelDialog':
+% Function 'ItemListDialog':
 %
 % Use:
-%       -- handles = OkCancelDialog(name, uistyle)
+%       -- handles = ItemListDialog(name, uistyle)
 %
 % Description:
-%          Demo and functionality test dialog for the OkCancelPanel view.
+%          Demo and functionality test dialog for the ItemListView view.
 %
 % -----------------------------------------------------------------------------
-function handles = ItemEditDialog(name, uistyle, item)
-    fname = 'OkCancelDialog';
-    use_case_a = ' -- handles = OkCancelDialog(name, uistyle)';
+function handles = ItemListDialog(name, uistyle, list)
+    fname = 'ItemListDialog';
+    use_case_a = ' -- handles = ItemListDialog(name, uistyle, list)';
 
     % Validate input arguments ------------------------------------------------
 
@@ -31,9 +31,9 @@ function handles = ItemEditDialog(name, uistyle, item)
 
     endif;
 
-    if(~isa(item, 'Item'))
+    if(~isa(list, 'ItemList'))
         error( ...
-            '%s: item must be an instance of the "Item" class', ...
+            '%s: list must be an instance of the "ItemList" class', ...
             fname ...
             );
 
@@ -58,11 +58,11 @@ function handles = ItemEditDialog(name, uistyle, item)
         );
 
     % Create the edit view
-    handles.edit_view = ItemEditView( ...
+    handles.list_view = ItemListView( ...
         view, ...
-        'Edit Item', ...
+        'Edit Items', ...
         uistyle, ...
-        item ...
+        list ...
         );
 
     % Create conrols
@@ -101,11 +101,8 @@ endfunction;
 function onWindowResize(hsrc, evt, handles, uistyle)
 
     % Reset edit view
-    position = itemEditViewElementsPosition(handles.edit_view.main_panel, uistyle);
-    set(handles.edit_view.lbl_name, 'position', position(1, :));
-    set(handles.edit_view.fld_name, 'position', position(2, :));
-    set(handles.edit_view.lbl_value, 'position', position(3, :));
-    set(handles.edit_view.fld_value, 'position', position(4, :));
+    position = itemListViewElementsPosition(handles.list_view.main_panel, uistyle);
+    set(handles.list_view.tbl_items, 'position', position(1, :));
 
     % Reset Ok-Cancel panel
     position = okCancelPanelElementsPosition(handles.control_panel.main_panel, uistyle);

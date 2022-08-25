@@ -1,22 +1,22 @@
 % -----------------------------------------------------------------------------
 %
-% Function 'OkCancelDialogController':
+% Function 'ItemEditDialogController':
 %
 % Use:
-%       -- OkCancelDialogController()
+%       -- ItemEditDialogController()
 %
 % Description:
-%          Demo and functionality test controller for the OkCancelPanel view.
+%          Demo and functionality test controller for the ItemEditView.
 %
 % -----------------------------------------------------------------------------
-function ItemEditDialogController()
+function ItemEditDialogController(item)
     global handles;
     global models
 
     uistyle = AppUiStyle();
     models = struct();
-    models.item = Item('Item #1', '25082022');
-    handles = ItemEditDialog('OK/Cancel Dialog', uistyle, models.item);
+    models.item = item;
+    handles = ItemEditDialog('Item Edit Dialog', uistyle, models.item);
 
     set(handles.edit_view.fld_name, 'callback', @onFieldEdit);
     set(handles.edit_view.fld_value, 'callback', @onFieldEdit);
