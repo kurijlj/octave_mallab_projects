@@ -1,17 +1,17 @@
 % -----------------------------------------------------------------------------
 %
-% Subfunction 'OkCancelPanelElementsPosition':
+% Subfunction 'itemEditViewElementsPosition':
 %
 % Use:
-%       -- position = okCancelPanelElementsPosition(hcntr, uistyle)
+%       -- position = itemEditViewElementsPosition(hcntr, uistyle)
 %
 % Description:
 %          Function to calculate GUI elements postion on the panel.
 %
 % -----------------------------------------------------------------------------
-function position = okCancelPanelElementsPosition(hcntr, uistyle)
-    fname = 'okCancelPanelElementsPosition';
-    use_case_a = ' -- position = okCancelPanelElementsPosition(hcntr, uistyle)';
+function position = itemEditViewElementsPosition(hcntr, uistyle)
+    fname = 'itemEditViewElementsPosition';
+    use_case_a = ' -- position = itemEditViewElementsPosition(hcntr, uistyle)';
 
     % Validate input arguments ------------------------------------------------
     if(~ishghandle(hcntr))
@@ -36,22 +36,25 @@ function position = okCancelPanelElementsPosition(hcntr, uistyle)
     % Calculate elements positions within container
     position = [];
 
-    % Center buttons in the view
-    nbtns = 2;
+    % Organize fields and labels the vertical stack. Align to the top of
+    % the view
+    nflds = 2;
     idx = 1;
-    while(nbtns >= idx)
+    while(nflds >= idx)
+        offset = 1 - 2*idx*(nstyle.padding_ver + nstyle.row_height);
         position = [ ...
             position; ...
-            (1.00 - nstyle.btn_width)/2, ...
-            % (1.00 - (nbtns*nstyle.btn_height + nstyle.padding_ver))/nbtns ...
-            %     + (nbtns - idx)*nstyle.btn_height ...
-            %     + (nbtns - idx)*nstyle.padding_ver, ...
-            (1.00 - nstyle.padding_ver - nbtns*nstyle.btn_height)/nbtns ...
-                + (nbtns - idx)*(nstyle.padding_ver + nstyle.btn_height), ...
-            nstyle.btn_width, ...
-            nstyle.btn_height; ...
+            % Calculate position for the label
+            nstyle.padding_hor, ...
+            offset + nstyle.row_height, ...
+            1.00 - 2*nstyle.padding_hor, ...
+            nstyle.row_height; ...
+            % Calculate position for the field
+            nstyle.padding_hor, ...
+            offset, ...
+            1.00 - 2*nstyle.padding_hor, ...
+            nstyle.row_height; ...
             ];
-
         idx = idx + 1;
 
     endwhile;
