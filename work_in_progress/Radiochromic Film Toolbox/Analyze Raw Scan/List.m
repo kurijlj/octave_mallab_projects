@@ -3,10 +3,10 @@
 % Class 'List':
 %
 % Description:
-%       Represents an unordered set of objects instances. Two lists are
-%       equivalent if they have same number of items with same titles. Two lists
-%       are equal if they are equivalent and have identical values for all
-%       fields.
+%       Data container that contains an unsorted set of unique objects of type
+%       FilmDigitizer and FilmPiece. Two lists are equivalent if they have same
+%       number of equivalent objects. Two lists are equal if they are equivalent
+%       and their equivalent objects are equal too.
 %
 % -----------------------------------------------------------------------------
 classdef List
@@ -18,6 +18,7 @@ classdef List
 % -----------------------------------------------------------------------------
     properties (SetAccess = private, GetAccess = public)
         items = {};
+        type = NaN;
 
     endproperties;
 
@@ -30,71 +31,41 @@ classdef List
 
 % -----------------------------------------------------------------------------
 %
-% Method 'ItemList':
+% Method 'List':
 %
 % Use:
 %       -- list = List()
 %       -- list = List(item1, item2, ...)
-%       -- list = List("DB_FILE_PATH")
+%       -- list = List("DB_FILE_PATH", type)
 %       -- list = List(other)
 %
 % Description:
 %          Class constructor.
 %
 % -----------------------------------------------------------------------------
-        function list = ItemList(varargin)
-            fname = 'ItemList';
-            use_case_a = ' -- list = ItemList()';
-            use_case_b = ' -- list = ItemList(item1, item2, ...)';
-            use_case_b = ' -- list = ItemList("DB_FILE_PATH")';
-            use_case_c = ' -- list = ItemList(other)';
+        function list = List(varargin)
+            fname = 'List';
+            use_case_a = ' -- list = List()';
+            use_case_b = ' -- list = List(item1, item2, ...)';
+            use_case_c = ' -- list = List("DB_FILE_PATH", type)';
+            use_case_d = ' -- list = List(other)';
 
             if(0 == nargin)
                 % Default constructor invoked
 
             elseif(1 == nargin)
-                if(isa(varargin{1}, 'ItemList'))
+                if(isa(varargin{1}, 'List'))
                     % Copy constructor invoked
                     list.items = varargin{1}.items;
+                    list.type = varargin{1}.type;
 
-                elseif(isa(varargin{1}, 'Item'))
-                    % Construct item list out of one item
+                elseif( ...
+                        isa(varargin{1}, 'FilmDigitizer') ...
+                        || isa(varargin{1}, 'FilmPiece') ...
+                        )
+                    % Only one object passed for the constructor
+                    list.type = class(varargin{1});
                     list.items = {varargin{1}};
-
-                elseif(ischar(varargin{1}) && ~isempty(varargin{1}))
-                    % Load item list from a database file
-
-                    % Check if given file path poins to actual file
-                    if(~isfile(varargin{1}))
-                        % Database does not exist, print error message and return empty list
-                        warning( ...
-                            '%s: file "%s" does not exist\nUsing defaul values\n', ...
-                            fname, ...
-                            file_path ...
-                            );
-
-                        return;
-
-                    endif;
-
-                    % Load required packages
-                    pkg load io;  % Required by 'csv2cell'
-
-                    % Load database entries as cell array
-                    entries = csv2cell(varargin{1});
-
-                    % Unload loaded packages
-                    pkg unload io;
-
-                    % Populate the list
-                    idx = 2;  % We skip column headers
-                    while(size(entries, 1) >= idx)
-                        item = Item(entries{idx, 1}, entries{idx, 2});
-                        list = list.add(item);
-
-                        idx = idx + 1;
-
-                    endwhile;
 
                 else
                     error( ...
@@ -108,19 +79,130 @@ classdef List
 
                 endif;
 
-            elseif(1 < nargin)
+            elseif(2 == nargin)
+                if(ischar(varargin{1}) && ~isempty(varargin{1}) ...
+                        && ischar(varargin{2}) && ~isempty(varargin{2}) ...
+                        )
+                    % Load item list from a database file
+
+                    % Check if given file path poins to actual file
+                    if(~isfile(varargin{1}))
+                        % Database does not exist, print error message and return empty list
+                        warning( ...
+                            '%s: file "%s" does not exist\nCalling default constructor\n', ...
+                            fname, ...
+                            file_path ...
+                            );
+
+                        return;
+
+                    endif;
+
+                    % Check if valid object type passed
+                    validatestring( ...
+                        varargin{2}, ...
+                        {'FilmDigitizer', 'FilmPiece'}, ...
+                        fname, ...
+                        'type' ...
+                        );
+
+                    % Load required packages
+                    pkg load io;  % Required by 'csv2cell'
+
+                    % Load database entries as cell array
+                    entries = csv2cell(varargin{1});
+
+                    % Unload loaded packages
+                    pkg unload io;
+
+                    % Populate the list
+                    list.type = varargin{2};
+                    idx = 2;  % We skip column headers
+                    while(size(entries, 1) >= idx)
+                        item = NaN;
+                        if(isequal('FilmDigitizer', list.type))
+                            item = FilmDigitizer( ...
+                                'Title', entries{idx, 1}, ...
+                                'Manufacturer', entries{idx, 2}, ...
+                                'Model', entries{idx, 3}, ...
+                                'SerialNumber', entries{idx, 4}, ...
+                                'OpticalResolution', entries{idx, 5}, ...
+                                'OpticalDensity', entries{idx, 6}, ...
+                                'LightSource', entries{idx, 7}, ...
+                                'ScanningMode', entries{idx, 8}, ...
+                                'ScanningResolution', entries{idx, 9}, ...
+                                'FilmFixation', entries{idx, 10} ...
+                                );
+
+                        else
+                            item = FilmPiece( ...
+                                'Title', entries{idx, 1}, ...
+                                'Manufacturer', entries{idx, 2}, ...
+                                'Model', entries{idx, 3}, ...
+                                'LOT', entries{idx, 4}, ...
+                                'CustomCut', entries{idx, 5} ...
+                                );
+
+                        endif;
+
+                        list = list.add(item);
+
+                        idx = idx + 1;
+
+                    endwhile;
+
+                elseif( ...
+                        (isa(varargin{1}, 'FilmDigitizer') ...
+                        && isa(varargin{2}, 'FilmDigitizer')) ...
+                        || (isa(varargin{1}, 'FilmPiece') ...
+                        && isa(varargin{2}, 'FilmPiece')) ...
+                        )
+                    % Only two object passed for the constructor
+                    list.type = class(varargin{1});
+                    list = list.add(varargin{1});
+                    list = list.add(varargin{2});
+
+                else
+                    error( ...
+                        'Invalid call to %s. Correct usage is:\n%s\n%s\n%s\n%s', ...
+                        fname, ...
+                        use_case_a, ...
+                        use_case_b, ...
+                        use_case_c, ...
+                        use_case_d ...
+                        );
+
+                endif;
+
+            elseif(2 < nargin)
                 % Regular constructor invoked
+
+                % Set type to a type of the first argument
+                list.type = class(varargin{1});
+
                 idx = 1;
                 while(nargin >= idx)
-                    if(~isa(varargin{idx}, 'Item'))
+                    if( ...
+                            ~isa(varargin{idx}, 'FilmDigitizer') ...
+                            && ~isa(varargin{idx}, 'FilmPiece') ...
+                            )
                         error( ...
-                            '%s: item{%d} must be an instance of the "Item" class', ...
+                            '%s: object{%d} must be an instance of the "FilmDigitizer" or the "FilmPiece" class', ...
                             fname, ...
                             idx ...
                             );
 
-                    else
+                    elseif(isa(varargin{idx}, list.type))
                         list = list.add(varargin{idx});
+
+                    else
+                        error( ...
+                            '%s: List container does not support mixing of object types: list.type = "%s", varargin{%d}.type = "%s"', ...
+                            fname, ...
+                            list.type, ...
+                            idx, ...
+                            class(varargin{idx}) ...
+                            );
 
                     endif;
 
@@ -149,14 +231,18 @@ classdef List
                 printf('\tItemList( ...\n\t\t{}(0x0), ...\n\t)\n');
 
             else
-                printf('\tItemList( ...\n');
+                printf('\tList( ...\n');
                 idx = 1;
                 while(list.numel() >= idx)
-                    printf( ...
-                        '\t\tItem("%s\", "%s"), ...\n', ...
-                        list.items{idx}.name, ...
-                        list.items{idx}.value ...
-                        );
+                    printf('\t\t');
+                    list.items{idx}.disp_short();
+                    if(list.numel() == idx)
+                        printf(' ...\n');
+
+                    else
+                        printf(', ...\n');
+
+                    endif;
 
                     idx = idx + 1;
 
@@ -172,25 +258,32 @@ classdef List
 % Method 'ismember':
 %
 % Use:
-%       -- result = list.ismember(item)
+%       -- result = list.ismember(obj)
 %
 % Description:
-%          Return 'true' if item with name item.name exists in the list.
+%          Return 'true' if obj with title obj.title is member of the list.
 %          Otherwise return 'false'.
 %
 % -----------------------------------------------------------------------------
-        function result = ismember(list, item)
+        function result = ismember(list, obj)
             fname = 'ismember';
 
-            if(~isa(item, 'Item'))
+            result = false;
+            if(list.isempty())
+                return;
+
+            endif;
+
+            if(~isa(obj, list.type))
                 error( ...
-                    '%s: item must be an instance of the "Item" class', ...
-                    fname ...
+                    '%s: obj must be an instance of the "%s"', ...
+                    fname, ...
+                    list.type ...
                     );
 
             endif;
 
-            [result, idx] = ismember(item.name, list.names());
+            [result, idx] = ismember(obj.title, list.titles());
 
         endfunction;
 
@@ -199,44 +292,56 @@ classdef List
 % Method 'index':
 %
 % Use:
-%       -- idx = list.index(item)
+%       -- idx = list.index(obj)
 %
 % Description:
-%          Search for item with name item.name in the list. If item exists in
-%          the list return item index, otherwise return 0.
+%          Search for obj with name obj.title in the list. If obj exists in
+%          the list return obj index, otherwise return 0.
 %
 % -----------------------------------------------------------------------------
-        function idx = index(list, item)
+        function idx = index(list, obj)
             fname = 'index';
 
-            if(~isa(item, 'Item'))
+            idx = 0;
+            if(list.isempty())
+                return;
+
+            endif;
+
+            if(~isa(obj, list.type))
                 error( ...
-                    '%s: item must be an instance of the "Item" class', ...
-                    fname ...
+                    '%s: obj must be an instance of the "%s"', ...
+                    fname, ...
+                    list.type ...
                     );
 
             endif;
 
-            [tf, idx] = ismember(item.name, list.names());
+            [tf, idx] = ismember(obj.title, list.titles());
 
         endfunction;
 
 % -----------------------------------------------------------------------------
 %
-% Method 'names':
+% Method 'titles':
 %
 % Use:
-%       -- name_list = list.names()
+%       -- tl = list.titles()
 %
 % Description:
-%          Return list of name values of all the items in the list.
+%          Return list of title values of all the objects in the list.
 %
 % -----------------------------------------------------------------------------
-        function name_list = names(list)
-            name_list = {};
+        function tl = titles(list)
+            tl = {};
+            if(list.isempty())
+                return;
+
+            endif;
+
             idx = 1;
             while(numel(list.items) >= idx)
-                name_list = {name_list{:}, list.items{idx}.name};
+                tl = {tl{:}, list.items{idx}.title};
 
                 idx = idx + 1;
 
@@ -259,15 +364,18 @@ classdef List
             cell_list = {};
 
             if(list.isempty())
-                % cell_list = {'', '';};
-                cell_list = Item().cellarray();
+                return;
 
             else
-                cell_list = cell(numel(list), 2);
-                idx = 1;
+                cell_list = cell( ...
+                    numel(list.items), ...
+                    numel(list.at(1).cellarray()) ...
+                    );
+                cell_list(1, :) = list.at(1).cellarray();
+
+                idx = 2;
+
                 while(numel(list) >= idx)
-                %     cell_list{idx, 1} = list.at(idx).name;
-                %     cell_list{idx, 2} = list.at(idx).value;
                     cell_list(idx, :) = list.at(idx).cellarray();
 
                     idx = idx + 1;
@@ -283,30 +391,45 @@ classdef List
 % Method 'add':
 %
 % Use:
-%       -- list = list.add(item)
+%       -- list = list.add(obj)
 %
 % Description:
-%          Append item to teh end of the list. If ietm with given item.name
-%          already exists in the list update item value to the item.value of the
-%          given item.
+%          Append obj to the end of the list. If there is already obj in the
+%          list that is equivalent to the given obj it updates fields of the
+%          obj ont the list using field values of the given obj.
 %
 % -----------------------------------------------------------------------------
-        function list = add(list, item)
+        function list = add(list, obj)
             fname = 'add';
 
-            if(~isa(item, 'Item'))
+            if(list.isempty())
+                if(~isa(obj, 'FilmDigitizer') && ~isa(obj, 'FilmPiece'))
+                    error( ...
+                        '%s: obj must be an instance of the "FilmDigitizer" or the "FilmPiece" class', ...
+                        fname, ...
+                        idx ...
+                        );
+
+                endif;
+
+                list.type = class(obj);
+
+            endif;
+
+            if(~isa(obj, list.type))
                 error( ...
-                    '%s: item must be an instance of the "Item" class', ...
-                    fname ...
+                    '%s: obj must be an instance of the "%s"', ...
+                    fname, ...
+                    list.type ...
                     );
 
             endif;
 
-            if(list.ismember(item))
-                list.items{list.index(item)}.value = item.value;
+            if(list.ismember(obj))
+                list.items{list.index(obj)} = obj;
 
             else
-                list.items = {list.items{:}, item};
+                list.items = {list.items{:}, obj};
 
             endif;
 
@@ -320,7 +443,7 @@ classdef List
 %       -- list = list.remove(idx)
 %
 % Description:
-%          Remove item with the given index idx from the list.
+%          Remove obj with the given index idx from the list.
 %
 % -----------------------------------------------------------------------------
         function list = remove(list, idx)
@@ -355,7 +478,7 @@ classdef List
 %       -- n = list.numel()
 %
 % Description:
-%          Return number of items (elements) in the list.
+%          Return number of objects (elements) in the list.
 %
 % -----------------------------------------------------------------------------
         function n = numel(list)
@@ -384,13 +507,13 @@ classdef List
 % Method 'at':
 %
 % Use:
-%       -- item = list.at(idx)
+%       -- obj = list.at(idx)
 %
 % Description:
 %          Return item with index idx from the list.
 %
 % -----------------------------------------------------------------------------
-        function item = at(list, idx)
+        function obj = at(list, idx)
             fname = 'at';
 
             validateattributes( ...
@@ -405,6 +528,12 @@ classdef List
                 'idx' ...
                 );
 
+            if(list.isempty())
+                obj = NaN;
+                return;
+
+            endif;
+
             if(1 > idx || list.numel() < idx)
                 error( ...
                     '%s: idx out of bounds ([1, %d] <> %d)', ...
@@ -415,7 +544,7 @@ classdef List
 
             endif;
 
-            item = list.items{idx};
+            obj = list.items{idx};
 
         endfunction;
 
@@ -428,21 +557,22 @@ classdef List
 %
 % Description:
 %          Return whether or not two lists are equivalent. Two list are
-%          equivalent if they have same number of items with same names.
+%          equivalent if they have same number of objects with the identical
+%          titles.
 %
 % -----------------------------------------------------------------------------
         function result = isequivalent(list, other)
             fname = 'isequivalent';
 
-            if(~isa(other, 'ItemList'))
+            if(~isa(other, 'List'))
                 error( ...
-                    '%s: other must be an instance of the "ItemList" class', ...
+                    '%s: other must be an instance of the "List" class', ...
                     fname ...
                     );
 
             endif;
 
-            result = isequal(sort(list.names()), sort(other.names()));
+            result = isequal(sort(list.titles()), sort(other.titles()));
 
         endfunction;
 
@@ -455,15 +585,15 @@ classdef List
 %
 % Description:
 %          Return whether or not two lists are equal. Two list are equal if
-%          they are equivalent and their items have same values too.
+%          they are equivalent and their equivalent objects are equal too.
 %
 % -----------------------------------------------------------------------------
         function result = isequal(list, other)
             fname = 'isequal';
 
-            if(~isa(other, 'ItemList'))
+            if(~isa(other, 'List'))
                 error( ...
-                    '%s: other must be an instance of the "ItemList" class', ...
+                    '%s: other must be an instance of the "List" class', ...
                     fname ...
                     );
 

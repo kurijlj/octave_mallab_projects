@@ -1,22 +1,23 @@
 % -----------------------------------------------------------------------------
 %
-% Class 'ItemListSelection':
+% Class 'ListSelection':
 %
 % Description:
 %       TODO: Put class description here
-%       Represents an item selected from the list of items. Two selections are
-%       equivalent if ... Two selections are equal if ...
+%       Represents an object selected from the list of objects. Two selections
+%       are equivalent if their lists are equal. Two selections are equal
+%       if both their lists and selection indexes are equal.
 %
 % -----------------------------------------------------------------------------
-classdef ItemListSelection
+classdef ListSelection
 
 % -----------------------------------------------------------------------------
 %
 % Public properties section
 %
 % -----------------------------------------------------------------------------
-    properties (Access = public)
-        list = ItemList();
+    properties (SetAccess = private, GetAccess = public)
+        list = List();
         idx = 0;
 
     endproperties;
@@ -30,24 +31,24 @@ classdef ItemListSelection
 
 % -----------------------------------------------------------------------------
 %
-% Method 'ItemListSelection':
+% Method 'ListSelection':
 %
 % Use:
-%       -- selec = ItemListSelection()
-%       -- selec = ItemListSelection(list)
-%       -- selec = ItemListSelection(list, idx)
-%       -- selec = ItemListSelection(other)
+%       -- selec = ListSelection()
+%       -- selec = ListSelection(list)
+%       -- selec = ListSelection(list, idx)
+%       -- selec = ListSelection(other)
 %
 % Description:
 %          Class constructor.
 %
 % -----------------------------------------------------------------------------
-        function selec = ItemListSelection(varargin)
-            fname = 'ItemListSelection';
-            use_case_a = ' -- selec = ItemListSelection()';
-            use_case_b = ' -- selec = ItemListSelection(list)';
-            use_case_c = ' -- selec = ItemListSelection(list, idx)';
-            use_case_d = ' -- selec = ItemListSelection(other)';
+        function selec = ListSelection(varargin)
+            fname = 'ListSelection';
+            use_case_a = ' -- selec = ListSelection()';
+            use_case_b = ' -- selec = ListSelection(list)';
+            use_case_c = ' -- selec = ListSelection(list, idx)';
+            use_case_d = ' -- selec = ListSelection(other)';
 
             if(0 == nargin)
                 % Default constructor invoked
@@ -56,11 +57,11 @@ classdef ItemListSelection
                 % Two scenarios can occur: 1) user passed just an item_list,
                 % takin default selectin (idx=0); 2) user passed another
                 % selection to make copy of
-                if(isa(varargin{1}, 'ItemList'))
+                if(isa(varargin{1}, 'List'))
                     % Constructor with deafult selection invoked
                     selec.list = varargin{1};
 
-                elseif(isa(varargin{1}, 'ItemListSelection'))
+                elseif(isa(varargin{1}, 'ListSelection'))
                     % Copy constructor invoked
                     selec.list = varargin{1}.list;
                     selec.idx = varargin{1}.idx;
@@ -79,9 +80,9 @@ classdef ItemListSelection
 
             elseif(2 == nargin)
                 % Regular constructor invoked
-                if(~isa(varargin{1}, 'ItemList'))
+                if(~isa(varargin{1}, 'List'))
                     error( ...
-                        '%s: list must be an instance of the "ItemList" class', ...
+                        '%s: list must be an instance of the "List" class', ...
                         fname ...
                         );
 
@@ -146,22 +147,15 @@ classdef ItemListSelection
                 printf('\tItemListSelection( ...\n');
                 idx = 1;
                 while(selec.list.numel() >= idx)
-                    name = selec.list.items{idx}.name;
-                    value = selec.list.items{idx}.value;
                     if(idx == selec.idx)
-                        printf( ...
-                            '\t%6s[ Item("%s\", "%s") ], ...\n', ...
-                            ' ', ...
-                            selec.list.items{idx}.name, ...
-                            selec.list.items{idx}.value ...
-                            );
+                        printf('\t%6s[ ', ' ');
+                        selec.list.at(idx).disp_short();
+                        printf(' ], ...\n');
 
                     else
-                        printf( ...
-                            '\t\tItem("%s\", "%s"), ...\n', ...
-                            selec.list.items{idx}.name, ...
-                            selec.list.items{idx}.value ...
-                            );
+                        printf('\t\t');
+                        selec.list.at(idx).disp_short();
+                        printf(', ...\n');
 
                     endif;
 
@@ -182,7 +176,7 @@ classdef ItemListSelection
 %       -- n = selec.numel()
 %
 % Description:
-%          Return number of items (elements) in the selection list.
+%          Return number of objects (elements) in the selection list.
 %
 % -----------------------------------------------------------------------------
         function n = numel(selec)
@@ -212,11 +206,11 @@ classdef ItemListSelection
 % Method 'select_index':
 %
 % Use:
-%       -- selec.select_index(idx)
+%       -- selec = selec.select_index(idx)
 %
 % Description:
-%          Changes selection to the item with index idx if item with such index
-%          exists in the list. Otherwise it returns an error.
+%          Changes selection to the object with index idx if object with such
+%          index exists in the list. Otherwise it returns an error.
 %
 % -----------------------------------------------------------------------------
         function selec = select_index(selec, idx)
@@ -250,34 +244,35 @@ classdef ItemListSelection
 
 % -----------------------------------------------------------------------------
 %
-% Method 'select_item':
+% Method 'select_obj':
 %
 % Use:
-%       -- selec.select_item(item)
+%       -- selec = selec.select_obj(obj)
 %
 % Description:
-%          If given item is member of the selection list, set selection index to
-%          value of the index of a given item in the selection list. Otherwise
-%          it returns an error.
+%          If given object is member of the selection list, set selection index
+%          to value of the index of a given object in the selection list.
+%          Otherwise it returns an error.
 %
 % -----------------------------------------------------------------------------
-        function selec = select_item(selec, item)
+        function selec = select_obj(selec, obj)
             fname = 'select_item';
 
-            if(~isa(item, 'Item'))
+            if(~isa(obj, selec.list.type))
                 error( ...
-                    '%s: item must be an instance of the "Item" class', ...
-                    fname ...
+                    '%s: obj must be an instance of the "%s" class', ...
+                    fname, ...
+                    selec.list.type
                     );
 
             endif;
 
-            if(selec.list.ismember(item))
-                selec.idx = selec.list.index(item);
+            if(selec.list.ismember(obj))
+                selec.idx = selec.list.index(obj);
 
             else
                 error( ...
-                    '%s: item is not a member of the selection list', ...
+                    '%s: obj is not a member of the selection list', ...
                     fname ...
                     );
 
@@ -287,21 +282,22 @@ classdef ItemListSelection
 
 % -----------------------------------------------------------------------------
 %
-% Method 'selected_item':
+% Method 'selected_obj':
 %
 % Use:
-%       -- selec.selected_item()
+%       -- obj = selec.selected_obj()
 %
 % Description:
-%          Return item from the list pointed by the selection index.
+%          Return object from the list pointed by the selection index. If no
+%          object is selected method returns NaN.
 %
 % -----------------------------------------------------------------------------
-        function item = selected_item(selec)
+        function obj = selected_obj(selec)
             if(0 == selec.idx)
-                item = Item();
+                obj = NaN;
 
             else
-                item = selec.list.at(selec.idx);
+                obj = selec.list.at(selec.idx);
 
             endif;
 
@@ -315,22 +311,22 @@ classdef ItemListSelection
 %       -- result = selec.isequivalent(other)
 %
 % Description:
-%          Return whether or not two lists selections are equivalent. Two
-%          list selections are equivalent if their lists are equivalent.
+%          Return whether or not two list selections are equivalent. Two
+%          list selections are equivalent if their lists are equal.
 %
 % -----------------------------------------------------------------------------
         function result = isequivalent(selec, other)
             fname = 'isequivalent';
 
-            if(~isa(other, 'ItemListSelection'))
+            if(~isa(other, 'ListSelection'))
                 error( ...
-                    '%s: other must be an instance of the "ItemListSelection" class', ...
+                    '%s: other must be an instance of the "ListSelection" class', ...
                     fname ...
                     );
 
             endif;
 
-            result = selec.list.isequivalent(other.list);
+            result = selec.list.isequal(other.list);
 
         endfunction;
 
@@ -342,7 +338,7 @@ classdef ItemListSelection
 %       -- result = list.isequal(other)
 %
 % Description:
-%          Return whether or not two lists selections are equal. Two list
+%          Return whether or not two list selections are equal. Two list
 %          selections are equal if both their lists and selection indexes are
 %          equal.
 %
@@ -350,9 +346,9 @@ classdef ItemListSelection
         function result = isequal(selec, other)
             fname = 'isequal';
 
-            if(~isa(other, 'ItemListSelection'))
+            if(~isa(other, 'ListSelection'))
                 error( ...
-                    '%s: other must be an instance of the "ItemListSelection" class', ...
+                    '%s: other must be an instance of the "ListSelection" class', ...
                     fname ...
                     );
 
