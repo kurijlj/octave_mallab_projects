@@ -1,12 +1,12 @@
 % -----------------------------------------------------------------------------
 %
-% Class 'FilmPiece':
+% Class 'IrradField':
 %
 % Description:
 %       TODO: Add class descritpion here.
 %
 % -----------------------------------------------------------------------------
-classdef FilmPiece
+classdef IrradField
 
 % -----------------------------------------------------------------------------
 %
@@ -14,16 +14,16 @@ classdef FilmPiece
 %
 % -----------------------------------------------------------------------------
     properties (SetAccess = private, GetAccess = public)
-        % Film piece title (unique ID)
+        % Irradiation field title (unique ID)
         title   = 'Unknown';
-        % Film manufacturer name
-        mnfc    = 'Unknown';
-        % Film model (type and model)
-        model   = 'Unknown';
-        % Film LOT
-        lot     = 'Unknown';
-        % Whether film was custom cut or no ('Yes', 'No' or 'Unknown')
-        cst_cut = 'Unknown';
+        % Beam type ('Unknown', 'Photon', 'Electron', 'Proton')
+        bm_type = 'Unknown';
+        % Beam energy (i.e. Unknown, Co60, 6MV, 4MeV, ...)
+        bme     = 'Unknown';
+        % Field shape ('Unknown', 'Rectangular', 'Circular', 'Irregular')
+        fld_shp = 'Unknown';
+        % Field size (i.e. Unknown, 4mm, 100x100 mm^2, ...)
+        fld_sze = 'Unknown';
 
     endproperties;
 
@@ -36,34 +36,34 @@ classdef FilmPiece
 
 % -----------------------------------------------------------------------------
 %
-% Method 'Item':
+% Method 'IrradField':
 %
 % Use:
-%       -- fp = FilmPiece()
-%       -- fp = FilmPiece(..., "PROPERTY", VALUE, ...)
-%       -- fp = FilmPiece(other)
+%       -- fld = IrradField()
+%       -- fld = IrradField(..., "PROPERTY", VALUE, ...)
+%       -- fld = IrradField(other)
 %
 % Description:
 %          Class constructor.
 %
 % -----------------------------------------------------------------------------
-        function fp = FilmPiece(varargin)
-            fname = 'FilmPiece';
-            use_case_a = ' -- fp = FilmPiece()';
-            use_case_b = ' -- fp = FilmPiece(..., "PROPERTY", VALUE, ...)';
-            use_case_c = ' -- fp = FilmPiece(other)';
+        function fld = IrradField(varargin)
+            fname = 'IrradField';
+            use_case_a = ' -- if = IrradField()';
+            use_case_b = ' -- if = IrradField(..., "PROPERTY", VALUE, ...)';
+            use_case_c = ' -- if = IrradField(other)';
 
             if(0 == nargin)
                 % Default constructor invoked ---------------------------------
 
             elseif(1 == nargin)
-                if(isa(varargin{1}, 'FilmPiece'))
+                if(isa(varargin{1}, 'IrradField'))
                     % Copy constructor invoked
-                    fp.title   = varargin{1}.title;
-                    fp.mnfc    = varargin{1}.mnfc;
-                    fp.model   = varargin{1}.model;
-                    fp.lot     = varargin{1}.lot;
-                    fp.cst_cut = varargin{1}.cst_cut;
+                    fld.title   = varargin{1}.title;
+                    fld.bm_type = varargin{1}.bm_type;
+                    fld.bme     = varargin{1}.bme;
+                    fld.fld_shp = varargin{1}.fld_shp;
+                    fld.fld_sze = varargin{1}.fld_sze;
 
                 else
                     % Invalid call to constructor
@@ -84,17 +84,17 @@ classdef FilmPiece
                 [ ...
                     pos, ...
                     title, ...
-                    mnfc, ...
-                    model, ...
-                    lot, ...
-                    cst_cut ...
+                    bm_type, ...
+                    bme, ...
+                    fld_shp, ...
+                    fld_sze ...
                     ] = parseparams( ...
                     varargin, ...
                     'Title', 'Unknown', ...
-                    'Manufacturer', 'Unknown', ...
-                    'Model', 'Unknown', ...
-                    'LOT', 'Unknown', ...
-                    'CustomCut', 'Unknown' ...
+                    'BeamType', 'Unknown', ...
+                    'BeamEnergy', 'Unknown', ...
+                    'FieldShape', 'Unknown', ...
+                    'FieldSize', 'Unknown' ...
                     );
 
                 if(0 ~= numel(pos))
@@ -115,38 +115,40 @@ classdef FilmPiece
 
                 endif;
 
-                % Validate value supplied for the Manufacturer
-                if(~ischar(mnfc) || isempty(mnfc))
-                    error('%s: Manufacturer must be a non-empty string', fname);
-
-                endif;
-
-                % Validate value supplied for the Model
-                if(~ischar(model) || isempty(model))
-                    error('%s: Model must be a non-empty string', fname);
-
-                endif;
-
-                % Validate value supplied for the SerialNumber
-                if(~ischar(lot) || isempty(lot))
-                    error('%s: LOT must be a non-empty string', fname);
-
-                endif;
-
-                % Validate value supplied for the ScanningMode
+                % Validate value supplied for the BeamType
                 validatestring( ...
-                    cst_cut, ...
-                    {'Unknown', 'Yes', 'No'}, ...
+                    bm_type, ...
+                    {'Unknown', 'Photon', 'Electron', 'Proton'}, ...
                     fname, ...
-                    'CustomCut' ...
+                    'BeamType' ...
                     );
 
+                % Validate value supplied for the BeamEnergy
+                if(~ischar(bme) || isempty(bme))
+                    error('%s: BeamEnergy must be a non-empty string', fname);
+
+                endif;
+
+                % Validate value supplied for the FieldShape
+                validatestring( ...
+                    fld_shp, ...
+                    {'Unknown', 'Rectangular', 'Circular', 'Irregular'}, ...
+                    fname, ...
+                    'FieldShape' ...
+                    );
+
+                % Validate value supplied for the FieldSize
+                if(~ischar(fld_sze) || isempty(fld_sze))
+                    error('%s: FieldSize must be a non-empty string', fname);
+
+                endif;
+
                 % Assign values to a new instance -----------------------------
-                fp.title   = title;
-                fp.mnfc    = mnfc;
-                fp.model   = model;
-                fp.lot     = lot;
-                fp.cst_cut = cst_cut;
+                fld.title   = title;
+                fld.bm_type = bm_type;
+                fld.bme     = bme;
+                fld.fld_shp = fld_shp;
+                fld.fld_sze = fld_sze;
 
             else
                 % Invalid call to constructor
@@ -167,20 +169,20 @@ classdef FilmPiece
 % Method 'disp':
 %
 % Use:
-%       -- fp.disp()
+%       -- fld.disp()
 %
 % Description:
 %          The disp method is used by Octave whenever a class instance should be
 %          displayed on the screen.
 %
 % -----------------------------------------------------------------------------
-        function disp(fp)
-            printf('\tFilmPiece(\n');
-            printf('\t\tTitle:        %s,\n', fp.title);
-            printf('\t\tManufacturer: %s,\n', fp.mnfc);
-            printf('\t\tModel:        %s,\n', fp.model);
-            printf('\t\tLOT:          %s,\n', fp.lot);
-            printf('\t\tCustom cut:   %s\n', fp.cst_cut);
+        function disp(fld)
+            printf('\tIrradField(\n');
+            printf('\t\tTitle:       %s,\n', fld.title);
+            printf('\t\tBeam type:   %s,\n', fld.bm_type);
+            printf('\t\tBeam energy: %s,\n', fld.bme);
+            printf('\t\tField shape: %s,\n', fld.fld_shp);
+            printf('\t\tField size:  %s\n', fld.fld_sze);
             printf('\t)\n');
 
         endfunction;
@@ -190,20 +192,21 @@ classdef FilmPiece
 % Method 'disp_short':
 %
 % Use:
-%       -- fp.disp_short()
+%       -- fld.disp_short()
 %
 % Description:
-%          The disp_short method is used by 'List' class whenever a
-%          FilmPiece instance should be displayed on the screen.
+%          A convenience method used to display shorthand info about the
+%          instances of the type IrradField.
 %
 % -----------------------------------------------------------------------------
-        function disp_short(fp)
+        function disp_short(fld)
             printf( ...
-                'FilmPiece(%s, %s, %s, %s)', ...
-                fp.title, ...
-                fp.model, ...
-                fp.lot, ...
-                fp.cst_cut ...
+                'IrradField(%s, %s, %s, %s, %s)', ...
+                fld.title, ...
+                fld.bm_type, ...
+                fld.bme, ...
+                fld.fld_shp, ...
+                fld.fld_sze ...
                 );
 
         endfunction;
@@ -213,15 +216,15 @@ classdef FilmPiece
 % Method 'cellarray':
 %
 % Use:
-%       -- cell_fp = fp.cellarry()
+%       -- cfld = fld.cellarry()
 %
 % Description:
-%          Return film object structure as cell array.
+%          Return field object structure as cell array.
 %
 % -----------------------------------------------------------------------------
-        function cell_fp = cellarray(fp)
-            cell_fp = {};
-            cell_fp = {fp.title, fp.mnfc, fp.model, fp.lot, fp.cst_cut;};
+        function cfld = cellarray(fld)
+            cfld = {};
+            cfld = {fld.title, fld.bm_type, fld.bme, fld.fld_shp, fld.fld_sze;};
 
         endfunction;
 
@@ -230,18 +233,18 @@ classdef FilmPiece
 % Method 'isequivalent':
 %
 % Use:
-%       -- result = fp.isequivalent(other)
+%       -- result = fld.isequivalent(other)
 %
 % Description:
-%          Return whether or not two FilmPiece instances are equivalent. Two
+%          Return whether or not two IrradField instances are equivalent. Two
 %          instances are equivalent if they have identical titles.
 % -----------------------------------------------------------------------------
-        function result = isequivalent(fp, other)
+        function result = isequivalent(fld, other)
             fname = 'isequivalent';
 
-            if(~isa(other, 'FilmPiece'))
+            if(~isa(other, 'IrradField'))
                 error( ...
-                    '%s: other must be an instance of the "FilmPiece" class', ...
+                    '%s: other must be an instance of the "IrradField" class', ...
                     fname ...
                     );
 
@@ -249,7 +252,7 @@ classdef FilmPiece
 
             % Initialize result to a default value
             result = false;
-            if(isequal(fp.title, other.title));
+            if(isequal(fld.title, other.title));
                 result = true;
 
             endif;
@@ -261,19 +264,19 @@ classdef FilmPiece
 % Method 'isequal':
 %
 % Use:
-%       -- result = fp.isequal(other)
+%       -- result = fld.isequal(other)
 %
 % Description:
-%          Return whether or not two 'FilmPiece' instances are equal. Two
+%          Return whether or not two 'IrradField' instances are equal. Two
 %          instances are equal if all of their fields have identical values.
 %
 % -----------------------------------------------------------------------------
-        function result = isequal(fp, other)
+        function result = isequal(fld, other)
             fname = 'isequal';
 
-            if(~isa(other, 'FilmPiece'))
+            if(~isa(other, 'IrradField'))
                 error( ...
-                    '%s: other must be an instance of the "FilmPiece" class', ...
+                    '%s: other must be an instance of the "IrradField" class', ...
                     fname ...
                     );
 
@@ -282,11 +285,11 @@ classdef FilmPiece
             % Initialize result to a default value
             result = false;
             if( ...
-                    isequal(fp.title, other.title) ...
-                    && isequal(fp.mnfc, other.mnfc) ...
-                    && isequal(fp.model, other.model) ...
-                    && isequal(fp.lot, other.lot) ...
-                    && isequal(fp.cst_cut, other.cst_cut) ...
+                    isequal(fld.title, other.title) ...
+                    && isequal(fld.bm_type, other.bm_type) ...
+                    && isequal(fld.bme, other.bme) ...
+                    && isequal(fld.fld_shp, other.fld_shp) ...
+                    && isequal(fld.fld_sze, other.fld_sze) ...
                     )
                 result = true;
 
