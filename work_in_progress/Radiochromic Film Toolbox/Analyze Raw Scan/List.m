@@ -147,7 +147,7 @@ classdef List
 
                         list = list.add(item);
 
-                        idx = idx + 1;
+                        ++idx;
 
                     endwhile;
 
@@ -206,7 +206,7 @@ classdef List
 
                     endif;
 
-                    idx = idx + 1;
+                    ++idx;
 
                 endwhile;
 
@@ -244,7 +244,7 @@ classdef List
 
                     endif;
 
-                    idx = idx + 1;
+                    ++idx;
 
                 endwhile;
                 printf('\t)\n');
@@ -343,7 +343,7 @@ classdef List
             while(numel(list.items) >= idx)
                 tl = {tl{:}, list.items{idx}.title};
 
-                idx = idx + 1;
+                ++idx;
 
             endwhile;
 
@@ -378,7 +378,7 @@ classdef List
                 while(numel(list) >= idx)
                     cell_list(idx, :) = list.at(idx).cellarray();
 
-                    idx = idx + 1;
+                    ++idx;
 
                 endwhile;
 
@@ -610,7 +610,7 @@ classdef List
 
                     endif;
 
-                    idx = idx + 1;
+                    ++idx;
 
                 endwhile;
 

@@ -159,7 +159,7 @@ classdef ListSelection
 
                     endif;
 
-                    idx = idx + 1;
+                    ++idx;
 
                 endwhile;
                 printf('\t)\n');
