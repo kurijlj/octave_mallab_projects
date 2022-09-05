@@ -15,17 +15,17 @@ classdef Scanset
 % -----------------------------------------------------------------------------
     properties (SetAccess = private, GetAccess = public)
         % Film piece title (unique ID)
-        title   = 'Unknown';
+        title    = 'Unknown';
         % List of files defining the scanset
         files    = {};
         % Date of irradiation (is applicable)
-        dt_irrd   = NaN;
+        dt_irrd  = NaN;
         % Date of scanning (mandatory)
-        dt_scan   = NaN;
+        dt_scan  = NaN;
         % Pixel data
-        pwmean = [];
+        pwmean   = [];
         % Pixelwise standard deviation
-        pwstdev = [];
+        pwsd     = [];
         % List of warnings generated during the initialization of the object
         warnings = {};
 
@@ -87,8 +87,7 @@ classdef Scanset
 
             % Validate input arguments ----------------------------------------
 
-            % Validate supplied file paths
-            idx = 1;
+            % Validate given file paths
 
             % Initilize variables holding reference parameters
             RU = 0;
@@ -96,9 +95,13 @@ classdef Scanset
             W  = 0;
             H  = 0;
 
+            % Initialize loop counter
+            idx = 1;
+
+            % Traverse file list
             while(numel(pos) >= idx)
 
-                % Check if we are dealing with non-empty string
+                % Check if we are dealing with non-empty string ---------------
                 if(~ischar(pos{idx}) || isempty(pos{idx}))
                     error( ...
                         '%s: pos{%d} must be a non-empty string', ...
@@ -108,7 +111,7 @@ classdef Scanset
 
                 endif;
 
-                % Check if we have a regular file
+                % Check if we have a regular file -----------------------------
                 if(~isfile(pos{idx}))
                     % We don't have a regular file. Format warning message
                     w = sprintf('%s is not a regular file', pos{idx});
@@ -129,7 +132,7 @@ classdef Scanset
 
                 endif;
 
-                % Load image file info
+                % Load image file info ----------------------------------------
                 ifi = NaN;
                 try
                     ifi = imfinfo(pos{idx});
@@ -154,7 +157,7 @@ classdef Scanset
 
                 end_try_catch;
 
-                % Check if we have a TIFF image
+                % Check if we have a TIFF image -------------------------------
                 if(~isequal('TIFF', ifi.Format))
                     % We don't have a TIFF image. Format warning message
                     w = sprintf('%s is not an TIFF image', pos{idx});
@@ -175,7 +178,7 @@ classdef Scanset
 
                 endif;
 
-                % Check if we have an RGB TIFF image
+                % Check if we have an RGB TIFF image --------------------------
                 if(2 ~= tiff_tag_read(pos{idx}, 262))
                     % We don't have an RGB image. Format warning message
                     w = sprintf('%s is not an RGB image', pos{idx});
@@ -196,7 +199,7 @@ classdef Scanset
 
                 endif;
 
-                % Check if we have the right bit depth
+                % Check if we have the right bit depth ------------------------
                 if(16 ~= ifi.BitDepth)
                     % We don't have 16 bits per sample. Format warning message
                     w = sprintf( ...
@@ -221,9 +224,10 @@ classdef Scanset
 
                 endif;
 
-                % Check if we are dealing with an uncompressed image
+                % Check if we are dealing with an uncompressed image ----------
                 if(1 ~= tiff_tag_read(pos{idx}, 259))
-                    % We don't have an uncompressed image. Format warning message
+                    % We don't have an uncompressed image.
+                    % Format warning message
                     w = sprintf( ...
                         '%s is not an uncompressed TIFF image', ...
                         pos{idx} ...
@@ -258,6 +262,7 @@ classdef Scanset
                 RX = tiff_tag_read(pos{idx}, 282);
                 RY = tiff_tag_read(pos{idx}, 283);
 
+                % Check if resolution units comply with the reference ---------
                 if(RU ~= ru)
                     % Noncompliant resolution units. Format the warning
                     % message
@@ -284,6 +289,7 @@ classdef Scanset
 
                 endif;
 
+                % Check if horizontal and vertical resolution are equal -------
                 if(RX ~= RY)
                     % X and Y resolution do not comply. Format the warning
                     % message
@@ -310,6 +316,7 @@ classdef Scanset
 
                 endif;
 
+                % Check if resolution comply with the reference ---------------
                 if(R ~= RX)
                     % resolution does not comply to the reference. Format the
                     % warning message
@@ -381,6 +388,70 @@ classdef Scanset
 
             endwhile;
 
+            % Validate value supplied for the Title
+            if(~ischar(title) || isempty(title))
+                error('%s: Title must be a non-empty string', fname);
+
+            endif;
+
+            % Validate value supplied for the DateOfIrradiation
+            if(~isnan(dt_irrd))
+                validateattributes( ...
+                    dt_irrd, ...
+                    {'numeric'}, ...
+                    { ...
+                        'nonnan', ...
+                        'nonempty', ...
+                        'scalar', ...
+                        'integer', ...
+                        'finite', ...
+                        'positive' ...
+                        }, ...
+                    fname, ...
+                    'DateOfIrradiation' ...
+                    );
+
+                % Check if given date is after the 01-Jan-2000
+                if(datenum(2000, 1, 1) > dt_irrd)
+                    error('%s: DateOfIrradiation too old: %s', datestr(dt_irrd));
+
+                endif;
+
+            endif;
+
+            % Validate value supplied for the DateOfScan
+            if(~isnan(dt_scan))
+                validateattributes( ...
+                    dt_scan, ...
+                    {'numeric'}, ...
+                    { ...
+                        'nonnan', ...
+                        'nonempty', ...
+                        'scalar', ...
+                        'integer', ...
+                        'finite', ...
+                        'positive' ...
+                        }, ...
+                    fname, ...
+                    'DateOfScan' ...
+                    );
+
+            else
+                dt_scan = datenum(strsplit(ifi.FileModDate){1});
+
+            endif;
+
+            % Check if given date is after the 01-Jan-2000
+            if(datenum(2000, 1, 1) > dt_scan)
+                error('%s: DateOfScan too old: %s', datestr(dt_scan));
+
+            endif;
+
+            % Assign values to a new instance ---------------------------------
+            ss.title   = title;
+            ss.dt_irrd = dt_irrd;
+            ss.dt_scan = dt_scan;
+
         endfunction;
 
 % -----------------------------------------------------------------------------
@@ -388,20 +459,44 @@ classdef Scanset
 % Method 'disp':
 %
 % Use:
-%       -- fp.disp()
+%       -- ss.disp()
 %
 % Description:
 %          The disp method is used by Octave whenever a class instance should be
 %          displayed on the screen.
 %
 % -----------------------------------------------------------------------------
-        function disp(fp)
+        function disp(ss)
             printf('\tScanset(\n');
-            printf('\t\tTitle:        %s,\n', fp.title);
-            printf('\t\tManufacturer: %s,\n', fp.mnfc);
-            printf('\t\tModel:        %s,\n', fp.model);
-            printf('\t\tLOT:          %s,\n', fp.lot);
-            printf('\t\tCustom cut:   %s\n', fp.cst_cut);
+            if(~isnan(ss.dt_irrd))
+                printf('\t\tTitle:               %s,\n', ss.title);
+                printf('\t\tDate of scan:        %s,\n', ss.dt_scan);
+                printf('\t\tDate of irradiation: %s,\n', ss.dt_irrd);
+                printf('\t\tPixel data:          ');
+                if(isempty(ss.pwmean))
+                    printf('[],\n');
+
+                else
+                    printf('[...],\n');
+                    printf('\t\tPixelwise SD:        [...]\n');
+
+                endif;
+
+            else
+                printf('\t\tTitle:        %s,\n', ss.title);
+                printf('\t\tDate of scan: %s,\n', ss.dt_scan);
+                printf('\t\tPixel data:   ');
+                if(isempty(ss.pwmean))
+                    printf('[],\n');
+
+                else
+                    printf('[...],\n');
+                    printf('\t\tPixelwise SD: [...]\n');
+
+                endif;
+
+
+            endif;
             printf('\t)\n');
 
         endfunction;
@@ -411,21 +506,15 @@ classdef Scanset
 % Method 'disp_short':
 %
 % Use:
-%       -- fp.disp_short()
+%       -- ss.disp_short()
 %
 % Description:
 %          The disp_short method is used by 'List' class whenever a
 %          Scanset instance should be displayed on the screen.
 %
 % -----------------------------------------------------------------------------
-        function disp_short(fp)
-            printf( ...
-                'Scanset(%s, %s, %s, %s)', ...
-                fp.title, ...
-                fp.model, ...
-                fp.lot, ...
-                fp.cst_cut ...
-                );
+        function disp_short(ss)
+            printf('Scanset(%s)', ss.title);
 
         endfunction;
 
@@ -434,15 +523,15 @@ classdef Scanset
 % Method 'cellarray':
 %
 % Use:
-%       -- cell_fp = fp.cellarry()
+%       -- css = ss.cellarry()
 %
 % Description:
 %          Return film object structure as cell array.
 %
 % -----------------------------------------------------------------------------
-        function cell_fp = cellarray(fp)
-            cell_fp = {};
-            cell_fp = {fp.title, fp.mnfc, fp.model, fp.lot, fp.cst_cut;};
+        function css = cellarray(ss)
+            ss = {};
+            ss = {ss.title, ss.dt_scan, ss.dt_irrd;};
 
         endfunction;
 
@@ -451,13 +540,14 @@ classdef Scanset
 % Method 'isequivalent':
 %
 % Use:
-%       -- result = fp.isequivalent(other)
+%       -- result = ss.isequivalent(other)
 %
 % Description:
 %          Return whether or not two Scanset instances are equivalent. Two
-%          instances are equivalent if they have identical titles.
+%          instances are equivalent if they have identical number of input files
+%          with identical size.
 % -----------------------------------------------------------------------------
-        function result = isequivalent(fp, other)
+        function result = isequivalent(ss, other)
             fname = 'isequivalent';
 
             if(~isa(other, 'Scanset'))
@@ -470,7 +560,10 @@ classdef Scanset
 
             % Initialize result to a default value
             result = false;
-            if(isequal(fp.title, other.title));
+            if( ...
+                    numel(ss.files) == numel(other.files) ...
+                    && size(ss.files{1}) == size(other.files{1}) ... 
+                    );
                 result = true;
 
             endif;
@@ -482,14 +575,14 @@ classdef Scanset
 % Method 'isequal':
 %
 % Use:
-%       -- result = fp.isequal(other)
+%       -- result = ss.isequal(other)
 %
 % Description:
 %          Return whether or not two 'Scanset' instances are equal. Two
 %          instances are equal if all of their fields have identical values.
 %
 % -----------------------------------------------------------------------------
-        function result = isequal(fp, other)
+        function result = isequal(ss, other)
             fname = 'isequal';
 
             if(~isa(other, 'Scanset'))
@@ -503,11 +596,12 @@ classdef Scanset
             % Initialize result to a default value
             result = false;
             if( ...
-                    isequal(fp.title, other.title) ...
-                    && isequal(fp.mnfc, other.mnfc) ...
-                    && isequal(fp.model, other.model) ...
-                    && isequal(fp.lot, other.lot) ...
-                    && isequal(fp.cst_cut, other.cst_cut) ...
+                    isequal(ss.title, other.title) ...
+                    && isequal(ss.files, other.files) ...
+                    && isequal(ss.dt_irrd, other.dt_irrd) ...
+                    && isequal(ss.dt_scan, other.dt_scan) ...
+                    && isequal(ss.pwmean, other.pwmean) ...
+                    && isequal(ss.pwsd, other.pwsd) ...
                     )
                 result = true;
 
