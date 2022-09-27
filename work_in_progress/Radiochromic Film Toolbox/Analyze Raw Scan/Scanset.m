@@ -18,10 +18,14 @@ classdef Scanset
         title    = 'Unknown';
         % List of files defining the scanset
         files    = {};
-        % Date of irradiation (is applicable)
+        % Date of irradiation (if applicable)
         dt_irrd  = NaN;
         % Date of scanning (mandatory)
         dt_scan  = NaN;
+        % Type (mandatory)
+        type     = 'TrueScanset';
+        % Data smoothing (mandatory)
+        ds       = NaN;
         % Pixel data
         pwmean   = [];
         % Pixelwise standard deviation
@@ -58,29 +62,16 @@ classdef Scanset
             use_case_c = ' -- ss = Scanset(other)';
 
             % Parse arguments -------------------------------------------------
-            [ ...
-                pos, ...
-                title, ...
-                dt_irrd, ...
-                dt_scan ...
-                ] = parseparams( ...
+            [pos, props] = parsearguments( ...
                 varargin, ...
-                'Title', 'Unknown', ...
-                'DateOfIrradiation', NaN, ...
-                'DateOfScan', NaN ...
+                { ...
+                    'Title', 'Unknown'; ...
+                    'DateOfIrradiation', NaN; ...
+                    'DateOfScan', NaN; ...
+                    'Type', 'TrueScanset'; ...
+                    'DataSmoothing', PixelDataSmoothing(); ...
+                    } ...
                 );
-
-            if(0 == numel(pos))
-                % Invalid call to constructor
-                error( ...
-                    'Invalid call to %s. Correct usage is:\n%s\n%s\n%s', ...
-                    fname, ...
-                    use_case_a, ...
-                    use_case_b, ...
-                    use_case_c ...
-                    );
-
-            endif;
 
             % Load required packages ------------------------------------------
             pkg load image;
@@ -254,13 +245,13 @@ classdef Scanset
                 % the stack)
                 if(1 == idx)
                     RU = tiff_tag_read(pos{idx}, 296);
-                    R  = tiff_tag_read(pos{idx}, 282);
+                    R = ifi.XResolution;
 
                 endif;
 
                 ru = tiff_tag_read(pos{idx}, 296);
-                RX = tiff_tag_read(pos{idx}, 282);
-                RY = tiff_tag_read(pos{idx}, 283);
+                RX = ifi.XResolution;
+                RY = ifi.YResolution;
 
                 % Check if resolution units comply with the reference ---------
                 if(RU ~= ru)
@@ -382,22 +373,22 @@ classdef Scanset
 
                 % Given file complies to the required image specifications. Add
                 % it to the stack
-                ss.files = {ss.files, pos{idx}};
+                ss.files = {ss.files{:}, pos{idx}};
 
                 ++idx;
 
-            endwhile;
+            endwhile; % End of file list traversal
 
-            % Validate value supplied for the Title
-            if(~ischar(title) || isempty(title))
+            % Validate value supplied for the Title ---------------------------
+            if(~ischar(props{1, 2}) || isempty(props{1, 2}))
                 error('%s: Title must be a non-empty string', fname);
 
             endif;
 
-            % Validate value supplied for the DateOfIrradiation
-            if(~isnan(dt_irrd))
+            % Validate value supplied for the DateOfIrradiation ---------------
+            if(~isnan(props{2, 2}))
                 validateattributes( ...
-                    dt_irrd, ...
+                    props{2, 2}, ...
                     {'numeric'}, ...
                     { ...
                         'nonnan', ...
@@ -412,17 +403,20 @@ classdef Scanset
                     );
 
                 % Check if given date is after the 01-Jan-2000
-                if(datenum(2000, 1, 1) > dt_irrd)
-                    error('%s: DateOfIrradiation too old: %s', datestr(dt_irrd));
+                if(datenum(2000, 1, 1) > props{2, 2})
+                    error( ...
+                        '%s: DateOfIrradiation too old: %s', ...
+                        datestr(props{2, 2}) ...
+                        );
 
                 endif;
 
             endif;
 
-            % Validate value supplied for the DateOfScan
-            if(~isnan(dt_scan))
+            % Validate value supplied for the DateOfScan ----------------------
+            if(~isnan(props{3, 2}))
                 validateattributes( ...
-                    dt_scan, ...
+                    props{3, 2}, ...
                     {'numeric'}, ...
                     { ...
                         'nonnan', ...
@@ -437,20 +431,62 @@ classdef Scanset
                     );
 
             else
-                dt_scan = datenum(strsplit(ifi.FileModDate){1});
+                if(~isempty(ss.files))
+                    % If user supplied any file (TrueScanset) use the file
+                    % modification date as the default for the DateOfScan
+                    props{3, 2} = datenum(strsplit(ifi.FileModDate){1});
+
+                else
+                    % otherwise, use the current date
+                    props{3, 2} = datenum(date());
+
+                endif;
 
             endif;
 
             % Check if given date is after the 01-Jan-2000
-            if(datenum(2000, 1, 1) > dt_scan)
-                error('%s: DateOfScan too old: %s', datestr(dt_scan));
+            if(datenum(2000, 1, 1) > props{3, 2})
+                error('%s: DateOfScan too old: %s', datestr(props{3, 2}));
+
+            endif;
+
+            % Validate value supplied for the Type ----------------------------
+            validatestring( ...
+                props{4, 2}, ...
+                {'TrueScanset', 'DummyBkg', 'DummyZeroL'}, ...
+                fname, ...
+                'Type' ...
+                );
+
+            % If user supplied no files (generate dummy scanset) and it supplied
+            % default value for the 'Type' ('TrueScanset'), set it to 'BummyBkg'
+            % instead (default value for the dummy scanset)
+            if(isempty(ss.files) && isequal('TrueScanset', props{4, 2}))
+                props{4, 2} = 'DummyBkg';
+
+            endif;
+
+            % Validate structure supplied for the DataSmoothing ---------------
+            if(~isa(props{5, 2}, 'PixelDataSmoothing'))
+                error( ...
+                    '%s: DataSmoothing must be an instance of the "PixelDataSmoothing" class', ...
+                    fname ...
+                    );
+
+            endif;
+
+            % Ignore supplied DataSmoothing for the DummyBkg and DummZeroL
+            if(~isequal('TrueScanset', props{4, 2}))
+                props{5, 2} = PixelDataSmoothing();
 
             endif;
 
             % Assign values to a new instance ---------------------------------
-            ss.title   = title;
-            ss.dt_irrd = dt_irrd;
-            ss.dt_scan = dt_scan;
+            ss.title   = props{1, 2};
+            ss.dt_irrd = props{2, 2};
+            ss.dt_scan = props{3, 2};
+            ss.type    = props{4, 2};
+            ss.ds      = props{5, 2};
 
         endfunction;
 
@@ -468,33 +504,100 @@ classdef Scanset
 % -----------------------------------------------------------------------------
         function disp(ss)
             printf('\tScanset(\n');
+
+            % We use two output formats for the printing of the 'Scanset'
+            % structure depending on whether the irradiation date (dt_irrd) is
+            % set or not. If the irradiation date is set we need more space for
+            % the fields, i.e. we need to ident field values more
             if(~isnan(ss.dt_irrd))
-                printf('\t\tTitle:               %s,\n', ss.title);
-                printf('\t\tDate of scan:        %s,\n', ss.dt_scan);
-                printf('\t\tDate of irradiation: %s,\n', ss.dt_irrd);
+                % We have irradiation date set
+                printf('\t\tTitle:               "%s",\n', ss.title);
+                printf('\t\tType:                "%s",\n', ss.type);
+                printf( ...
+                    '\t\tDate of scan:        "%s",\n', ...
+                    datestr(ss.dt_scan, 'dd-mmm-yyyy') ...
+                    );
+                printf( ...
+                    '\t\tDate of irradiation: "%s",\n', ...
+                    datestr(ss.dt_irrd, 'dd-mmm-yyyy') ...
+                    );
+                printf('\t\tData smoothing:      %s,\n', ss.ds.str_rep());
+
                 printf('\t\tPixel data:          ');
                 if(isempty(ss.pwmean))
-                    printf('[],\n');
+                    printf('Not loaded,\n');
 
                 else
                     printf('[...],\n');
-                    printf('\t\tPixelwise SD:        [...]\n');
+                    printf('\t\tPixelwise SD:        [...],\n');
+
+                endif;
+
+                if(0 == numel(ss.files))
+                    printf('\t\tScan #1:            "Dummy"\n');
+
+                else
+                    idx = 1;
+                    while(numel(ss.files) >= idx)
+                        [d, n, e] = fileparts(ss.files{idx});
+                        if(numel(ss.files) == idx)
+                            % Last entry. Omit the comma at the end
+                            printf('\t\tScan #%d:             "%s%s"\n', idx, n, e);
+
+                        else
+                            % Not the last entry. Putt the comma at the end
+                            printf('\t\tScan #%d:             "%s%s",\n', idx, n, e);
+
+                        endif;
+
+                        ++idx;
+
+                    endwhile;
 
                 endif;
 
             else
-                printf('\t\tTitle:        %s,\n', ss.title);
-                printf('\t\tDate of scan: %s,\n', ss.dt_scan);
-                printf('\t\tPixel data:   ');
+                % We have irradiation date not set
+                printf('\t\tTitle:          "%s",\n', ss.title);
+                printf('\t\tType:           "%s",\n', ss.type);
+                printf( ...
+                    '\t\tDate of scan:   "%s",\n', ...
+                    datestr(ss.dt_scan, 'dd-mmm-yyyy') ...
+                    );
+                printf('\t\tData smoothing: %s,\n', ss.ds.str_rep());
+
+                printf('\t\tPixel data:     ');
                 if(isempty(ss.pwmean))
-                    printf('[],\n');
+                    printf('Not loaded,\n');
 
                 else
                     printf('[...],\n');
-                    printf('\t\tPixelwise SD: [...]\n');
+                    printf('\t\tPixelwise SD:   [...],\n');
 
                 endif;
 
+                if(0 == numel(ss.files))
+                    printf('\t\tScan #1:        "Dummy"\n');
+
+                else
+                    idx = 1;
+                    while(numel(ss.files) >= idx)
+                        [d, n, e] = fileparts(ss.files{idx});
+                        if(numel(ss.files) == idx)
+                            % Last entry. Omit the comma at the end
+                            printf('\t\tScan #%d:        "%s%s"\n', idx, n, e);
+
+                        else
+                            % Not the last entry. Putt the comma at the end
+                            printf('\t\tScan #%d:        "%s%s",\n', idx, n, e);
+
+                        endif;
+
+                        ++idx;
+
+                    endwhile;
+
+                endif;
 
             endif;
             printf('\t)\n');
@@ -503,18 +606,25 @@ classdef Scanset
 
 % -----------------------------------------------------------------------------
 %
-% Method 'disp_short':
+% Method 'str_rep':
 %
 % Use:
-%       -- ss.disp_short()
+%       -- result = ds.str_rep()
 %
 % Description:
-%          The disp_short method is used by 'List' class whenever a
-%          Scanset instance should be displayed on the screen.
+%          A convenience method that is used to format string representation of
+%          the Scanset instance.
 %
 % -----------------------------------------------------------------------------
-        function disp_short(ss)
-            printf('Scanset(%s)', ss.title);
+        function result = str_rep(ss)
+            result = sprintf( ...
+                'Scanset("%s", "%s", "%s", %s, %d scan(s))', ...
+                ss.title, ...
+                ss.type, ...
+                datestr(ss.dt_scan, 'dd-mmm-yyyy'), ...
+                ss.ds.str_rep(), ...
+                numel(ss.files) ...
+                );
 
         endfunction;
 
@@ -530,8 +640,31 @@ classdef Scanset
 %
 % -----------------------------------------------------------------------------
         function css = cellarray(ss)
-            ss = {};
-            ss = {ss.title, ss.dt_scan, ss.dt_irrd;};
+            css = {};
+            css = {ss.title, ss.type, datestr(ss.dt_scan, 'dd-mmm-yyyy')};
+
+            if(~isnan(ss.dt_irrd))
+                css = {css{:}, datestr(ss.dt_irrd, 'dd-mmm-yyyy')};
+
+            else
+                css = {css{:}, 'N/A'};
+
+            endif;
+
+            css = {css{:}, ss.ds.cellarray()};
+
+            if(~isempty(ss.files))
+
+                idx = 1;
+                while(numel(ss.files) >= idx)
+                    [d, n, e] = fileparts(ss.files{idx});
+                    css = {css{:}, sprintf('%s%s', n, e)};
+
+                    ++idx;
+
+                endwhile;
+
+            endif;
 
         endfunction;
 
@@ -544,8 +677,8 @@ classdef Scanset
 %
 % Description:
 %          Return whether or not two Scanset instances are equivalent. Two
-%          instances are equivalent if they have identical number of input files
-%          with identical size.
+%          instances are equivalent if they pixel data are of the same size.
+%          Pixel values must be loaded, otherwise error is thrown.
 % -----------------------------------------------------------------------------
         function result = isequivalent(ss, other)
             fname = 'isequivalent';
@@ -558,12 +691,25 @@ classdef Scanset
 
             endif;
 
+            if(isempty(ss.pwmean))
+                error( ...
+                    '%s: pixel data not loaded (self)', ...
+                    fname ...
+                    );
+
+            endif;
+
+            if(isempty(other.pwmean))
+                error( ...
+                    '%s: pixel data not loaded (other)', ...
+                    fname ...
+                    );
+
+            endif;
+
             % Initialize result to a default value
             result = false;
-            if( ...
-                    numel(ss.files) == numel(other.files) ...
-                    && size(ss.files{1}) == size(other.files{1}) ... 
-                    );
+            if(size(ss.pwmean) == size(other.pwmean));
                 result = true;
 
             endif;
@@ -580,6 +726,7 @@ classdef Scanset
 % Description:
 %          Return whether or not two 'Scanset' instances are equal. Two
 %          instances are equal if all of their fields have identical values.
+%          Pixel values must be loaded, otherwise error is thrown.
 %
 % -----------------------------------------------------------------------------
         function result = isequal(ss, other)
@@ -593,6 +740,22 @@ classdef Scanset
 
             endif;
 
+            if(isempty(ss.pwmean))
+                error( ...
+                    '%s: pixel data not loaded (self)', ...
+                    fname ...
+                    );
+
+            endif;
+
+            if(isempty(other.pwmean))
+                error( ...
+                    '%s: pixel data not loaded (other)', ...
+                    fname ...
+                    );
+
+            endif;
+
             % Initialize result to a default value
             result = false;
             if( ...
@@ -600,6 +763,8 @@ classdef Scanset
                     && isequal(ss.files, other.files) ...
                     && isequal(ss.dt_irrd, other.dt_irrd) ...
                     && isequal(ss.dt_scan, other.dt_scan) ...
+                    && isequal(ss.type, other.type) ...
+                    && isequal(ss.ds.isequal(other.ds)) ...
                     && isequal(ss.pwmean, other.pwmean) ...
                     && isequal(ss.pwsd, other.pwsd) ...
                     )

@@ -352,34 +352,21 @@ classdef PixelDataSmoothing
         function disp(ds)
             printf('\tPixelDataSmoothing(\n');
             if(ds.isnone())
-                printf('\t\tTitle:  %s,\n', ds.title);
-                printf('\t\tMethod: %s\n', ds.method);
+                printf('\t\tTitle:  "%s",\n', ds.title);
+                printf('\t\tMethod: "%s"\n', ds.method);
 
             elseif(isequal('Wavelet', ds.method))
-                printf('\t\tTitle:          %s,\n', ds.title);
-                printf('\t\tMethod:         %s,\n', ds.method);
-                printf('\t\tFilter bank:    %s,\n', ds.flt_bnk);
+                printf('\t\tTitle:          "%s",\n', ds.title);
+                printf('\t\tMethod:         "%s",\n', ds.method);
+                printf('\t\tFilter bank:    "%s",\n', ds.flt_bnk);
                 printf('\t\tIterations:     %d,\n', ds.iter_no);
                 printf('\t\tLambda:         %d,\n', ds.lambda);
-                printf('\t\tThreshold type: %s\n', ds.tr_type);
+                printf('\t\tThreshold type: "%s"\n', ds.tr_type);
 
             else
-                win = '';
-                if(isempty(ds.window))
-                    win = '[]';
-
-                else
-                    win = sprintf( ...
-                        '[%d %d]', ...
-                        ds.window(1), ...
-                        ds.window(2) ...
-                        );
-
-                endif;
-
-                printf('\t\tTitle:  %s,\n', ds.title);
-                printf('\t\tMethod: %s,\n', ds.method);
-                printf('\t\tWindow: %s\n', win);
+                printf('\t\tTitle:  "%s",\n', ds.title);
+                printf('\t\tMethod: "%s",\n', ds.method);
+                printf('\t\tWindow: [%d %d]\n', ds.window(1), ds.window(2));
 
             endif;
             printf('\t)\n');
@@ -388,31 +375,44 @@ classdef PixelDataSmoothing
 
 % -----------------------------------------------------------------------------
 %
-% Method 'disp_short':
+% Method 'str_rep':
 %
 % Use:
-%       -- ds.disp_short()
+%       -- result = ds.str_rep()
 %
 % Description:
-%          A convenience method used to display shorthand info about the
-%          instances of the type PixelDataSmoothing.
+%          A convenience method that is used to format string representation of
+%          the PixelDataSmoothing instance.
 %
 % -----------------------------------------------------------------------------
-        function disp_short(ds)
-            win = '';
-            if(isempty(ds.window))
-                win = '[]';
+        function result = str_rep(ds)
+            p = 'PixelDataSmoothing';
+            if(ds.isnone())
+                result = sprintf('%s("%s", "%s")', p, ds.title, ds.method);
+
+            elseif(isequal('Wavelet', ds.method))
+                result = sprintf( ...
+                    '%s("%s", "%s", "%s", %d, %d, "%s")', ...
+                    p, ...
+                    ds.title, ...
+                    ds.method, ...
+                    ds.flt_bnk, ...
+                    ds.iter_no, ...
+                    ds.lambda, ...
+                    ds.tr_type ...
+                    );
 
             else
-                win = sprintf( ...
-                    '[%d %d]', ...
+                result = sprintf( ...
+                    '%s("%s", "%s", [%d %d])', ...
+                    p, ...
+                    ds.title, ...
+                    ds.method, ...
                     ds.window(1), ...
                     ds.window(2) ...
                     );
 
             endif;
-
-            printf('PixelDataSmoothing(%s)', ds.title);
 
         endfunction;
 
@@ -433,11 +433,10 @@ classdef PixelDataSmoothing
                 ds.title, ...
                 ds.method, ...
                 ds.window, ...
-                ds.wavelet, ...
-                flt_bnk, ...
-                iter_no, ...
-                lambda, ...
-                tr_type; ...
+                ds.flt_bnk, ...
+                ds.iter_no, ...
+                ds.lambda, ...
+                ds.tr_type; ...
                 };
 
         endfunction;

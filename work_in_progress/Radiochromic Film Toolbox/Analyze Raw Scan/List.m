@@ -4,7 +4,7 @@
 %
 % Description:
 %       Data container that contains an unsorted set of unique objects of type
-%       FilmDigitizer and FilmPiece. Two lists are equivalent if they have same
+%       FilmDigitizer or FilmPiece. Two lists are equivalent if they have same
 %       number of equivalent objects. Two lists are equal if they are equivalent
 %       and their equivalent objects are equal too.
 %
