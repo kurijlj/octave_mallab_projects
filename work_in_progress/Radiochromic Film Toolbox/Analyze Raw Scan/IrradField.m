@@ -189,18 +189,18 @@ classdef IrradField
 
 % -----------------------------------------------------------------------------
 %
-% Method 'disp_short':
+% Method 'str_rep':
 %
 % Use:
-%       -- fld.disp_short()
+%       -- result = fld.str_rep()
 %
 % Description:
-%          A convenience method used to display shorthand info about the
-%          instances of the type IrradField.
+%          A convenience method that is used to format string representation of
+%          the IrradField instance.
 %
 % -----------------------------------------------------------------------------
-        function disp_short(fld)
-            printf( ...
+        function result = str_rep(fld)
+            result = sprintf( ...
                 'IrradField(%s, %s, %s, %s, %s)', ...
                 fld.title, ...
                 fld.bm_type, ...

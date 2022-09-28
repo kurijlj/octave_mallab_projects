@@ -148,14 +148,17 @@ classdef ListSelection
                 idx = 1;
                 while(selec.list.numel() >= idx)
                     if(idx == selec.idx)
-                        printf('\t%6s[ ', ' ');
-                        selec.list.at(idx).disp_short();
-                        printf(' ], ...\n');
+                        printf( ...
+                            '\t%6s[ %s ], ...\n', ...
+                            ' ', ...
+                            selec.list.at(idx).str_rep() ...
+                            );
 
                     else
-                        printf('\t\t');
-                        selec.list.at(idx).disp_short();
-                        printf(', ...\n');
+                        printf( ...
+                            '\t\t%s, ...\n', ...
+                            selec.list.at(idx).str_rep() ...
+                            );
 
                     endif;
 

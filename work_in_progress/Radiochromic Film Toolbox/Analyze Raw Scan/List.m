@@ -234,8 +234,7 @@ classdef List
                 printf('\tList( ...\n');
                 idx = 1;
                 while(list.numel() >= idx)
-                    printf('\t\t');
-                    list.items{idx}.disp_short();
+                    printf('\t\t%s', list.items{idx}.str_rep());
                     if(list.numel() == idx)
                         printf(' ...\n');
 

@@ -61,6 +61,23 @@ classdef Scanset
             use_case_b = ' -- ss = Scanset(..., "PROPERTY", VALUE, ...)';
             use_case_c = ' -- ss = Scanset(other)';
 
+            % Check if copy constructor invoked -------------------------------
+            if(1 == nargin && isa(varargin{1}, 'Scanset'))
+                % Copy constructor invoked
+                ss.title    = varargin{1}.title;
+                ss.files    = varargin{1}.files;
+                ss.dt_irrd  = varargin{1}.dt_irrd;
+                ss.dt_scan  = varargin{1}.dt_scan;
+                ss.type     = varargin{1}.type;
+                ss.ds       = varargin{1}.ds;
+                ss.pwmean   = varargin{1}.pwmean;
+                ss.pwsd     = varargin{1}.pwsd;
+                ss.warnings = varargin{1}.warnings;
+
+                return;
+
+            endif;
+
             % Parse arguments -------------------------------------------------
             [pos, props] = parsearguments( ...
                 varargin, ...

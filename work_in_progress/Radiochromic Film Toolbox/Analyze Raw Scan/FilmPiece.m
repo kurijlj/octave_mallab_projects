@@ -187,18 +187,18 @@ classdef FilmPiece
 
 % -----------------------------------------------------------------------------
 %
-% Method 'disp_short':
+% Method 'str_rep':
 %
 % Use:
-%       -- fp.disp_short()
+%       -- result = fp.str_rep()
 %
 % Description:
-%          The disp_short method is used by 'List' class whenever a
-%          FilmPiece instance should be displayed on the screen.
+%          A convenience method that is used to format string representation of
+%          the FilmPiece instance.
 %
 % -----------------------------------------------------------------------------
-        function disp_short(fp)
-            printf( ...
+        function result = str_rep(fp)
+            result = sprintf( ...
                 'FilmPiece(%s, %s, %s, %s)', ...
                 fp.title, ...
                 fp.model, ...

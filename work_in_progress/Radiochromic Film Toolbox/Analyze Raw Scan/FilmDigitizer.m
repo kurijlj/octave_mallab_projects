@@ -254,18 +254,18 @@ classdef FilmDigitizer
 
 % -----------------------------------------------------------------------------
 %
-% Method 'disp_short':
+% Method 'str_rep':
 %
 % Use:
-%       -- fd.disp_short()
+%       -- result = fd.str_rep()
 %
 % Description:
-%          The disp_short method is used by 'List' class whenever a
-%          FilmDigitizer instance should be displayed on the screen.
+%          A convenience method that is used to format string representation of
+%          the FilmDigitizer  instance.
 %
 % -----------------------------------------------------------------------------
-        function disp_short(fd)
-            printf( ...
+        function result = str_rep(fd)
+            result = sprintf( ...
                 'FilmDigitizer(%s, %s, %s, %s)', ...
                 fd.title, ...
                 fd.scn_mod, ...
