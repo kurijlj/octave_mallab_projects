@@ -9,40 +9,48 @@
 %       TODO: Add function descritpion here.
 %
 % -----------------------------------------------------------------------------
-function [c, w, sigma] = auto_noise_est(I, p)
+function [M, sigma] = auto_noise_est(I, p)
     fname = 'auto_noise_est';
     use_case_a = ' -- auto_noise_est(I)';
 
     n     = 0;
-    c     = [];
-    w     = [];
-    sigma = [std2(I)];
+    c     = zeros(size(I, 1), size(I, 2), p);
+    w     = zeros(size(I, 1), size(I, 2), p);
+    M     = zeros(size(I, 1), size(I, 2), p);
+    sigma = [];
 
     while(p > n)
-        [cw, i] = ufwt(I, 'syn:spline2:2', n + 1);
+        [cw, i] = ufwt(I, 'syn:spline2:4', n + 1);
+        c(:, :, n + 1) = reshape(cw(:, 1, :), size(I, 1), size(I, 2));
+        w(:, :, n + 1) = reshape(cw(:, 2, :), size(I, 1), size(I, 2));
         if(0 == n)
-            c = reshape(cw(:, 1, :), size(I, 1), size(I, 2));
-            w = [reshape(cw(:, 2, :), size(I, 1), size(I, 2));];
-
-        else
-            c(:, :, end + 1) = reshape(cw(:, 1, :), size(I, 1), size(I, 2));
-            w(:, :, end + 1) = reshape(cw(:, 2, :), size(I, 1), size(I, 2));
+            sigma(end + 1) = std2(w(:, :, 1));
 
         endif;
 
-        ++n;
+        M(:, :, n + 1) = abs(w(:, :, n + 1));
+        M(:, :, n + 1) = M(:, :, n + 1) < 3*sigma(n + 1);
 
-    endwhile;
+        S = I - c(:, :, n + 1);
+        idx = 1;
+        mask = ones(size(M, 1), size(M, 2));
+        while(size(M, 3) >= idx)
+            mask = mask & M(:, :, idx);
+            ++idx;
 
-    n = 0;
+        endwhile;
 
-    while(p > n)
-        M = abs(w(n + 1));
-        M = M < 3*sigma(n + 1);
-        S = I - c(n + 1);
-        sigma(end + 1) = std2(S(M));
+        if(numel(mask) == sum(sum(mask)))
+            return;
 
-        printf('%s: %d\n', (sigma(n + 2) - sigma(n + 1))/sigma(n + 2));
+        endif;
+
+        sigma(n + 2) = std2(S(mask));
+        printf( ...
+            '%s: %d\n', ...
+            fname, ...
+            ((sigma(n + 2) - sigma(n + 1))/sigma(n + 2))*100 ...
+            );
 
         ++n;
 
