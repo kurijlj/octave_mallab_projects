@@ -694,7 +694,7 @@ classdef Scanset
 %
 % Description:
 %          Return whether or not two Scanset instances are equivalent. Two
-%          instances are equivalent if they pixel data are of the same size.
+%          instances are equivalent if their pixel data are of the same size.
 %          Pixel values must be loaded, otherwise error is thrown.
 % -----------------------------------------------------------------------------
         function result = isequivalent(ss, other)

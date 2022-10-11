@@ -1,9 +1,9 @@
 function eval_auto_noise_est(imsize=1024)
-    sigma = [10, 30, 50, 100, 300, 500, 1000, 3000, 5000];
+    sigma = [10, 30, 50, 100, 300, 500, 600, 700, 800, 900, 1000, 3000, 5000];
     idx = 1;
 
     while(numel(sigma) >= idx)
-        im = make_test_img(imsize, 'gaussian', 32000, sigma(idx)*sigma(idx));
+        im = make_test_img(imsize, 'gaussian', 64000, sigma(idx)*sigma(idx));
         se = uwt_auto_noise_est(im);
 
         printf( ...
