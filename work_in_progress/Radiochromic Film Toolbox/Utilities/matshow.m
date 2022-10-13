@@ -37,7 +37,7 @@ function matshow(M)
     R = zeros(size(M, 1), size(M, 2), size(M, 3));
 
     idx = 1;
-    while(size(mat, 3) >= idx)
+    while(size(M, 3) >= idx)
         R(:, :, idx) = mat2gray(M(:, :, idx));
 
         ++idx;
