@@ -24,7 +24,7 @@ function matshow(M)
 
     endif;
 
-    if(2 ~= ndims(M) && 3 ~= ndims(M))
+    if(1 ~= size(M, 3) && 3 ~= size(M, 3))
         % Not supported matrix dimensions
         error( ...
             '%s: M has unsupported dimensions', ...
