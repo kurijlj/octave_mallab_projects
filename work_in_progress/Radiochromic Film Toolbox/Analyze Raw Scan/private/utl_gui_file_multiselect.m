@@ -3,8 +3,8 @@
 %  -- fpath = utl_gui_file_multiselect ()
 %
 %       Utility function that calls 'uigetfile' with enabled 'MultiSeect'
-%       option. It returns empty cell array if user hits 'Cancel'. Otherwiseit
-%       returs cell array of strings, containing absolute paths to selected
+%       option. It returns empty cell array if user hits 'Cancel'. Otherwise it
+%       returns cell array of strings, containing absolute paths to selected
 %       files.
 %
 

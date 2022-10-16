@@ -17,31 +17,17 @@ classdef PixelDataSmoothing
         % Pixel data smoothing title (unique ID)
         title   = 'None';
         % Filter ('None', 'Median', 'Wiener', 'Wavelet')
-        ds_flt  = 'None';
-        % Smoothing window ('[] if ds_flt = 'None' or ds_flt = 'Wavelet')
+        filt  = 'None';
+        % Smoothing window ('[] if filt = 'None' or filt = 'Wavelet')
         window  = [];
-        % Wavelet type (algorithm). Supported types are:
-        %
-        %   uwt:spline3:7:hard - undecimated wavelet transform using
-        %                        synthesis 'spline3:7' filterbank with the
-        %                        hard thresholding
-        %   uwt:spline3:7:soft - undecimated wavelet transform using
-        %                        synthesis 'spline3:7' filterbank with the
-        %                        soft thresholding
-        wt_type = 'None'
-        % % Wavelet filter bank ('db8' if 'Wavelet' selected for the method,
-        % % otherwise 'None')
-        % flt_bnk = 'None';
-        % % Iterations (number of filter bank iterations; for more information
-        % % see: https://octave.sourceforge.io/ltfat/function/fwt2.html)
-        % iter_no = 0;
-        % % Lambda (value used for thresholding operation; for more information
-        % % see: https://octave.sourceforge.io/ltfat/function/thresh.html)
-        % lambda = 0;
-        % % Thresholding type ('hard', 'wiener', 'soft', 'full', 'sparse'; Default
-        % % is 'hard'; for more information see:
-        % % https://octave.sourceforge.io/ltfat/function/thresh.html)
-        % tr_type = 'None';
+        % Wavelet definition
+        wt      = 'None';
+        % Number of wavelet filterban iterations
+        J       = 0;
+        % Wavelet transform filter scaling
+        fs      = 'None';
+        % Wavelet threshoding type ('hard', 'soft', 'wiener')
+        thrsh
 
     endproperties;
 
@@ -77,10 +63,13 @@ classdef PixelDataSmoothing
             elseif(1 == nargin)
                 if(isa(varargin{1}, 'PixelDataSmoothing'))
                     % Copy constructor invoked
-                    ds.title   = varargin{1}.title;
-                    ds.ds_flt  = varargin{1}.ds_flt;
-                    ds.window  = varargin{1}.window;
-                    ds.wt_type = varargin{1}.wt_type;
+                    ds.title  = varargin{1}.title;
+                    ds.filt   = varargin{1}.filt;
+                    ds.window = varargin{1}.window;
+                    ds.wt     = varargin{1}.wt;
+                    ds.J      = varargin{1}.J;
+                    ds.fs     = varargin{1}.fs;
+                    ds.thrsh  = varargin{1}.thrsh;
 
                 else
                     % Invalid call to constructor
@@ -101,15 +90,21 @@ classdef PixelDataSmoothing
                 [ ...
                     pos, ...
                     title, ...
-                    ds_flt, ...
+                    filt, ...
                     window, ...
-                    wt_type ...
+                    wt, ...
+                    J, ...
+                    fs, ...
+                    thrsh ...
                     ] = parseparams( ...
                     varargin, ...
                     'Title', 'None', ...
                     'Filter', 'None', ...
                     'Window', [], ...
-                    'WT-Type', 'None' ...
+                    'Wavelet', 'None', ...
+                    'WtFbNoIterations', 0, ...
+                    'WtFilterScaling', 'None', ...
+                    'WtThresholding', 'None' ...
                     );
 
                 if(0 ~= numel(pos))
@@ -132,20 +127,20 @@ classdef PixelDataSmoothing
 
                 % Validate value supplied for the Filter
                 validatestring( ...
-                    ds_flt, ...
+                    filt, ...
                     {'None', 'Median', 'Wiener', 'Wavelet'}, ...
                     fname, ...
                     'Filter' ...
                     );
 
                 % Validate value supplied for the Window
-                if(isequal('None', ds_flt) || isequal('Wavelet', ds_flt))
+                if(isequal('None', filt) || isequal('Wavelet', filt))
                     % For these options window must be an empty vector
                     if(~isempty(window))
                         warning( ...
                             '%s: Filter "%s" does not support nonempty window', ...
                             fname, ...
-                            ds_flt ...
+                            filt ...
                             );
 
                     endif;
@@ -175,53 +170,146 @@ classdef PixelDataSmoothing
 
                 endif;
 
-                % Validate value supplied for the WT-Type
-                if(~isequal('Wavelet', ds_flt))
+                % Validate value supplied for the Wavelet
+                if(~isequal('Wavelet', filt))
                     % FilterBank option is not needed for other than Wavelet
-                    if(~isequal('None', wt_type))
+                    if(~isequal('None', wt))
                         warning( ...
-                            '%s: WT-Type option not supported for the given method: %s', ...
+                            '%s: Wavelet option not supported for the given method: %s', ...
                             fname, ...
-                            method ...
+                            filt ...
                             );
 
                     endif;
 
                     % reset to default
-                    wt_type = 'None';
+                    wt = 'None';
 
                 else
                     % Use the default value if 'None' assigned
-                    if(isequal('None', wt_type))
-                        wt_type = 'uwt:spline3:7:hard';
+                    if(isequal('None', wt))
+                        wt = 'syn:spline3:7';
 
                     endif;
 
-                    if(~ischar(wt_type) || isempty(wt_type))
+                    if(~ischar(wt) || isempty(wt))
                         error( ...
-                            '%s: WT-Type parameter must be a non-empty string', ...
+                            '%s: Wavelet parameter must be a non-empty string', ...
                             fname ...
                             );
 
                     endif;
 
-                    validatestring( ...
-                        wt_type, ...
+                endif;
+
+                % Validate value supplied for the WtFbNoIterations
+                if(~isequal('Wavelet', filt))
+                    % WtFbNoIterations option is not needed for other than Wavelet
+                    if(0 ~= J)
+                        warning( ...
+                            '%s: WtFbNoIterations option not supported for the given method: %s', ...
+                            fname, ...
+                            filt ...
+                            );
+
+                    endif;
+
+                    % reset to default
+                    J = 0;
+
+                else
+                    % Use the default value if 'None' assigned
+                    if(0 == J)
+                        J = 3;
+
+                    endif;
+
+                    validateattributes( ...
+                        J, ...
+                        {'numeric'}, ...
                         { ...
-                            'uwt:spline3:7:hard', ...
-                            'uwt:spline3:7:soft' ...
+                            'nonnan', ...
+                            'nonempty', ...
+                            'integer', ...
+                            'scalar', ...
+                            '>=', 1 ...
                             }, ...
                         fname, ...
-                        'WT-Type' ...
+                        'WtFbNoIterations' ...
+                        );
+
+                endif;
+
+                % Validate value supplied for the WtFilterScaling
+                if(~isequal('Wavelet', filt))
+                    % WtFilterScaling option is not needed for other than Wavelet
+                    if(~isequal('None', fs))
+                        warning( ...
+                            '%s: WtFilterScaling option not supported for the given method: %s', ...
+                            fname, ...
+                            filt ...
+                            );
+
+                    endif;
+
+                    % reset to default
+                    fs = 'None';
+
+                else
+                    % Use the default value if 'None' assigned
+                    if(isequal('None', wt))
+                        fs = 'sqrt';
+
+                    endif;
+
+                    validatestring( ...
+                        fs, ...
+                        {'sqrt', 'noscale', 'scale'}, ...
+                        fname, ...
+                        'WtFilterScaling' ...
+                        );
+
+                endif;
+
+                % Validate value supplied for the WtThresholding
+                if(~isequal('Wavelet', filt))
+                    % WtThresholding option is not needed for other than Wavelet
+                    if(~isequal('None', thrsh))
+                        warning( ...
+                            '%s: WtThresholding option not supported for the given method: %s', ...
+                            fname, ...
+                            filt ...
+                            );
+
+                    endif;
+
+                    % reset to default
+                    thrsh = 'None';
+
+                else
+                    % Use the default value if 'None' assigned
+                    if(isequal('None', thrsh))
+                        thrsh = 'hard';
+
+                    endif;
+
+                    validatestring( ...
+                        thrsh, ...
+                        {'hard', 'soft', 'wiener'}, ...
+                        fname, ...
+                        'WtThresholding' ...
                         );
 
                 endif;
 
                 % Assign values to a new instance -----------------------------
-                ds.title   = title;
-                ds.ds_flt  = ds_flt;
-                ds.window  = window;
-                ds.wt_type = wt_type;
+                ds.title  = title;
+                ds.filt   = filt;
+                ds.window = window;
+                ds.wt     = wt;
+                ds.J      = J;
+                ds.fs     = fs;
+                ds.thrsh  = thrsh;
 
             else
                 % Invalid call to constructor
@@ -253,16 +341,19 @@ classdef PixelDataSmoothing
             printf('\tPixelDataSmoothing(\n');
             if(ds.isnone())
                 printf('\t\tTitle:  "%s",\n', ds.title);
-                printf('\t\tFilter: "%s"\n', ds.method);
+                printf('\t\tFilter: "%s"\n', ds.filt);
 
-            elseif(isequal('Wavelet', ds.method))
-                printf('\t\tTitle:   "%s",\n', ds.title);
-                printf('\t\tFilter:  "%s",\n', ds.method);
-                printf('\t\tWT-Type: "%s",\n', ds.wt_type);
+            elseif(isequal('Wavelet', ds.filt))
+                printf('\t\tTitle:                "%s",\n', ds.title);
+                printf('\t\tFilter:               "%s",\n', ds.filt);
+                printf('\t\tWavelet:              "%s",\n', ds.wt);
+                printf('\t\tNumber of iterations: %d,\n', ds.J);
+                printf('\t\tFilter scaling:       "%s",\n', ds.fs);
+                printf('\t\tThresholding:         "%s",\n', ds.fs);
 
             else
                 printf('\t\tTitle:  "%s",\n', ds.title);
-                printf('\t\tFilter: "%s",\n', ds.method);
+                printf('\t\tFilter: "%s",\n', ds.filt);
                 printf('\t\tWindow: [%d %d]\n', ds.window(1), ds.window(2));
 
             endif;
@@ -285,15 +376,18 @@ classdef PixelDataSmoothing
         function result = str_rep(ds)
             p = 'PixelDataSmoothing';
             if(ds.isnone())
-                result = sprintf('%s("%s", "%s")', p, ds.title, ds.ds_flt);
+                result = sprintf('%s("%s", "%s")', p, ds.title, ds.filt);
 
-            elseif(isequal('Wavelet', ds.method))
+            elseif(isequal('Wavelet', ds.filt))
                 result = sprintf( ...
-                    '%s("%s", "%s", "%s")', ...
+                    '%s("%s", "%s", "%s", %d, "%s", "%s")', ...
                     p, ...
                     ds.title, ...
-                    ds.ds_flt, ...
-                    ds.wt_type ...
+                    ds.filt, ...
+                    ds.wt, ...
+                    ds.J, ...
+                    ds.fs, ...
+                    ds.thrsh ...
                     );
 
             else
@@ -301,7 +395,7 @@ classdef PixelDataSmoothing
                     '%s("%s", "%s", [%d %d])', ...
                     p, ...
                     ds.title, ...
-                    ds.ds_flt, ...
+                    ds.filt, ...
                     ds.window(1), ...
                     ds.window(2) ...
                     );
@@ -325,10 +419,18 @@ classdef PixelDataSmoothing
             cds = {};
             cds = { ...
                 ds.title, ...
-                ds.ds_flt, ...
-                ds.window, ...
-                ds.wt_type; ...
+                ds.filt ...
                 };
+            if(isequal('Median', ds.filt) || isequal('Wiener', ds.filt))
+                cds{end + 1} = ds.window;
+
+            else
+                cds{end + 1} = ds.wt;
+                cds{end + 1} = ds.J;
+                cds{end + 1} = ds.fs;
+                cds{end + 1} = ds.thrsh;
+
+            endif;
 
         endfunction;
 
@@ -346,7 +448,7 @@ classdef PixelDataSmoothing
 %
 % -----------------------------------------------------------------------------
         function result = isnone(ds)
-            result = isequal('None', ds.ds_flt);
+            result = isequal('None', ds.filt);
 
         endfunction;
 
@@ -360,7 +462,7 @@ classdef PixelDataSmoothing
 % Description:
 %          Return whether or not two PixelDataSmoothing instances are
 %          equivalent. Two instances are equivalent if they have identical
-%          titles.
+%          titles and filters.
 % -----------------------------------------------------------------------------
         function result = isequivalent(ds, other)
             fname = 'isequivalent';
@@ -375,7 +477,7 @@ classdef PixelDataSmoothing
 
             % Initialize result to a default value
             result = false;
-            if(isequal(ds.title, other.title));
+            if(isequal(ds.title, other.title) && isequal(ds.filt, other.filt));
                 result = true;
 
             endif;
@@ -409,9 +511,12 @@ classdef PixelDataSmoothing
             result = false;
             if( ...
                     isequal(ds.title, other.title) ...
-                    && isequal(ds.ds_flt, other.ds_flt) ...
+                    && isequal(ds.filt, other.filt) ...
                     && isequal(ds.window, other.window) ...
-                    && isequal(ds.wt_type, other.wt_type) ...
+                    && isequal(ds.wt, other.wt) ...
+                    && isequal(ds.J, other.J) ...
+                    && isequal(ds.fs, other.fs) ...
+                    && isequal(ds.thrsh, other.thrsh) ...
                     )
                 result = true;
 
@@ -442,7 +547,7 @@ classdef PixelDataSmoothing
                     'nonempty', ...
                     'nonnan', ...
                     'nonnegative', ...
-                    'positive', ...
+                    % 'positive', ...
                     'integer' ...
                     }, ...
                 fname, ...
@@ -455,27 +560,17 @@ classdef PixelDataSmoothing
             % Initilize data structure for the resulting image
             sim = zeros(size(im));
 
-            if(isbw(im))
-                if(isequal('Median', ds.method))
+            if(isgray(im))
+                if(isequal('Median', ds.filt))
                     % Smooth data using median filter
                     sim = medfilt2(im, ds.window);
 
-                elseif(isequal('Wiener', ds.method))
+                elseif(isequal('Wiener', ds.filt))
                     % Smooth data using wiener filter
                     sim = wiener2(im, ds.window);
 
-                elseif(isequal('Wavelet', ds.method))
-                    % Load required package
-                    pkg load ltfat;
-
-                    cf = fwt2(double(im), ds.flt_bnk, ds.iter_no);
-                    cf = thresh(cf, ds.lambda);
-                    sim = ifwt2( ...
-                        cf, ...
-                        ds.flt_bnk, ...
-                        ds.iter_no, ...
-                        [size(im, 1), size(im, 2)] ...
-                        );
+                elseif(isequal('Wavelet', ds.filt))
+                    sim = ds.wtsmooth(double(im));
 
                 else
                     % No filtering
@@ -484,46 +579,22 @@ classdef PixelDataSmoothing
                 endif;
 
             elseif(isrgb(im))
-                if(isequal('Median', ds.method))
+                if(isequal('Median', ds.filt))
                     % Smooth data using median filter
                     sim(:, :, 1) = medfilt2(im(:, :, 1), ds.window);
                     sim(:, :, 2) = medfilt2(im(:, :, 2), ds.window);
                     sim(:, :, 3) = medfilt2(im(:, :, 3), ds.window);
 
-                elseif(isequal('Wiener', ds.method))
+                elseif(isequal('Wiener', ds.filt))
                     % Smooth data using wiener filter
                     sim(:, :, 1) = wiener2(im(:, :, 1), ds.window);
                     sim(:, :, 2) = wiener2(im(:, :, 2), ds.window);
                     sim(:, :, 3) = wiener2(im(:, :, 3), ds.window);
 
-                elseif(isequal('Wavelet', ds.method))
-                    % Load required package
-                    pkg load ltfat;
-
-                    R_cf = fwt2(double(im(:, :, 1)), ds.flt_bnk, ds.iter_no);
-                    G_cf = fwt2(double(im(:, :, 2)), ds.flt_bnk, ds.iter_no);
-                    B_cf = fwt2(double(im(:, :, 3)), ds.flt_bnk, ds.iter_no);
-                    R_cf = thresh(R_cf, ds.lambda);
-                    G_cf = thresh(G_cf, ds.lambda);
-                    B_cf = thresh(B_cf, ds.lambda);
-                    sim(:, :, 1) = ifwt2( ...
-                        R_cf, ...
-                        ds.flt_bnk, ...
-                        ds.iter_no, ...
-                        [size(im, 1), size(im, 2)] ...
-                        );
-                    sim(:, :, 2) = ifwt2( ...
-                        G_cf, ...
-                        ds.flt_bnk, ...
-                        ds.iter_no, ...
-                        [size(im, 1), size(im, 2)] ...
-                        );
-                    sim(:, :, 3) = ifwt2( ...
-                        B_cf, ...
-                        ds.flt_bnk, ...
-                        ds.iter_no, ...
-                        [size(im, 1), size(im, 2)] ...
-                        );
+                elseif(isequal('Wavelet', ds.filt))
+                    sim(:, :, 1) = ds.wtsmooth(im(:, :, 1));
+                    sim(:, :, 2) = ds.wtsmooth(im(:, :, 2));
+                    sim(:, :, 3) = ds.wtsmooth(im(:, :, 3));
 
                 else
                     % No filtering
@@ -541,6 +612,84 @@ classdef PixelDataSmoothing
                     );
 
             endif;
+
+        endfunction;
+
+    endmethods;
+
+% -----------------------------------------------------------------------------
+%
+% Private methods section
+%
+% -----------------------------------------------------------------------------
+    methods (Access = private)
+
+% -----------------------------------------------------------------------------
+%
+% Method 'wtsmooth':
+%
+% Description:
+%          Calculate wavelet smoothing of the image.
+%
+% -----------------------------------------------------------------------------
+        function sm = wtsmooth(ds, m)
+            % Load required package
+            pkg load ltfat;
+
+            mask = ones(size(m, 1), size(m, 2));
+            c    = [];
+            w    = [];
+
+            idx = 1;
+            while(ds.J >= idx)
+                [coef, info] = uwfbt( ...
+                    m, ...
+                    {ds.wt, idx, 'full'}, ...
+                    ds.fs ...
+                    );
+                c = reshape(coef(:, 1, :), size(coef, 1), size(coef, 3));
+                w = reshape(coef(:, 2, :), size(coef, 1), size(coef, 3));
+                % We use MAD for the estimation of the noise sdev
+                s = median(abs(w)(:))/0.6745;
+                % We use unified threshold method
+                % mask = mask & imdilate( ...
+                %     w >= s*sqrt(2*log(numel(w))), ...
+                %     [0, 1, 0; 1, 1, 1; 0, 1, 0;] ...
+                %     );
+                mask = mask & (w >= s*sqrt(2*log(numel(w))));
+
+                ++idx;
+
+            endwhile;
+
+            nssdev = median(abs(w(~mask))(:))/0.6745;
+            lambda = nssdev*sqrt(2*log(sum(sum(~mask))));
+            nsr = m - c;
+            [coef, info] = uwfbt(nsr, {ds.wt, 1, 'full'}, ds.fs);
+            coef = thresh(coef, lambda, ds.thrsh);
+
+            wtsyn = ds.wt;
+            fssyn = ds.fs;
+            if(4 < numel(ds.wt))
+                if(isequal('ana:', ds.wt(1:4)))
+                    wtsyn = sprintf('syn:%s', ds.wt(5, end));
+
+                elseif(isequal('syn:', ds.wt(1:4)))
+                    wtsyn = sprintf('ana:%s', ds.wt(5:end));
+
+                endif;
+
+            endif;
+
+            if(isequal('scale', ds.fs))
+                fssyn = 'noscale';
+
+            elseif(isequal('noscale', ds.fs))
+                fssyn = 'scale';
+
+            endif;
+
+            sm = c + ~mask.*iuwfbt(coef, {wtsyn, 1, 'full'}, fssyn);
 
         endfunction;
 

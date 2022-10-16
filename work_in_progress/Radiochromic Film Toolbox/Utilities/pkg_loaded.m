@@ -7,7 +7,7 @@
 %
 % Description:
 %
-%       Check if the named package is added to the path (loaded). Ite returns:
+%       Check if the named package is added to the path (loaded). It returns:
 %
 %           1 if package is added to the path;
 %           0 if package is not added to the path;
