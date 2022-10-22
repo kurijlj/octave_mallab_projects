@@ -20,7 +20,7 @@ function result = pkg_loaded(pkg_name)
 
     % Validate input arguments ------------------------------------------------
 
-    % Check the numbe rof input parameters
+    % Check the number of input parameters
     if(1 ~= nargin)
         % Invalid call to function
         error( ...

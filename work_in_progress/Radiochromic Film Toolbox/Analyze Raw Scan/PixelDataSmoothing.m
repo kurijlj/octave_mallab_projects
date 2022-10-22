@@ -563,11 +563,11 @@ classdef PixelDataSmoothing
             if(isgray(im))
                 if(isequal('Median', ds.filt))
                     % Smooth data using median filter
-                    sim = medfilt2(im, ds.window);
+                    sim = medfilt2(double(im), ds.window);
 
                 elseif(isequal('Wiener', ds.filt))
                     % Smooth data using wiener filter
-                    sim = wiener2(im, ds.window);
+                    sim = wiener2(double(im), ds.window);
 
                 elseif(isequal('Wavelet', ds.filt))
                     sim = ds.wtsmooth(double(im));
