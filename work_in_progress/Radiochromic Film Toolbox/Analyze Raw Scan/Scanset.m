@@ -44,7 +44,7 @@ classdef Scanset
 
 % -----------------------------------------------------------------------------
 %
-% Method 'Item':
+% Method 'Scanset':
 %
 % Use:
 %       -- ss = Scanset(tif1, tif2, ...)
