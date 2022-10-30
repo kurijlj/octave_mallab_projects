@@ -1,33 +1,72 @@
+classdef MultiResSupport
 % -----------------------------------------------------------------------------
 %
 % Class 'MultiResSupport':
 %
 % Description:
-%       TODO: Add class descritpion here.
+%       Calculates the multi-resolution support of the undecimated wavelet
+%       decomposition of the 2D data. It takes a matrix containing diagonal
+%       coefficients of the undecimated wavelet transform of the data to
+%       calculate the multi-resolution support (see: ufwt2, iufwt2).
+%
+%       If the class constructor is invoked with another multi-resolution
+%       support object, it makes a copy of the given object.
+%
+%       Multiple property-value pairs may be specified for the multi-resolution
+%       support object, but they must appear in pairs.
+%
+%       Properties of 'Multi-Resolution Support' objects:
+%
+%       Dilate: bool, def. false
+%           Determines whether to perform morphological dilation when
+%           calculating significant coefficients for each scale.
+%
+%       DilateType: "cross"|{"none"}|"plus"
+%           Defines the binary matrix to be used for morphological dilation.
+%           Currently, two arrangements are supported: "cross" and "plus"
+%           where "cross" is the following matrix:
+%
+%               | 1 0 1 |
+%               | 0 1 0 |
+%               | 1 0 1 |
+%
+%           and the "plus" is:
+%
+%               | 0 1 0 |
+%               | 1 1 1 |
+%               | 0 1 0 |
+%
+%           If 'Dilate' is true and 'DilateType' is none, the constructor will
+%           automatically set it to the "plus" value. If the 'Dilate' false, the
+%           value of the 'DilateType' is ignored.
 %
 % -----------------------------------------------------------------------------
-classdef MultiResSupport
 
+    properties (SetAccess = private, GetAccess = public)
 % -----------------------------------------------------------------------------
 %
 % Properties section (SetAccess: private, GetAccess: public)
 %
 % -----------------------------------------------------------------------------
-    properties (SetAccess = private, GetAccess = public)
+
         % Dilate (defines whether or not each scale should be dilated)
         dilate = false;
+        % Dilate type (defines the binary matrix to be used for morphological
+        % dilation
+        dilate_type = 'none';
         % Multiresolution support array of dimensions Ix*Iy*J
         M = [];
 
     endproperties;
 
+    methods (Access = public)
 % -----------------------------------------------------------------------------
 %
 % Public methods section
 %
 % -----------------------------------------------------------------------------
-    methods (Access = public)
 
+        function mrs = MultiResSupport(varargin)
 % -----------------------------------------------------------------------------
 %
 % Method 'MultiResSupport':
@@ -41,7 +80,6 @@ classdef MultiResSupport
 %          Class constructor.
 %
 % -----------------------------------------------------------------------------
-        function mrs = MultiResSupport(varargin)
             fname = 'MultiResSupport';
             use_case_a = ' -- mrs = MultiResSupport()';
             use_case_b = ' -- mrs = MultiResSupport(..., "PROPERTY", VALUE, ...)';
@@ -60,17 +98,20 @@ classdef MultiResSupport
 
             elseif(1 == nargin && isa(varargin{1}, 'MultiResSupport'))
                 % Copy constructor invoked
-                mrs.dilate = varargin{1}.dilate;
-                mrs.M      = varargin{1}.M;
+                mrs.dilate      = varargin{1}.dilate;
+                mrs.dilate_type = varargin{1}.dilate_type;
+                mrs.M           = varargin{1}.M;
 
             else
                 % Regular constructor invoked. Parse arguments
                 [ ...
                     pos, ...
-                    dilate ...
+                    dilate, ...
+                    dilate_type ...
                     ] = parseparams( ...
                     varargin, ...
-                    'Dilate', false ...
+                    'Dilate', false, ...
+                    'DilateType', 'none' ...
                     );
 
                 if(1 ~= numel(pos))
@@ -105,6 +146,28 @@ classdef MultiResSupport
 
                 endif;
 
+                % Validate value supplied for the DilateType
+                validatestring( ...
+                    dilate_type, ...
+                    { ...
+                        'cross', ...
+                        'plus', ...
+                        'none' ...
+                        }, ...
+                    fname, ...
+                    'DilateType' ...
+                    );
+
+                % Ignore DilateType property if 'Dilate' property is not set
+                % (i.e. dilate = false)
+                if(dilate && iequal('none', dilate_type))
+                    dilate_type = 'plus';
+
+                elseif(~dilate && ~isequal('none', dilate_type))
+                    dilate_type = 'none';
+
+                endif;
+
                 % Assign values to a new instance -----------------------------
                 mrs.dilate = dilate;
 
@@ -130,10 +193,19 @@ classdef MultiResSupport
 
                     % Dilate multiresolution support if switched on
                     if(dilate)
-                        mrs.M(:, :, idx) = imdilate( ...
-                            mrs.M(:, :, idx), ...
-                            [0, 1, 0; 1, 1, 1; 0, 1, 0;] ...
-                            );
+                        if(isequal('plus', dilate_type))
+                            mrs.M(:, :, idx) = imdilate( ...
+                                mrs.M(:, :, idx), ...
+                                [0, 1, 0; 1, 1, 1; 0, 1, 0;] ...
+                                );
+
+                        else
+                            mrs.M(:, :, idx) = imdilate( ...
+                                mrs.M(:, :, idx), ...
+                                [1, 0, 1; 0, 1, 0; 1, 0, 1;] ...
+                                );
+
+                        endif;
 
                     endif;
 
@@ -145,6 +217,7 @@ classdef MultiResSupport
 
         endfunction;
 
+        function disp(mrs)
 % -----------------------------------------------------------------------------
 %
 % Method 'disp':
@@ -157,25 +230,27 @@ classdef MultiResSupport
 %          displayed on the screen.
 %
 % -----------------------------------------------------------------------------
-        function disp(mrs)
             printf('\tMultiResSupport(\n');
             printf( ...
-                '\t\tM:                        [%dx%dx%d]\n', ...
+                '\t\tM:          [%dx%dx%d]\n', ...
                 size(mrs.M, 1), ...
                 size(mrs.M, 2), ...
                 size(mrs.M, 3) ...
                 );
             if(mrs.dilate)
-                printf('\t\tDilate:                   "true"\n');
+                printf('\t\tDilate:     true\n');
+                printf('\t\tDilateType: %s\n', mrs.dilate_type);
 
             else
-                printf('\t\tDilate:                   "false"\n');
+                printf('\t\tDilate:     false\n');
+                printf('\t\tDilateType: none\n');
 
             endif;
             printf('\t)\n');
 
         endfunction;
 
+        function result = str_rep(mrs)
 % -----------------------------------------------------------------------------
 %
 % Method 'str_rep':
@@ -188,15 +263,15 @@ classdef MultiResSupport
 %          the MultiResSupport instance.
 %
 % -----------------------------------------------------------------------------
-        function result = str_rep(mrs)
             cn = 'MultiResSupport';
             if(mrs.dilate)
                 result = sprintf( ...
-                    '%s([%dx%dx%d], "true")', ...
+                    '%s([%dx%dx%d], "true", "%s")', ...
                     cn, ...
                     size(mrs.M, 1), ...
                     size(mrs.M, 2), ...
-                    size(mrs.M, 3) ...
+                    size(mrs.M, 3), ...
+                    mrs.dilate_type ...
                     );
 
             else
@@ -212,6 +287,7 @@ classdef MultiResSupport
 
         endfunction;
 
+        function m = mask(mrs)
 % -----------------------------------------------------------------------------
 %
 % Method 'mask':
@@ -223,7 +299,6 @@ classdef MultiResSupport
 %          Calculate binary mask from the given multiresolution support.
 %
 % -----------------------------------------------------------------------------
-        function m = mask(mrs)
             m = ones(size(mrs.M, 1), size(mrs.M, 2));
             idx = 1;
             while(size(mrs.M, 3) >= idx)
@@ -235,6 +310,7 @@ classdef MultiResSupport
 
         endfunction;
 
+        function show(mrs)
 % -----------------------------------------------------------------------------
 %
 % Method 'show':
@@ -247,7 +323,6 @@ classdef MultiResSupport
 %          multiresolution support.
 %
 % -----------------------------------------------------------------------------
-        function show(mrs)
             ir = zeros(size(mrs.M, 1), size(mrs.M, 2));
             idx = 1;
             while(size(mrs.M, 3) >= idx)

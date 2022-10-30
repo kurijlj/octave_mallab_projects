@@ -1,43 +1,80 @@
+classdef PixelDataSmoothing
 % -----------------------------------------------------------------------------
 %
 % Class 'PixelDataSmoothing':
 %
 % Description:
-%       TODO: Add class descritpion here.
+%       Data structure representing algorithm and parameters of the selected
+%       algorithm to be used for the pixel data smoothing of the image data.
+%
+%       Multiple property-value pairs may be specified for the
+%       PixelDataSmoothing object, but they must appear in pairs.
+%
+%       Properties of 'PixelDataSmoothing' objects:
+%
+%       Title: string, def. "None"
+%           A string containing a title describing pixel data smoothing
+%           algorithm and parameters.
+%
+%       Filter: "Median"|{"None"}|"UWT"|"Wiener"
+%           Defines the algorithm to be applied for the data smoothing.
+%
+%       Window: two-element vector, def. []
+%           A vector specifying the size of the NHOOD matrix to be used for
+%           median and wiener filters if selected. Otherwise, this property is
+%           ignored.
+%
+%       WtFb: string, def. "None"
+%           Wavelet filterbank. For all accepted paramter formats, see the
+%           fwtinit function of the ltfat package. If the Filter property is
+%           set to other than "UFWT" this property is ignored.
+%
+%`      WtFbIter: def. 0
+%           The number of filterbank iterations. If the Filter property is set
+%           to other than "UFWT" this property is ignored.
+%
+%       WtFs: {"none"}|"noscale"|"scale"|"sqrt"
+%           Wavelet filter scaling. See ufwt of the ltfat package for more
+%           information.
+%
+%       WtThrType: "hard"|{"none"}|"soft"|"wiener"
+%           Thresholding type. See thresh of the ltfat package for more
+%           information.
 %
 % -----------------------------------------------------------------------------
-classdef PixelDataSmoothing
 
+    properties (SetAccess = private, GetAccess = public)
 % -----------------------------------------------------------------------------
 %
 % Public properties section
 %
 % -----------------------------------------------------------------------------
-    properties (SetAccess = private, GetAccess = public)
+
         % Pixel data smoothing title (unique ID)
         title   = 'None';
-        % Filter ('None', 'Median', 'Wiener', 'Wavelet')
-        filt  = 'None';
+        % Filter ('None', 'Median', 'Wiener', 'UWT')
+        filter  = 'None';
         % Smoothing window ('[] if filt = 'None' or filt = 'Wavelet')
         window  = [];
         % Wavelet definition
-        wt      = 'None';
+        w       = 'none';
         % Number of wavelet filterban iterations
         J       = 0;
-        % Wavelet transform filter scaling
-        fs      = 'None';
-        % Wavelet threshoding type ('hard', 'soft', 'wiener')
-        thrsh
+        % Wavelet transform filter scaling ('none', 'sqrt', 'noscale', 'scale')
+        fs      = 'none';
+        % Wavelet threshoding type ('none', 'hard', 'soft', 'wiener')
+        thrtype = 'none';
 
     endproperties;
 
+    methods (Access = public)
 % -----------------------------------------------------------------------------
 %
 % Public methods section
 %
 % -----------------------------------------------------------------------------
-    methods (Access = public)
 
+        function ds = PixelDataSmoothing(varargin)
 % -----------------------------------------------------------------------------
 %
 % Method 'PixelDataSmoothing':
@@ -51,7 +88,6 @@ classdef PixelDataSmoothing
 %          Class constructor.
 %
 % -----------------------------------------------------------------------------
-        function ds = PixelDataSmoothing(varargin)
             fname = 'PixelDataSmoothing';
             use_case_a = ' -- ds = PixelDataSmoothing()';
             use_case_b = ' -- ds = PixelDataSmoothing(..., "PROPERTY", VALUE, ...)';
@@ -325,6 +361,7 @@ classdef PixelDataSmoothing
 
         endfunction;
 
+        function disp(ds)
 % -----------------------------------------------------------------------------
 %
 % Method 'disp':
@@ -337,7 +374,6 @@ classdef PixelDataSmoothing
 %          displayed on the screen.
 %
 % -----------------------------------------------------------------------------
-        function disp(ds)
             printf('\tPixelDataSmoothing(\n');
             if(ds.isnone())
                 printf('\t\tTitle:  "%s",\n', ds.title);
@@ -361,6 +397,7 @@ classdef PixelDataSmoothing
 
         endfunction;
 
+        function result = str_rep(ds)
 % -----------------------------------------------------------------------------
 %
 % Method 'str_rep':
@@ -373,7 +410,6 @@ classdef PixelDataSmoothing
 %          the PixelDataSmoothing instance.
 %
 % -----------------------------------------------------------------------------
-        function result = str_rep(ds)
             p = 'PixelDataSmoothing';
             if(ds.isnone())
                 result = sprintf('%s("%s", "%s")', p, ds.title, ds.filt);
@@ -404,6 +440,7 @@ classdef PixelDataSmoothing
 
         endfunction;
 
+        function cds = cellarray(ds)
 % -----------------------------------------------------------------------------
 %
 % Method 'cellarray':
@@ -415,7 +452,6 @@ classdef PixelDataSmoothing
 %          Return smoothing object structure as cell array.
 %
 % -----------------------------------------------------------------------------
-        function cds = cellarray(ds)
             cds = {};
             cds = { ...
                 ds.title, ...
@@ -434,6 +470,7 @@ classdef PixelDataSmoothing
 
         endfunction;
 
+        function result = isnone(ds)
 % -----------------------------------------------------------------------------
 %
 % Method 'isnone':
@@ -447,11 +484,11 @@ classdef PixelDataSmoothing
 %          'None'.
 %
 % -----------------------------------------------------------------------------
-        function result = isnone(ds)
             result = isequal('None', ds.filt);
 
         endfunction;
 
+        function result = isequivalent(ds, other)
 % -----------------------------------------------------------------------------
 %
 % Method 'isequivalent':
@@ -464,7 +501,6 @@ classdef PixelDataSmoothing
 %          equivalent. Two instances are equivalent if they have identical
 %          titles and filters.
 % -----------------------------------------------------------------------------
-        function result = isequivalent(ds, other)
             fname = 'isequivalent';
 
             if(~isa(other, 'PixelDataSmoothing'))
@@ -484,6 +520,7 @@ classdef PixelDataSmoothing
 
         endfunction;
 
+        function result = isequal(ds, other)
 % -----------------------------------------------------------------------------
 %
 % Method 'isequal':
@@ -496,7 +533,6 @@ classdef PixelDataSmoothing
 %          Two instances are equal if all of their fields have identical values.
 %
 % -----------------------------------------------------------------------------
-        function result = isequal(ds, other)
             fname = 'isequal';
 
             if(~isa(other, 'PixelDataSmoothing'))
@@ -524,6 +560,7 @@ classdef PixelDataSmoothing
 
         endfunction;
 
+        function sim = smooth(ds, im)
 % -----------------------------------------------------------------------------
 %
 % Method 'smooth':
@@ -535,7 +572,6 @@ classdef PixelDataSmoothing
 %          Return smoothed pixel data of image im.
 %
 % -----------------------------------------------------------------------------
-        function sim = smooth(ds, im)
             fname = 'smooth';
 
             % Validate input pixel data
@@ -617,13 +653,14 @@ classdef PixelDataSmoothing
 
     endmethods;
 
+    methods (Access = private)
 % -----------------------------------------------------------------------------
 %
 % Private methods section
 %
 % -----------------------------------------------------------------------------
-    methods (Access = private)
 
+        function sm = wtsmooth(ds, m)
 % -----------------------------------------------------------------------------
 %
 % Method 'wtsmooth':
@@ -632,7 +669,6 @@ classdef PixelDataSmoothing
 %          Calculate wavelet smoothing of the image.
 %
 % -----------------------------------------------------------------------------
-        function sm = wtsmooth(ds, m)
             % Load required package
             pkg load ltfat;
 

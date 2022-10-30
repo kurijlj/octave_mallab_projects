@@ -1,3 +1,4 @@
+classdef Scan
 % -----------------------------------------------------------------------------
 %
 % Class 'Scan':
@@ -5,15 +6,63 @@
 % Description:
 %       Data structure representing a single data scan.
 %
+%       The class constructor can be invoked with a string representing the
+%       path to a 'TIFF' image, a 2D or 3D matrix representing scan pixel data,
+%       or with another class instance.
+%
+%       The minimum required scan signal size is 8x8 pixels. If the scan signal
+%       is loaded from an image file, the following requirements are mandatory:
+%           - must be a TIFF file;
+%           - must be an RGB image;
+%           - must be 16 bits per sample (uint16);
+%           - must be an uncompressed image.
+%
+%       Two scan objects are equivalent if they are of the same type, same size,
+%       same date of scanning, same date of irradiation, and of the same
+%       resolution.
+%
+%       The scan object is valid if there are no warnings generated (sc.wrn =
+%       'None') during object initialization. The validity of the scan object
+%       can be checked using 'is_valid' method.
+%
+%       Multiple property-value pairs may be specified for the scan object, but
+%       they must appear in pairs.
+%
+%       Properties of 'Scan' objects:
+%
+%       Title: string, def. "Signal scan"
+%           A string containing a title describing scanned data.
+%
+%       DateOfIrradiation: serial date number (see: datenum), def. NaN
+%           Serial date number representing the date of irradiation of the scan,
+%           if applicable. The date of irradiation must be no older than
+%           01-Jan-2022.
+%
+%       DateOfScan: serial date number (see: datenum), def. NaN
+%           Serial date number representing the date when the pixel data of the
+%           image were generated. If pixel data are read from the file, the date
+%           of scan is automatically set from the file metadata. Otherwise, it
+%           is set as the current date. The date of the scan must be no older
+%           than 01-Jan-2022.
+%
+%       Type: "BkgScan"|"DummyBkg"|"DummyScan"|"DummyZeroL"|{"SignalScan"}|"ZeroLScan"
+%           Define the type of scan. This property defines how the object will
+%           be used for the calculation of the optical density of the
+%           measurement, and is one of the parameters determining which scan
+%           objects are mutually equivalent and can form a scan set.
+%
+%       DataSmoothing: PixelDataSmoothing object, def. PixelDataSmoothing("None", "None")
+%           Defines the denoising algorithm used for pixel data smoothing of
+%           individual scan objects.
+%
 % -----------------------------------------------------------------------------
-classdef Scan
 
+    properties (SetAccess = private, GetAccess = public)
 % -----------------------------------------------------------------------------
 %
 % Public properties section
 %
 % -----------------------------------------------------------------------------
-    properties (SetAccess = private, GetAccess = public)
         % Film piece title (unique ID)
         title   = 'Signal scan';
         % Source file (if applicable)
@@ -37,13 +86,14 @@ classdef Scan
 
     endproperties;
 
+    methods (Access = public)
 % -----------------------------------------------------------------------------
 %
 % Public methods section
 %
 % -----------------------------------------------------------------------------
-    methods (Access = public)
 
+        function sc = Scan(varargin)
 % -----------------------------------------------------------------------------
 %
 % Method 'Scan':
@@ -58,7 +108,6 @@ classdef Scan
 %          Class constructor.
 %
 % -----------------------------------------------------------------------------
-        function sc = Scan(varargin)
             fname = 'Scan';
             use_case_a = ' -- sc = Scan(tif)';
             use_case_b = ' -- sc = Scan(pd)';
@@ -450,8 +499,9 @@ classdef Scan
 
                 endif;
 
-                % Load pixel data from file
-                sc.pd = double(imread(pos{1}));
+                % Set given matrix as pixel data
+                sc.pd = pos{1};
+
                 % Check if user supplied date of scan
                 if(isnan(props{3, 2}))
                     % Date of scan not set, use the current date
@@ -499,6 +549,7 @@ classdef Scan
 
         endfunction;
 
+        function disp(sc)
 % -----------------------------------------------------------------------------
 %
 % Method 'disp':
@@ -511,7 +562,6 @@ classdef Scan
 %          displayed on the screen.
 %
 % -----------------------------------------------------------------------------
-        function disp(sc)
             printf('\tScan(\n');
             if(sc.is_valid())
                 printf('\t\tTitle:                %s,\n', sc.title);
@@ -555,6 +605,7 @@ classdef Scan
 
         endfunction;
 
+        function result = str_rep(sc)
 % -----------------------------------------------------------------------------
 %
 % Method 'str_rep':
@@ -567,7 +618,6 @@ classdef Scan
 %          the Scan instance.
 %
 % -----------------------------------------------------------------------------
-        function result = str_rep(sc)
             if(~isequal('None', sc.file))
                 result = sprintf('Scan("%s")', sc.file);
 
@@ -578,6 +628,7 @@ classdef Scan
 
         endfunction;
 
+        function css = cellarray(sc)
 % -----------------------------------------------------------------------------
 %
 % Method 'cellarray':
@@ -589,7 +640,6 @@ classdef Scan
 %          Return film object structure as cell array.
 %
 % -----------------------------------------------------------------------------
-        function css = cellarray(sc)
             css = {};
             css = {sc.title, sc.type};
             if(~isequal('None', sc.file))
@@ -631,6 +681,7 @@ classdef Scan
 
         endfunction;
 
+        function result = isequivalent(sc, other)
 % -----------------------------------------------------------------------------
 %
 % Method 'isequivalent':
@@ -644,7 +695,6 @@ classdef Scan
 %          same date of scanning, same date of irradiation, and of same
 %          resolution.
 % -----------------------------------------------------------------------------
-        function result = isequivalent(sc, other)
             fname = 'isequivalent';
 
             if(~isa(other, 'Scan'))
@@ -710,6 +760,7 @@ classdef Scan
 
         endfunction;
 
+        function result = isequal(sc, other)
 % -----------------------------------------------------------------------------
 %
 % Method 'isequal':
@@ -722,7 +773,6 @@ classdef Scan
 %          instances are equal if all of their fields have identical values.
 %
 % -----------------------------------------------------------------------------
-        function result = isequal(sc, other)
             fname = 'isequal';
 
             if(~isa(other, 'Scan'))
@@ -809,6 +859,7 @@ classdef Scan
 
         endfunction;
 
+        function result = scan_size(sc)
 % -----------------------------------------------------------------------------
 %
 % Method 'scan_size':
@@ -820,7 +871,6 @@ classdef Scan
 %          Return scan size (size of the pixel data matrix).
 %
 % -----------------------------------------------------------------------------
-        function result = scan_size(sc)
             if(sc.is_valid())
                 result = [size(sc.pd, 1), size(sc.pd, 2), size(sc.pd, 3)];
 
@@ -831,6 +881,7 @@ classdef Scan
 
         endfunction;
 
+        function result = is_valid(sc)
 % -----------------------------------------------------------------------------
 %
 % Method 'is_valid':
@@ -843,8 +894,23 @@ classdef Scan
 %          object initialization no waning was generated (i.e. sc.wrn = 'None').
 %
 % -----------------------------------------------------------------------------
-        function result = is_valid(sc)
             result = isequal('None', sc.wrn);
+
+        endfunction;
+
+        function pd = pixel_data(sc)
+% -----------------------------------------------------------------------------
+%
+% Method 'pixel_data':
+%
+% Use:
+%       -- pd = sc.pixel_data()
+%
+% Description:
+%          Return copy of the scan pixel data. If pixel data smoothing is
+%          defined, return smoothed data.
+%
+% -----------------------------------------------------------------------------
 
         endfunction;
 
