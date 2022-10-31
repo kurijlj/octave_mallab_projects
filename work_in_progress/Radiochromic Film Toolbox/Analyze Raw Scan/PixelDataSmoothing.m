@@ -100,12 +100,12 @@ classdef PixelDataSmoothing
                 if(isa(varargin{1}, 'PixelDataSmoothing'))
                     % Copy constructor invoked
                     ds.title  = varargin{1}.title;
-                    ds.filt   = varargin{1}.filt;
+                    ds.filt   = varargin{1}.filter;
                     ds.window = varargin{1}.window;
-                    ds.wt     = varargin{1}.wt;
+                    ds.wt     = varargin{1}.w;
                     ds.J      = varargin{1}.J;
                     ds.fs     = varargin{1}.fs;
-                    ds.thrsh  = varargin{1}.thrsh;
+                    ds.thrsh  = varargin{1}.thrtype;
 
                 else
                     % Invalid call to constructor
@@ -126,21 +126,21 @@ classdef PixelDataSmoothing
                 [ ...
                     pos, ...
                     title, ...
-                    filt, ...
+                    filter, ...
                     window, ...
-                    wt, ...
+                    w, ...
                     J, ...
                     fs, ...
-                    thrsh ...
+                    thrtype ...
                     ] = parseparams( ...
                     varargin, ...
                     'Title', 'None', ...
                     'Filter', 'None', ...
                     'Window', [], ...
-                    'Wavelet', 'None', ...
-                    'WtFbNoIterations', 0, ...
-                    'WtFilterScaling', 'None', ...
-                    'WtThresholding', 'None' ...
+                    'WtFb', 'None', ...
+                    'WtFbIter', 0, ...
+                    'WtFs', 'None', ...
+                    'WtThrType', 'None' ...
                     );
 
                 if(0 ~= numel(pos))
@@ -163,31 +163,20 @@ classdef PixelDataSmoothing
 
                 % Validate value supplied for the Filter
                 validatestring( ...
-                    filt, ...
-                    {'None', 'Median', 'Wiener', 'Wavelet'}, ...
+                    filter, ...
+                    {'None', 'Median', 'Wiener', 'UWT'}, ...
                     fname, ...
                     'Filter' ...
                     );
 
                 % Validate value supplied for the Window
-                if(isequal('None', filt) || isequal('Wavelet', filt))
-                    % For these options window must be an empty vector
-                    if(~isempty(window))
-                        warning( ...
-                            '%s: Filter "%s" does not support nonempty window', ...
-                            fname, ...
-                            filt ...
-                            );
+                if(isequal('Median', filter) || isequal('Wiener', filter))
+                    % Window property value is only required if filter is set to
+                    % Median or Wiener ...
 
-                    endif;
-
-                    % Reset to default
-                    window = [];
-
-                else
                     % If window is empty assign the default value
                     if(isempty(window))
-                        window = [5 5];
+                        window = [3 3];
 
                     endif;
 
@@ -204,57 +193,45 @@ classdef PixelDataSmoothing
                         'window' ...
                         );
 
+                else
+                    % ... for all other filter selections we ignore value of the
+                    % Window property
+                    window = [];
+
                 endif;
 
-                % Validate value supplied for the Wavelet
-                if(~isequal('Wavelet', filt))
-                    % FilterBank option is not needed for other than Wavelet
-                    if(~isequal('None', wt))
-                        warning( ...
-                            '%s: Wavelet option not supported for the given method: %s', ...
-                            fname, ...
-                            filt ...
-                            );
+                % Validate values of the properties related to 'UWT' filter
+                if(isequal('UWT', filter))
+                    % Wavelet filterbank definition (WtFb), number of filterbank
+                    % iterations (WtFbIter), filter scaling (WtFs) and threshold
+                    % type (WtThrType) properties are only required if filter is
+                    % set to 'UFWT' ...
 
-                    endif;
+                    % Validate value of the wavelet filterbank definition
+                    % property (WtFb)
 
-                    % reset to default
-                    wt = 'None';
-
-                else
                     % Use the default value if 'None' assigned
-                    if(isequal('None', wt))
-                        wt = 'syn:spline3:7';
+                    if(isequal('None', w))
+                        w = 'syn:spline3:7';
 
                     endif;
 
-                    if(~ischar(wt) || isempty(wt))
+                    try
+                        w = fwtinit(w);
+
+                    catch err
                         error( ...
-                            '%s: Wavelet parameter must be a non-empty string', ...
-                            fname ...
-                            );
-
-                    endif;
-
-                endif;
-
-                % Validate value supplied for the WtFbNoIterations
-                if(~isequal('Wavelet', filt))
-                    % WtFbNoIterations option is not needed for other than Wavelet
-                    if(0 ~= J)
-                        warning( ...
-                            '%s: WtFbNoIterations option not supported for the given method: %s', ...
+                            '%s: %s', ...
                             fname, ...
-                            filt ...
+                            err.message ...
                             );
 
-                    endif;
+                    end_try_catch;
 
-                    % reset to default
-                    J = 0;
+                    % Validate value of the number of wavelet filterbank
+                    % iterations property (WtFbIter)
 
-                else
-                    % Use the default value if 'None' assigned
+                    % Use the default value if none (0) assigned
                     if(0 == J)
                         J = 3;
 
@@ -271,29 +248,14 @@ classdef PixelDataSmoothing
                             '>=', 1 ...
                             }, ...
                         fname, ...
-                        'WtFbNoIterations' ...
+                        'WtFbIter' ...
                         );
 
-                endif;
+                    % Validate the value of the wavelet filter scaling
+                    % property (WtFs)
 
-                % Validate value supplied for the WtFilterScaling
-                if(~isequal('Wavelet', filt))
-                    % WtFilterScaling option is not needed for other than Wavelet
-                    if(~isequal('None', fs))
-                        warning( ...
-                            '%s: WtFilterScaling option not supported for the given method: %s', ...
-                            fname, ...
-                            filt ...
-                            );
-
-                    endif;
-
-                    % reset to default
-                    fs = 'None';
-
-                else
                     % Use the default value if 'None' assigned
-                    if(isequal('None', wt))
+                    if(isequal('none', fs))
                         fs = 'sqrt';
 
                     endif;
@@ -302,50 +264,43 @@ classdef PixelDataSmoothing
                         fs, ...
                         {'sqrt', 'noscale', 'scale'}, ...
                         fname, ...
-                        'WtFilterScaling' ...
+                        'WtFs' ...
                         );
 
-                endif;
+                    % Validate the value of the wavelet threshold type
+                    % property (WtThrType)
 
-                % Validate value supplied for the WtThresholding
-                if(~isequal('Wavelet', filt))
-                    % WtThresholding option is not needed for other than Wavelet
-                    if(~isequal('None', thrsh))
-                        warning( ...
-                            '%s: WtThresholding option not supported for the given method: %s', ...
-                            fname, ...
-                            filt ...
-                            );
-
-                    endif;
-
-                    % reset to default
-                    thrsh = 'None';
-
-                else
                     % Use the default value if 'None' assigned
-                    if(isequal('None', thrsh))
-                        thrsh = 'hard';
+                    if(isequal('none', thrtype))
+                        thrtype = 'soft';
 
                     endif;
 
                     validatestring( ...
-                        thrsh, ...
+                        thrtype, ...
                         {'hard', 'soft', 'wiener'}, ...
                         fname, ...
-                        'WtThresholding' ...
+                        'WtThrType' ...
                         );
+
+                else
+                    % ... for all other cases we ignore the values of these
+                    % properties
+                    w       = 'none';
+                    J       = 0;
+                    fs      = 'none';
+                    thrtype = 'none';
 
                 endif;
 
                 % Assign values to a new instance -----------------------------
-                ds.title  = title;
-                ds.filt   = filt;
-                ds.window = window;
-                ds.wt     = wt;
-                ds.J      = J;
-                ds.fs     = fs;
-                ds.thrsh  = thrsh;
+                ds.title   = title;
+                ds.filter  = filter;
+                ds.window  = window;
+                ds.w       = w;
+                ds.J       = J;
+                ds.fs      = fs;
+                ds.thrtype = thrtype;
 
             else
                 % Invalid call to constructor
@@ -377,19 +332,19 @@ classdef PixelDataSmoothing
             printf('\tPixelDataSmoothing(\n');
             if(ds.isnone())
                 printf('\t\tTitle:  "%s",\n', ds.title);
-                printf('\t\tFilter: "%s"\n', ds.filt);
+                printf('\t\tFilter: "%s"\n', ds.filter);
 
             elseif(isequal('Wavelet', ds.filt))
                 printf('\t\tTitle:                "%s",\n', ds.title);
-                printf('\t\tFilter:               "%s",\n', ds.filt);
-                printf('\t\tWavelet:              "%s",\n', ds.wt);
+                printf('\t\tFilter:               "%s",\n', ds.filter);
+                printf('\t\tWavelet filterbank:   "%s",\n', ds.w);
                 printf('\t\tNumber of iterations: %d,\n', ds.J);
                 printf('\t\tFilter scaling:       "%s",\n', ds.fs);
-                printf('\t\tThresholding:         "%s",\n', ds.fs);
+                printf('\t\tThresholding:         "%s",\n', ds.thrtype);
 
             else
                 printf('\t\tTitle:  "%s",\n', ds.title);
-                printf('\t\tFilter: "%s",\n', ds.filt);
+                printf('\t\tFilter: "%s",\n', ds.filter);
                 printf('\t\tWindow: [%d %d]\n', ds.window(1), ds.window(2));
 
             endif;
@@ -412,18 +367,18 @@ classdef PixelDataSmoothing
 % -----------------------------------------------------------------------------
             p = 'PixelDataSmoothing';
             if(ds.isnone())
-                result = sprintf('%s("%s", "%s")', p, ds.title, ds.filt);
+                result = sprintf('%s("%s", "%s")', p, ds.title, ds.filter);
 
             elseif(isequal('Wavelet', ds.filt))
                 result = sprintf( ...
                     '%s("%s", "%s", "%s", %d, "%s", "%s")', ...
                     p, ...
                     ds.title, ...
-                    ds.filt, ...
-                    ds.wt, ...
+                    ds.filter, ...
+                    ds.w, ...
                     ds.J, ...
                     ds.fs, ...
-                    ds.thrsh ...
+                    ds.thrtype ...
                     );
 
             else
@@ -431,7 +386,7 @@ classdef PixelDataSmoothing
                     '%s("%s", "%s", [%d %d])', ...
                     p, ...
                     ds.title, ...
-                    ds.filt, ...
+                    ds.filter, ...
                     ds.window(1), ...
                     ds.window(2) ...
                     );
@@ -455,16 +410,16 @@ classdef PixelDataSmoothing
             cds = {};
             cds = { ...
                 ds.title, ...
-                ds.filt ...
+                ds.filter ...
                 };
-            if(isequal('Median', ds.filt) || isequal('Wiener', ds.filt))
+            if(isequal('Median', ds.filter) || isequal('Wiener', ds.filter))
                 cds{end + 1} = ds.window;
 
             else
-                cds{end + 1} = ds.wt;
+                cds{end + 1} = ds.w;
                 cds{end + 1} = ds.J;
                 cds{end + 1} = ds.fs;
-                cds{end + 1} = ds.thrsh;
+                cds{end + 1} = ds.thrtype;
 
             endif;
 
@@ -484,7 +439,7 @@ classdef PixelDataSmoothing
 %          'None'.
 %
 % -----------------------------------------------------------------------------
-            result = isequal('None', ds.filt);
+            result = isequal('None', ds.filter);
 
         endfunction;
 
@@ -513,7 +468,10 @@ classdef PixelDataSmoothing
 
             % Initialize result to a default value
             result = false;
-            if(isequal(ds.title, other.title) && isequal(ds.filt, other.filt));
+            if( ...
+                    isequal(ds.title, other.title) ...
+                    && isequal(ds.filter, other.filter) ...
+                    );
                 result = true;
 
             endif;
@@ -547,12 +505,12 @@ classdef PixelDataSmoothing
             result = false;
             if( ...
                     isequal(ds.title, other.title) ...
-                    && isequal(ds.filt, other.filt) ...
+                    && isequal(ds.filter, other.filter) ...
                     && isequal(ds.window, other.window) ...
-                    && isequal(ds.wt, other.wt) ...
+                    && isequal(ds.w, other.w) ...
                     && isequal(ds.J, other.J) ...
                     && isequal(ds.fs, other.fs) ...
-                    && isequal(ds.thrsh, other.thrsh) ...
+                    && isequal(ds.thrtype, other.thrtype) ...
                     )
                 result = true;
 
