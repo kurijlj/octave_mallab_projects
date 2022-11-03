@@ -518,92 +518,50 @@ classdef PixelDataSmoothing
 
         endfunction;
 
-        function sim = smooth(ds, im)
+        function sf = smooth(ds, f)
 % -----------------------------------------------------------------------------
 %
 % Method 'smooth':
 %
 % Use:
-%       -- sim = ds.smooth(im)
+%       -- sim = ds.smooth(f)
 %
 % Description:
-%          Return smoothed pixel data of image im.
+%          Return smoothed pixel data of input data f.
 %
 % -----------------------------------------------------------------------------
             fname = 'smooth';
 
             % Validate input pixel data
             validateattributes( ...
-                im, ...
-                {'numeric'}, ...
+                f, ...
+                {'float'}, ...
                 { ...
+                    '3d', ...
                     'finite', ...
                     'nonempty', ...
                     'nonnan', ...
-                    'nonnegative', ...
-                    % 'positive', ...
-                    'integer' ...
                     }, ...
                 fname, ...
                 'im' ...
                 );
 
-            % Load required package
-            pkg load image;
+%       Filter: "Median"|{"None"}|"UWT"|"Wiener"
+            if(isequal('None', ds.filter))
+                % Just return the unmodified input data
+                sf = f;
 
-            % Initilize data structure for the resulting image
-            sim = zeros(size(im));
+            elseif(isequal('Median', ds.filter))
+                % Call the median algorithm
+                sf = ds._median_smooth();
 
-            if(isgray(im))
-                if(isequal('Median', ds.filt))
-                    % Smooth data using median filter
-                    sim = medfilt2(double(im), ds.window);
-
-                elseif(isequal('Wiener', ds.filt))
-                    % Smooth data using wiener filter
-                    sim = wiener2(double(im), ds.window);
-
-                elseif(isequal('Wavelet', ds.filt))
-                    sim = ds.wtsmooth(double(im));
-
-                else
-                    % No filtering
-                    sim = im;
-
-                endif;
-
-            elseif(isrgb(im))
-                if(isequal('Median', ds.filt))
-                    % Smooth data using median filter
-                    sim(:, :, 1) = medfilt2(im(:, :, 1), ds.window);
-                    sim(:, :, 2) = medfilt2(im(:, :, 2), ds.window);
-                    sim(:, :, 3) = medfilt2(im(:, :, 3), ds.window);
-
-                elseif(isequal('Wiener', ds.filt))
-                    % Smooth data using wiener filter
-                    sim(:, :, 1) = wiener2(im(:, :, 1), ds.window);
-                    sim(:, :, 2) = wiener2(im(:, :, 2), ds.window);
-                    sim(:, :, 3) = wiener2(im(:, :, 3), ds.window);
-
-                elseif(isequal('Wavelet', ds.filt))
-                    sim(:, :, 1) = ds.wtsmooth(im(:, :, 1));
-                    sim(:, :, 2) = ds.wtsmooth(im(:, :, 2));
-                    sim(:, :, 3) = ds.wtsmooth(im(:, :, 3));
-
-                else
-                    % No filtering
-                    sim = im;
-
-                endif;
+            elseif(isequal('Wiener', ds.filter))
+                % Call the wiener algorithm
+                sf = ds._wiener_smooth();
 
             else
-                error( ...
-                    '%s: Unsupported image format (%dx%dx%d)', ...
-                    fname, ...
-                    size(im, 2), ...
-                    size(im, 1), ...
-                    size(im, 3) ...
-                    );
+                % Call the UWT algorithm
+                sf = ds._uwt_smooth();
 
             endif;
 
@@ -618,7 +576,59 @@ classdef PixelDataSmoothing
 %
 % -----------------------------------------------------------------------------
 
-        function sm = wtsmooth(ds, m)
+        function sm = _median_smooth(ds, f)
+% -----------------------------------------------------------------------------
+%
+% Method '_median_smooth':
+%
+% Description:
+%          Perform the median smoothing of the inut data
+%
+% -----------------------------------------------------------------------------
+
+            % Load required package
+            pkg load image;
+
+            % Initilize data structure for the resulting image
+            sf = zeros(size(f));
+
+            idx = 1;
+            while(size(f, 3) >= idx)
+                sf(:, :, idx) = medfilt2(double(f(:, :, idx)), ds.window);
+
+                ++idx;
+
+            endwhile;
+
+        endfunction;
+
+        function sm = _wiener_smooth(ds, f)
+% -----------------------------------------------------------------------------
+%
+% Method '_wiener_smooth':
+%
+% Description:
+%          Perform the wiener smoothing of the inut data
+%
+% -----------------------------------------------------------------------------
+
+            % Load required package
+            pkg load image;
+
+            % Initilize data structure for the resulting image
+            sf = zeros(size(f));
+
+            idx = 1;
+            while(size(f, 3) >= idx)
+                sf(:, :, idx) = wiener2(double(f(:, :, idx)), ds.window);
+
+                ++idx;
+
+            endwhile;
+
+        endfunction;
+
+        function sm = _uwt_smooth(ds, m)
 % -----------------------------------------------------------------------------
 %
 % Method 'wtsmooth':
@@ -627,63 +637,12 @@ classdef PixelDataSmoothing
 %          Calculate wavelet smoothing of the image.
 %
 % -----------------------------------------------------------------------------
+
             % Load required package
             pkg load ltfat;
 
-            mask = ones(size(m, 1), size(m, 2));
-            c    = [];
-            w    = [];
-
-            idx = 1;
-            while(ds.J >= idx)
-                [coef, info] = uwfbt( ...
-                    m, ...
-                    {ds.wt, idx, 'full'}, ...
-                    ds.fs ...
-                    );
-                c = reshape(coef(:, 1, :), size(coef, 1), size(coef, 3));
-                w = reshape(coef(:, 2, :), size(coef, 1), size(coef, 3));
-                % We use MAD for the estimation of the noise sdev
-                s = median(abs(w)(:))/0.6745;
-                % We use unified threshold method
-                % mask = mask & imdilate( ...
-                %     w >= s*sqrt(2*log(numel(w))), ...
-                %     [0, 1, 0; 1, 1, 1; 0, 1, 0;] ...
-                %     );
-                mask = mask & (w >= s*sqrt(2*log(numel(w))));
-
-                ++idx;
-
-            endwhile;
-
-            nssdev = median(abs(w(~mask))(:))/0.6745;
-            lambda = nssdev*sqrt(2*log(sum(sum(~mask))));
-            nsr = m - c;
-            [coef, info] = uwfbt(nsr, {ds.wt, 1, 'full'}, ds.fs);
-            coef = thresh(coef, lambda, ds.thrsh);
-
-            wtsyn = ds.wt;
-            fssyn = ds.fs;
-            if(4 < numel(ds.wt))
-                if(isequal('ana:', ds.wt(1:4)))
-                    wtsyn = sprintf('syn:%s', ds.wt(5, end));
-
-                elseif(isequal('syn:', ds.wt(1:4)))
-                    wtsyn = sprintf('ana:%s', ds.wt(5:end));
-
-                endif;
-
-            endif;
-
-            if(isequal('scale', ds.fs))
-                fssyn = 'noscale';
-
-            elseif(isequal('noscale', ds.fs))
-                fssyn = 'scale';
-
-            endif;
-
-            sm = c + ~mask.*iuwfbt(coef, {wtsyn, 1, 'full'}, fssyn);
+            % Initilize data structure for the resulting image
+            sf = zeros(size(f));
 
         endfunction;
 
