@@ -139,8 +139,8 @@ classdef PixelDataSmoothing
                     'Window', [], ...
                     'WtFb', 'None', ...
                     'WtFbIter', 0, ...
-                    'WtFs', 'None', ...
-                    'WtThrType', 'None' ...
+                    'WtFs', 'none', ...
+                    'WtThrType', 'none' ...
                     );
 
                 if(0 ~= numel(pos))
@@ -334,10 +334,37 @@ classdef PixelDataSmoothing
                 printf('\t\tTitle:  "%s",\n', ds.title);
                 printf('\t\tFilter: "%s"\n', ds.filter);
 
-            elseif(isequal('Wavelet', ds.filt))
+            elseif(isequal('UWT', ds.filter))
                 printf('\t\tTitle:                "%s",\n', ds.title);
                 printf('\t\tFilter:               "%s",\n', ds.filter);
-                printf('\t\tWavelet filterbank:   "%s",\n', ds.w);
+                % Format the wavelet filterbank description string
+                wstr = '';
+                idx = 1;
+                while(size(ds.w.origArgs, 2) >= idx)
+                    if(1 == idx)
+                        wstr = sprintf('%s', ds.w.origArgs{1, idx});
+
+                    else
+                        if(isequal('double', class(ds.w.origArgs{1, idx})))
+                            wstr = sprintf( ...
+                                '%s:%d', ...
+                                wstr, ...
+                                ds.w.origArgs{1, idx} ...
+                                );
+
+                        else
+                            wstr = sprintf( ...
+                                '%s:%s', ...
+                                wstr, ...
+                                ds.w.origArgs{1, idx} ...
+                                );
+
+                        endif;
+
+                    endif;
+                    ++idx;
+                endwhile;
+                printf('\t\tWavelet filterbank:   "%s",\n', wstr);
                 printf('\t\tNumber of iterations: %d,\n', ds.J);
                 printf('\t\tFilter scaling:       "%s",\n', ds.fs);
                 printf('\t\tThresholding:         "%s",\n', ds.thrtype);
@@ -369,13 +396,40 @@ classdef PixelDataSmoothing
             if(ds.isnone())
                 result = sprintf('%s("%s", "%s")', p, ds.title, ds.filter);
 
-            elseif(isequal('Wavelet', ds.filt))
+            elseif(isequal('UWT', ds.filter))
+                % Format the wavelet filterbank description string
+                wstr = '';
+                idx = 1;
+                while(size(ds.w.origArgs, 2) >= idx)
+                    if(1 == idx)
+                        wstr = sprintf('%s', ds.w.origArgs{1, idx});
+
+                    else
+                        if(isequal('double', class(ds.w.origArgs{1, idx})))
+                            wstr = sprintf( ...
+                                '%s:%d', ...
+                                wstr, ...
+                                ds.w.origArgs{1, idx} ...
+                                );
+
+                        else
+                            wstr = sprintf( ...
+                                '%s:%s', ...
+                                wstr, ...
+                                ds.w.origArgs{1, idx} ...
+                                );
+
+                        endif;
+
+                    endif;
+                    ++idx;
+                endwhile;
                 result = sprintf( ...
                     '%s("%s", "%s", "%s", %d, "%s", "%s")', ...
                     p, ...
                     ds.title, ...
                     ds.filter, ...
-                    ds.w, ...
+                    wstr, ...
                     ds.J, ...
                     ds.fs, ...
                     ds.thrtype ...
@@ -553,15 +607,15 @@ classdef PixelDataSmoothing
 
             elseif(isequal('Median', ds.filter))
                 % Call the median algorithm
-                sf = ds._median_smooth();
+                sf = ds._median_smooth(f);
 
             elseif(isequal('Wiener', ds.filter))
                 % Call the wiener algorithm
-                sf = ds._wiener_smooth();
+                sf = ds._wiener_smooth(f);
 
             else
                 % Call the UWT algorithm
-                sf = ds._uwt_smooth();
+                sf = ds._uwt_smooth(f);
 
             endif;
 
@@ -576,7 +630,7 @@ classdef PixelDataSmoothing
 %
 % -----------------------------------------------------------------------------
 
-        function sm = _median_smooth(ds, f)
+        function sf = _median_smooth(ds, f)
 % -----------------------------------------------------------------------------
 %
 % Method '_median_smooth':
@@ -602,7 +656,7 @@ classdef PixelDataSmoothing
 
         endfunction;
 
-        function sm = _wiener_smooth(ds, f)
+        function sf = _wiener_smooth(ds, f)
 % -----------------------------------------------------------------------------
 %
 % Method '_wiener_smooth':
@@ -628,7 +682,7 @@ classdef PixelDataSmoothing
 
         endfunction;
 
-        function sm = _uwt_smooth(ds, m)
+        function sf = _uwt_smooth(ds, f)
 % -----------------------------------------------------------------------------
 %
 % Method 'wtsmooth':
@@ -643,6 +697,88 @@ classdef PixelDataSmoothing
 
             % Initilize data structure for the resulting image
             sf = zeros(size(f));
+
+            cidx = 1;
+            while(size(f, 3) >= cidx)
+                % Do the channel decomposition using
+                % undecimated wavelet transform
+                [A, H, V, D] = ufwt2(f(:, :, cidx), ds.w, ds.J, ds.fs);
+
+                % Determine multi-resolution support for the set
+                % decomposition scale
+                mrs = MultiResSupport(D, 'Dilate', true, 'DilateType', 'plus');
+
+                % Keep the significant wavelet coeficients
+                sidx = 1;
+                while(size(D, 3) >= sidx)
+                    H(:, :, sidx) = H(:, :, sidx).*mrs.M(:, :, sidx);
+                    V(:, :, sidx) = V(:, :, sidx).*mrs.M(:, :, sidx);
+                    D(:, :, sidx) = D(:, :, sidx).*mrs.M(:, :, sidx);
+
+                    ++sidx;
+
+                endwhile;
+
+                % Switch the analysis and synthesis filters if applicable
+                iw = ds.w.origArgs;
+                if(isequal('syn', ds.w.origArgs{1, 1}))
+                    iw{1, 1} = 'ana';
+
+                elseif(isequal('ana', ds.w.origArgs{1, 1}))
+                    iw{1, 1} = 'syn';
+
+                endif;
+                iw = fwtinit(iw);
+
+                % Switch the filter scaling if appicable
+                fs = 'sqrt';
+                if(isequal('scale', ds.fs))
+                    fs = 'noscale';
+
+                elseif(isequal('noscale', ds.fs))
+                    fs = 'scale';
+
+                endif;
+
+                % Reconstruct the image, I^(n), from the significant coeficients
+                In = iufwt2(A, H, V, D, iw, fs);
+
+                % Determine the residual
+                Rn = f(:, :, cidx) - In;
+
+                % Determine the multiresolution transform of the residual
+                [A, H, V, D] = ufwt2(Rn, ds.w, ds.J, ds.fs);
+
+                % Keep the significant wavelet coeficients
+                sidx = 1;
+                while(size(D, 3) >= sidx)
+                    H(:, :, sidx) = H(:, :, sidx).*mrs.M(:, :, sidx);
+                    V(:, :, sidx) = V(:, :, sidx).*mrs.M(:, :, sidx);
+                    D(:, :, sidx) = D(:, :, sidx).*mrs.M(:, :, sidx);
+
+                    ++sidx;
+
+                endwhile;
+
+                % Reconstruct the residual, tldR^(n), from the
+                % significant coeficients
+                fs = 'sqrt';
+                if(isequal('scale', ds.fs))
+                    fs = 'noscale';
+
+                elseif(isequal('noscale', ds.fs))
+                    fs = 'scale';
+
+                endif;
+
+                tldRn = iufwt2(A, H, V, D, iw, fs);
+
+                % Add reconstructed residual to the solution
+                sf(:, :, cidx) = In + tldRn;
+
+                ++cidx;
+
+            endwhile;
 
         endfunction;
 

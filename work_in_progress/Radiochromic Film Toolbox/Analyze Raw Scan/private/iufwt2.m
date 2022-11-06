@@ -151,6 +151,7 @@ function f = iufwt2(A, H, V, D, w, fs='sqrt')
         c(:, 2, :) = reshape(h, size(h, 1), 1, size(h, 2));
         lpr = iufwt(c, w, 1, fs)';
 
+        c = zeros(size(lpr, 1), 2, size(lpr, 2));
         c(:, 1, :) = reshape(lpr, size(lpr, 1), 1, size(lpr, 2));
         c(:, 2, :) = reshape(hpr, size(hpr, 1), 1, size(hpr, 2));
 

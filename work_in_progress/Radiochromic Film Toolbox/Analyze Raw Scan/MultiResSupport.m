@@ -160,7 +160,7 @@ classdef MultiResSupport
 
                 % Ignore DilateType property if 'Dilate' property is not set
                 % (i.e. dilate = false)
-                if(dilate && iequal('none', dilate_type))
+                if(dilate && isequal('none', dilate_type))
                     dilate_type = 'plus';
 
                 elseif(~dilate && ~isequal('none', dilate_type))
