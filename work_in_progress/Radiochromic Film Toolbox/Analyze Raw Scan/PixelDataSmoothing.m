@@ -37,9 +37,9 @@ classdef PixelDataSmoothing
 %           Wavelet filter scaling. See ufwt of the ltfat package for more
 %           information.
 %
-%       WtThrType: "hard"|{"none"}|"soft"|"wiener"
-%           Thresholding type. See thresh of the ltfat package for more
-%           information.
+%       WtResRstrc: bool, def. false
+%           Perform the full multiresolution transform with keeping significant
+%           residuals of the origianl image
 %
 % -----------------------------------------------------------------------------
 
@@ -62,8 +62,8 @@ classdef PixelDataSmoothing
         J       = 0;
         % Wavelet transform filter scaling ('none', 'sqrt', 'noscale', 'scale')
         fs      = 'none';
-        % Wavelet threshoding type ('none', 'hard', 'soft', 'wiener')
-        thrtype = 'none';
+        % Keep significan residuals (true, false)
+        resrstrc = false;
 
     endproperties;
 
@@ -99,13 +99,13 @@ classdef PixelDataSmoothing
             elseif(1 == nargin)
                 if(isa(varargin{1}, 'PixelDataSmoothing'))
                     % Copy constructor invoked
-                    ds.title  = varargin{1}.title;
-                    ds.filt   = varargin{1}.filter;
-                    ds.window = varargin{1}.window;
-                    ds.wt     = varargin{1}.w;
-                    ds.J      = varargin{1}.J;
-                    ds.fs     = varargin{1}.fs;
-                    ds.thrsh  = varargin{1}.thrtype;
+                    ds.title    = varargin{1}.title;
+                    ds.filt     = varargin{1}.filter;
+                    ds.window   = varargin{1}.window;
+                    ds.wt       = varargin{1}.w;
+                    ds.J        = varargin{1}.J;
+                    ds.fs       = varargin{1}.fs;
+                    ds.resrstrc = varargin{1}.resrstrc;
 
                 else
                     % Invalid call to constructor
@@ -131,7 +131,7 @@ classdef PixelDataSmoothing
                     w, ...
                     J, ...
                     fs, ...
-                    thrtype ...
+                    resrstrc  ...
                     ] = parseparams( ...
                     varargin, ...
                     'Title', 'None', ...
@@ -140,7 +140,7 @@ classdef PixelDataSmoothing
                     'WtFb', 'None', ...
                     'WtFbIter', 0, ...
                     'WtFs', 'none', ...
-                    'WtThrType', 'none' ...
+                    'WtResRstrc', false ...
                     );
 
                 if(0 ~= numel(pos))
@@ -212,7 +212,7 @@ classdef PixelDataSmoothing
 
                     % Use the default value if 'None' assigned
                     if(isequal('None', w))
-                        w = 'syn:spline3:7';
+                        w = 'ana:spline3:7';
 
                     endif;
 
@@ -267,40 +267,30 @@ classdef PixelDataSmoothing
                         'WtFs' ...
                         );
 
-                    % Validate the value of the wavelet threshold type
-                    % property (WtThrType)
-
-                    % Use the default value if 'None' assigned
-                    if(isequal('none', thrtype))
-                        thrtype = 'soft';
-
+                    % Validate the value of the recostruct significant residuals
+                    % property (WtResRstrc)
+                    if(~isbool(resrstrc))
+                        error('%s: WtResRstrc must be a boolean value', fname);
                     endif;
-
-                    validatestring( ...
-                        thrtype, ...
-                        {'hard', 'soft', 'wiener'}, ...
-                        fname, ...
-                        'WtThrType' ...
-                        );
 
                 else
                     % ... for all other cases we ignore the values of these
                     % properties
-                    w       = 'none';
-                    J       = 0;
-                    fs      = 'none';
-                    thrtype = 'none';
+                    w        = 'none';
+                    J        = 0;
+                    fs       = 'none';
+                    resrstrc = false;
 
                 endif;
 
                 % Assign values to a new instance -----------------------------
-                ds.title   = title;
-                ds.filter  = filter;
-                ds.window  = window;
-                ds.w       = w;
-                ds.J       = J;
-                ds.fs      = fs;
-                ds.thrtype = thrtype;
+                ds.title    = title;
+                ds.filter   = filter;
+                ds.window   = window;
+                ds.w        = w;
+                ds.J        = J;
+                ds.fs       = fs;
+                ds.resrstrc = resrstrc;
 
             else
                 % Invalid call to constructor
@@ -367,7 +357,13 @@ classdef PixelDataSmoothing
                 printf('\t\tWavelet filterbank:   "%s",\n', wstr);
                 printf('\t\tNumber of iterations: %d,\n', ds.J);
                 printf('\t\tFilter scaling:       "%s",\n', ds.fs);
-                printf('\t\tThresholding:         "%s",\n', ds.thrtype);
+                if(ds.resrstrc)
+                    printf('\t\tKeep residuals:       true\n');
+
+                else
+                    printf('\t\tKeep residuals:       false\n');
+
+                endif;
 
             else
                 printf('\t\tTitle:  "%s",\n', ds.title);
@@ -399,6 +395,7 @@ classdef PixelDataSmoothing
             elseif(isequal('UWT', ds.filter))
                 % Format the wavelet filterbank description string
                 wstr = '';
+                rstr = 'false';
                 idx = 1;
                 while(size(ds.w.origArgs, 2) >= idx)
                     if(1 == idx)
@@ -424,6 +421,10 @@ classdef PixelDataSmoothing
                     endif;
                     ++idx;
                 endwhile;
+                if(ds.resrstrc)
+                    rstr = 'true';
+
+                endif;
                 result = sprintf( ...
                     '%s("%s", "%s", "%s", %d, "%s", "%s")', ...
                     p, ...
@@ -432,7 +433,7 @@ classdef PixelDataSmoothing
                     wstr, ...
                     ds.J, ...
                     ds.fs, ...
-                    ds.thrtype ...
+                    rstr ...
                     );
 
             else
@@ -473,7 +474,7 @@ classdef PixelDataSmoothing
                 cds{end + 1} = ds.w;
                 cds{end + 1} = ds.J;
                 cds{end + 1} = ds.fs;
-                cds{end + 1} = ds.thrtype;
+                cds{end + 1} = ds.resrstrc;
 
             endif;
 
@@ -506,9 +507,11 @@ classdef PixelDataSmoothing
 %       -- result = ds.isequivalent(other)
 %
 % Description:
+%          TODO: Finish the method algorithm
 %          Return whether or not two PixelDataSmoothing instances are
-%          equivalent. Two instances are equivalent if they have identical
-%          titles and filters.
+%          equivalent. Two instances are equivalent if they share the same
+%          filter algorithm parameters.
+%
 % -----------------------------------------------------------------------------
             fname = 'isequivalent';
 
@@ -521,12 +524,31 @@ classdef PixelDataSmoothing
             endif;
 
             % Initialize result to a default value
-            result = false;
-            if( ...
-                    isequal(ds.title, other.title) ...
-                    && isequal(ds.filter, other.filter) ...
-                    );
-                result = true;
+            result = true;
+
+            if(~isequal(ds.filter, other.filter))
+                result = false;
+                return;
+
+            endif;
+            if(isequal('UWT', ds.filter))
+                if( ...
+                        ~isequal(ds.w, other.w) ...
+                        || ~isequal(ds.J, other.J) ...
+                        || ~isequal(ds.fs, other.fs) ...
+                        || ~isequal(ds.resrstrc, other.resrstrc) ...
+                        )
+                    result = false;
+                    return;
+
+                endif;
+
+            else
+                if(~isequal(ds.window, other.window))
+                    result = false;
+                    return;
+
+                endif;
 
             endif;
 
@@ -564,7 +586,7 @@ classdef PixelDataSmoothing
                     && isequal(ds.w, other.w) ...
                     && isequal(ds.J, other.J) ...
                     && isequal(ds.fs, other.fs) ...
-                    && isequal(ds.thrtype, other.thrtype) ...
+                    && isequal(ds.resrstrc, other.resrstrc) ...
                     )
                 result = true;
 
@@ -704,20 +726,11 @@ classdef PixelDataSmoothing
                 % undecimated wavelet transform
                 [A, H, V, D] = ufwt2(f(:, :, cidx), ds.w, ds.J, ds.fs);
 
-                % Determine multi-resolution support for the set
-                % decomposition scale
-                mrs = MultiResSupport(D, 'Dilate', true, 'DilateType', 'plus');
+                % Determine multiresolution support for the original scan
+                mrs = MultiResSupport(H, V, D, 'Dilate', false, 'DilateType', 'none');
 
                 % Keep the significant wavelet coeficients
-                sidx = 1;
-                while(size(D, 3) >= sidx)
-                    H(:, :, sidx) = H(:, :, sidx).*mrs.M(:, :, sidx);
-                    V(:, :, sidx) = V(:, :, sidx).*mrs.M(:, :, sidx);
-                    D(:, :, sidx) = D(:, :, sidx).*mrs.M(:, :, sidx);
-
-                    ++sidx;
-
-                endwhile;
+                [H, V, D] = mrs.apply_mask(H, V, D);
 
                 % Switch the analysis and synthesis filters if applicable
                 iw = ds.w.origArgs;
@@ -741,40 +754,42 @@ classdef PixelDataSmoothing
                 endif;
 
                 % Reconstruct the image, I^(n), from the significant coeficients
-                In = iufwt2(A, H, V, D, iw, fs);
+                sf(:, :, cidx) = iufwt2(A, H, V, D, iw, fs);
 
-                % Determine the residual
-                Rn = f(:, :, cidx) - In;
+                if(ds.resrstrc)
+                    % Determine the residual
+                    Rn = f(:, :, cidx) - sf(:, :, cidx);
 
-                % Determine the multiresolution transform of the residual
-                [A, H, V, D] = ufwt2(Rn, ds.w, ds.J, ds.fs);
+                    % Determine the multiresolution transform of the residual
+                    [A, H, V, D] = ufwt2(Rn, ds.w, ds.J, ds.fs);
 
-                % Keep the significant wavelet coeficients
-                sidx = 1;
-                while(size(D, 3) >= sidx)
-                    H(:, :, sidx) = H(:, :, sidx).*mrs.M(:, :, sidx);
-                    V(:, :, sidx) = V(:, :, sidx).*mrs.M(:, :, sidx);
-                    D(:, :, sidx) = D(:, :, sidx).*mrs.M(:, :, sidx);
+                    % Determine multiresolution support for the residual
+                    mrs = MultiResSupport( ...
+                        H, V, D, ...
+                        'Dilate', false, ...
+                        'DilateType', 'none' ...
+                        );
 
-                    ++sidx;
+                    % Keep the significant wavelet coeficients
+                    [H, V, D] = mrs.apply_mask(H, V, D);
 
-                endwhile;
+                    % Reconstruct the residual, tldR^(n), from the
+                    % significant coeficients
+                    fs = 'sqrt';
+                    if(isequal('scale', ds.fs))
+                        fs = 'noscale';
 
-                % Reconstruct the residual, tldR^(n), from the
-                % significant coeficients
-                fs = 'sqrt';
-                if(isequal('scale', ds.fs))
-                    fs = 'noscale';
+                    elseif(isequal('noscale', ds.fs))
+                        fs = 'scale';
 
-                elseif(isequal('noscale', ds.fs))
-                    fs = 'scale';
+                    endif;
+
+                    tldRn = iufwt2(A, H, V, D, iw, fs);
+
+                    % Add reconstructed residual to the solution
+                    sf(:, :, cidx) = sf(:, :, cidx) + tldRn;
 
                 endif;
-
-                tldRn = iufwt2(A, H, V, D, iw, fs);
-
-                % Add reconstructed residual to the solution
-                sf(:, :, cidx) = In + tldRn;
 
                 ++cidx;
 

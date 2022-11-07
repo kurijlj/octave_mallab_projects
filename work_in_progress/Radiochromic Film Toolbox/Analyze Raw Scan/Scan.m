@@ -911,6 +911,7 @@ classdef Scan
 %          defined, return smoothed data.
 %
 % -----------------------------------------------------------------------------
+        pd = sc.ds.smooth(sc.pd);
 
         endfunction;
 
