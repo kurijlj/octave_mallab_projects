@@ -19,6 +19,7 @@ function [lE, rE] = find_profile_edges(x, Dp)
     fname = 'find_profile_edges';
     use_case_a = sprintf('-- [lE, rE] = %s(x, Dp)', fname);
 
+    % Validate number of passed arguments
     if(2 ~= nargin)
         % Invalid call to function
         error( ...
