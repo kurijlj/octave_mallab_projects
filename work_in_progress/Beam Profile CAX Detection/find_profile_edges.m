@@ -62,7 +62,7 @@ function [lE, rE] = find_profile_edges(x, Dp)
     % Validate that inupt arrays match in number of elements
     if(numel(x) ~= numel(Dp))
         error( ...
-            '%s: Arrays x and Dp must have same number of elements (%d ~= %d)', ...
+            '%s: Nonconformant arguments (numel(x)=%d ~= numel(Dp)=%d)', ...
             fname, ...
             numel(x), ...
             numel(Dp) ...
@@ -70,7 +70,7 @@ function [lE, rE] = find_profile_edges(x, Dp)
 
     endif;
 
-    % We work with coumn vectors so reshape input arrays as column vectors,
+    % We work with column vectors so reshape input arrays as column vectors,
     % if not
     if(1 == size(x, 1))
         x = x';
@@ -81,15 +81,15 @@ function [lE, rE] = find_profile_edges(x, Dp)
 
     endif;
 
-    % Calculate minimal detector step from the array of detector positions
+    % Calculate smalest detector step from the array of detector positions
     dstep = min(arrayfun(@(x, y) y-x, x(1:end-1, 1), x(2:end, 1)));
 
-    % Calculate minimum step for the data resampling
-    rstep = dstep / 16;
+    % Calculate step for the data resampling
+    rstep = dstep/4;
 
     % Resample imput data to get smoother numerical derivates
     xR   = x(1):rstep:x(end);
-    DpR  = interp1(x, Dp, xR, 'spline');
+    DpR  = interp1(x, Dp, xR, 'cubic');
 
     % Normalize profile data if not normalized
     if(100.00 ~= max(DpR))
@@ -106,55 +106,31 @@ function [lE, rE] = find_profile_edges(x, Dp)
         ++idx;
 
     endwhile;
+
+    % Assume that endpoints of the first derivates array does not differ
+    % significantly from the neighboring points
     DpD1(1) = DpD1(2);
     DpD1(end) = DpD1(end - 1);
 
-    % Calculate the second derivate of the data
-    % DpD2 = zeros(size(DpR));
-    % idx = 2;
-    % while(numel(DpR)-1 >= idx)
-    %     DpD2(idx) = (DpR(idx+1) - 2*DpR(idx) + DpR(idx-1))/(rstep^2);
-
-    %     ++idx;
-
-    % endwhile;
-    % DpD2(1) = DpD2(2);
-    % DpD2(end) = DpD2(end - 1);
-
-    % Calculate the third derivate of the data
-    % DpD3 = zeros(size(DpR));
-    % idx = 3;
-    % while(numel(DpR)-2 >= idx)
-    %     DpD3(idx) = (DpR(idx+2) - 2*DpR(idx+1) + 2*DpR(idx-1) - DpR(idx-2))/(2*rstep^3);
-
-    %     ++idx;
-
-    % endwhile;
-    % DpD3(1) = DpD3(2) = DpD3(3);
-    % DpD3(end) = DpD3(end - 1) = DpD3(end - 2);
-
-    % plot(xR, DpR, xR, DpD1);
-    % plot(xR, DpR, xR, DpD1, xR, DpD2, xR, DpD3);
-
-    % Segment left penumbra derivate values
+    % Segment left penumbra
     lROI = find(DpD1 >= 0.2*(max(DpD1)));
+
+    % Fit Gaussian to fist derivates of the left penumbra
     c = polyfit(xR(lROI), log(DpD1(lROI)), 2);
-    % sigma = sqrt(-0.5/c(1))
-    % mu = -0.5*c(2)/c(1)
-    % A = exp(c(3) - (c(2)^2)/(4*c(1)))
-    % fit = arrayfun(@(x) A*exp(-0.5*((x - mu)/sigma)^2), xR(lROI));
-    % plot(xR(lROI), DpD1(lROI), xR(lROI), fit);
+
+    % Center of Gaussian represnets penumbra's mid point
     lE = -0.5*c(2)/c(1);
 
+    % Segment right penumbra
     rROI = find(DpD1 < 0.2*(min(DpD1)));
-    c = polyfit(xR(rROI), log(abs(DpD1(rROI))), 2);
-    rE = -0.5*c(2)/c(1);
-    % sigma = sqrt(-0.5/c(1))
-    % mu = -0.5*c(2)/c(1)
-    % A = exp(c(3) - (c(2)^2)/(4*c(1)))
-    % fit = arrayfun(@(x) -A*exp(-0.5*((x - mu)/sigma)^2), xR(rROI));
-    % plot(xR(rROI), DpD1(rROI), xR(rROI), fit);
 
+    % Fit Gaussian
+    c = polyfit(xR(rROI), log(abs(DpD1(rROI))), 2);
+
+    % Calculate right field edge
+    rE = -0.5*c(2)/c(1);
+
+    % Plot results
     plot(xR, DpR, xR, DpD1);
     hold on;
     plot([lE, lE], [min(DpD1)*2, max(DpR)*1.2], 'linestyle', '--', 'color', 'red');
