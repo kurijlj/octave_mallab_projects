@@ -97,14 +97,37 @@ function [ca, cv, info] = ufwt2t2(f, w, J, varargin)
     % Initialize the wavelet filters structure
     w = fwtinit(w);
 
+    % Check if we are dealing with a dual-channel filterbank
+    if(2 ~= length(w.h))
+       error( ...
+           '%s: w must be a dual-channel filterbank.', ...
+           upper(mfilename) ...
+           );
+
+    endif;
+
+    % Check if we are dealing with a orthogonal filterbank
+    tf1 = wt.h{1}.h * wt.h{1}.h'
+    tf2 = wt.h{1}.h * wt.h{2}.h'
+    tf3 = wt.h{2}.h * wt.h{2}.h'
+    tf4 = [wt.h{1}.h; wt.h{2}.h] * [wt.g{1}.h', wt.g{2}.h']
+    if(1 ~= tf1 || 10.0e-18 < tf2 || 1 ~= tf3 || [1, 0; 0, 1] ~= tf4)
+       error( ...
+           '%s: w must be a orthogonal filterbank.', ...
+           upper(mfilename) ...
+           );
+
+    endif;
+
     %% ----- step 1 : Verify f and determine its length -------
     % Change f to correct shape.
     [f, Ls] = comp_sigreshape_pre(f, upper(mfilename), 0);
-    if(Ls<2)
+    if(Ls < 2)
        error( ...
            '%s: Input signal seems not to be a vector of length > 1.', ...
            upper(mfilename) ...
            );
+
     end
 
     %% ----- step 2 : Run computation
@@ -116,6 +139,7 @@ function [ca, cv, info] = ufwt2t2(f, w, J, varargin)
        info.wt = w;
        info.J = J;
        info.scaling = flags.scaling;
+
     end
 
 endfunction;
