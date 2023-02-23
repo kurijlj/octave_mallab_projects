@@ -31,6 +31,9 @@ function [A, H, V, D] = ufwt2(f, w, J, fs='sqrt')
     use_case_a = ' -- ufwt2(f, w, J)';
     use_case_b = ' -- ufwt2(f, w, J, fs)';
 
+    % Add required packages to the path ---------------------------------------
+    pkg load ltfat;
+
     % Validate input arguments ------------------------------------------------
 
     % Check the number of input parameters
@@ -97,11 +100,8 @@ function [A, H, V, D] = ufwt2(f, w, J, fs='sqrt')
         'fs' ...
         );
 
-    % Add required packages to the path ---------------------------------------
-    pkg load ltfat;
-
     % Decompose the input signal ----------------------------------------------
-    A = zeros(size(f, 1), size(f, 2), 1);
+    A = zeros(size(f, 1), size(f, 2));
     H = V = D = zeros(size(f, 1), size(f, 2), J);
 
     idx = 1;
