@@ -1,27 +1,19 @@
 % -----------------------------------------------------------------------------
 %
-% Function 'iufwt2':
+% Function 'plotcoefs':
 %
 % Use:
-%       -- f = iufwt2(A, H, V, D, w, fs)
+%       -- plotcoefs(A, H, V, D)
 %
 % Description:
-%       Performs a multilevel 2-D stationary wavelet reconstruction of the
-%       signal f using wavelet filters defined by w.
-%
-%       For all accepted formats of the parameter w see the fwtinit function of
-%       the package 'ltfat'.
-%
-%       For all accepted formats of the parameter fs see the ufwt function of
-%       the package 'ltfat'.
+%       Plot coeffcicents obtained with 'ufwt2' function.
 %
 %       The function requires 'ltfat' package installed to work.
 %
 % -----------------------------------------------------------------------------
-function f = iufwt2(A, H, V, D, w, fs='sqrt')
-    fname = 'iufwt2';
-    use_case_a = ' -- iufwt2(A, H, V, D, w)';
-    use_case_b = ' -- iufwt2(A, H, V, D, w, fs)';
+function plotcoefs(A, H, V, D)
+    fname = 'plotcoefs';
+    use_case_a = ' -- plotcoefs(A, H, V, D)';
 
     % Add required packages to the path ---------------------------------------
     pkg load ltfat;
@@ -29,13 +21,12 @@ function f = iufwt2(A, H, V, D, w, fs='sqrt')
     % Validate input arguments ------------------------------------------------
 
     % Check the number of input parameters
-    if(5 ~= nargin && 6 ~= nargin)
+    if(4 ~= nargin)
         % Invalid call to function
         error( ...
-            'Invalid call to %s. Correct usage is:\n%s\n%s', ...
+            'Invalid call to %s. Correct usage is:\n%s', ...
             fname, ...
-            use_case_a, ...
-            use_case_b ...
+            use_case_a ...
             );
 
     endif;
@@ -111,43 +102,21 @@ function f = iufwt2(A, H, V, D, w, fs='sqrt')
             );
     endif;
 
-    % Validate value(s) supplied for the wavelet filterbank definition
-    try
-        w = fwtinit(w);
+    % Plotting section --------------------------------------------------------
+    hfig = figure();
+    haxes = axes(hfig);
+    subplot(2, 2, 1);
+    imshow(mat2gray(A));
+    title("A");
+    subplot(2, 2, 2);
+    imshow(mat2gray(H(:, :, end)));
+    title("H");
+    subplot(2, 2, 3);
+    imshow(mat2gray(V(:, :, end)));
+    title("V");
+    subplot(2, 2, 4);
+    imshow(mat2gray(D(:, :, end)));
+    title("D");
 
-    catch err
-        error( ...
-            '%s: %s', ...
-            fname, ...
-            err.message ...
-            );
-
-    end_try_catch;
-
-    % Validate value supplied for the filter scaling
-    validatestring( ...
-        fs, ...
-        {'noscale', 'scale', 'sqrt'}, ...
-        fname, ...
-        'fs' ...
-        );
-
-    % Reconstruct the signal f ------------------------------------------------
-    c = zeros(length, J + 1, width);
-    d = e = zeros(width, 2, length);  % These coefficients are transpose of c(:, 1, :) and c(:, 2, :)
-    idx = 1;
-    while(J >= idx)
-        e(:, 1, :) = reshape(V', width, 1, length);
-        e(:, 2, :) = reshape(H', width, 1, length);
-        c(:, idx + 1, :) = iufwt(e, w, idx, fs)';
-
-        ++idx;
-
-    endwhile;
-
-    d(:, 1, :) = reshape(A', width, 1, length);
-    d(:, 2, :) = reshape(V(:, :, end)', width, 1, length);
-    c(:, 1, :) = iufwt(d, w, J, fs)';
-    f = iufwt(c, w, J, fs);
 
 endfunction;
