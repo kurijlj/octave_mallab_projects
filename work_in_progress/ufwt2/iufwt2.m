@@ -13,7 +13,7 @@ function f = iufwt2(A, V, H, D, w, J, scaling='sqrt')
 % -----------------------------------------------------------------------------
 %%  Define function name and use cases strings --------------------------------
     fname = 'iufwt2';
-    use_case_a = ' -- iufwt2(A, V, H, D, w, J)';
+    use_case_a = ' -- f = iufwt2(A, V, H, D, w, J)';
     use_case_b = ' -- f = iufwt2(A, V, H, D, w, J, scaling)';
 
 %%  Add required packages to the path -----------------------------------------

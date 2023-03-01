@@ -151,8 +151,9 @@ function [F, info] = mrs_denoise_soft(f, wt, J, scaling='sqrt')
         w(:, :, 1) = squeeze(c(:, 1, :))';
 
         % Calculate significant coefficients using soft threshold
-        m = w(:, :, runPtr) > std2(w(:, :, runPtr));
-        m = w(:, :, runPtr) > std2(w(:, :, runPtr).*m)*sqrt(2*log(L*W));
+        m = w(:, :, runPtr) > std2(w(:, :, runPtr))*sqrt(2*log(L*W));
+        % m = w(:, :, runPtr) > std2(w(:, :, runPtr));
+        % m = w(:, :, runPtr) > std2(w(:, :, runPtr).*m)*sqrt(2*log(L*W));
         w(:, :, runPtr) = w(:, :, runPtr).*m;
 
         --runPtr;
