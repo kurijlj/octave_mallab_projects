@@ -13,8 +13,11 @@ function [A, V, H, D, info] = ufwt2(f, w, J, scaling='sqrt')
 % -----------------------------------------------------------------------------
 %%  Define function name and use cases strings --------------------------------
     fname = 'ufwt2';
-    use_case_a = ' -- [A, V, H, D, info] = ufwt2(f, w, J)';
-    use_case_b = ' -- [A, V, H, D, info] = ufwt2(f, w, J, scaling)';
+    use_case_a = sprintf(' -- [A, V, H, D, info] = %s(f, w, J)', fname);
+    use_case_b = sprintf( ...
+        ' -- [A, V, H, D, info] = %s(f, w, J, scaling)', ...
+        fname ...
+        );
 
 %%  Add required packages to the path -----------------------------------------
     pkg load ltfat;
@@ -62,12 +65,12 @@ function [A, V, H, D, info] = ufwt2(f, w, J, scaling='sqrt')
     % This could be removed with some effort. The question is, are there such
     % wavelet filters? If your filterbank has different subsampling factors
     % after first two filters, please send a feature request.
-    assert(
-        w.a(1) == w.a(2),
-        cstrcat(
-            "First two elements of a vector 'w.a' are not equal. ",
-            "Such wavelet filterbank is not suported."
-            )
+    assert( ...
+        w.a(1) == w.a(2), ...
+        cstrcat( ...
+            'First two elements of a vector w.a are not equal. ', ...
+            'Such wavelet filterbank is not suported.' ...
+            ) ...
         );
 
     % For holding the time-reversed, complex conjugate impulse responses.
@@ -100,9 +103,14 @@ function [A, V, H, D, info] = ufwt2(f, w, J, scaling='sqrt')
 
 %%  Verify length of the input signal -----------------------------------------
     if(2 > size(f, 1) || 2 > size(f, 2))
-        error(
-            '%s: Input signal seems not to be a matrix of at least 2x2 size.',
-            fname
+        error( ...
+            sprintf( ...
+                cstrcat( ...
+                    '%s: Input signal seems not to be a matrix of', ...
+                    ' at least 2x2 size.' ...
+                    ), ...
+                fname ...
+                ) ...
             );
 
     endif;
@@ -136,11 +144,11 @@ function [A, V, H, D, info] = ufwt2(f, w, J, scaling='sqrt')
         % Run on rows
         kk = 1;
         while(filtNo >= kk)
-            b(kk, :, :, :) = comp_atrousfilterbank_td(
-                squeeze(A(:, kk, :))',
-                hMat,
-                w.a(1)^(jj-1),
-                offset
+            b(kk, :, :, :) = comp_atrousfilterbank_td( ...
+                squeeze(A(:, kk, :))', ...
+                hMat, ...
+                w.a(1)^(jj-1), ...
+                offset ...
                 );
 
             ++kk;
@@ -156,13 +164,16 @@ function [A, V, H, D, info] = ufwt2(f, w, J, scaling='sqrt')
                     if(1 == ll)
                         A = squeeze(b(1, :, 1, :))';
                     else
-                        H(runPtr, ll - 1, :, :) = squeeze(b(1, :, ll, :))';
+                        H(runPtr, ll - 1, :, :) ...
+                            = squeeze(b(1, :, ll, :))';
                     endif;
                 else
                     if(1 == ll)
-                        V(runPtr, kk - 1, :, :) = squeeze(b(kk, :, 1, :))';
+                        V(runPtr, kk - 1, :, :) ...
+                            = squeeze(b(kk, :, 1, :))';
                     else
-                        D(runPtr, kk - 1, ll - 1, :, :) = squeeze(b(kk, :, ll, :))';
+                        D(runPtr, kk - 1, ll - 1, :, :) ...
+                            = squeeze(b(kk, :, ll, :))';
                     endif;
                 endif;
 
