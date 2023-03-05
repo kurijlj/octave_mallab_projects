@@ -169,10 +169,10 @@ function image_click(hax, img, window)
         [bbox(1, 1), bbox(2, 1), bbox(2, 1), bbox(1, 1), bbox(1, 1)], ...
         'color', 'g' ...
         );
-    plot(dp(:, 1), dp(:, 2), 'color', 'g');
+    plot(dp(:, 1), dp(:, 2), 'color', 'g', 'marker', '+');
 
     hold(hax, 'off');
-    display(dp);
+    assignin('base','measurement', dp);
 
     setappdata(hfig, 'data_points', dp);
 

@@ -3,7 +3,7 @@
 % Class 'Item':
 %
 % Description:
-%       Represents a simple database recordset where name is a uniq identifier
+%       Represents a simple database recordset where name is a uniqe identifier
 %       and value represents data stored in the recordset. Two items are
 %       equivalent if they have common name (e.g. unique ID), whtether two items
 %       are equal if they have common name and identical values.
@@ -117,7 +117,7 @@ classdef Item
 %
 % -----------------------------------------------------------------------------
         function disp(item)
-            printf('\tItem("%s\", "%s")\n', item.name, item.value);
+            printf('\tItem("%s", "%s")\n', item.name, item.value);
 
         endfunction;
 
@@ -126,7 +126,7 @@ classdef Item
 % Method 'cellarray':
 %
 % Use:
-%       -- cell_item = list.cellarry()
+%       -- cell_item = item.cellarry()
 %
 % Description:
 %          Return item as cell array.
@@ -181,7 +181,7 @@ classdef Item
         function result = isequivalent(item, other)
             fname = 'isequivalent';
 
-            if(~isa(item, 'Item'))
+            if(~isa(other, 'Item'))
                 error( ...
                     '%s: other must be an instance of the "Item" class', ...
                     fname ...
