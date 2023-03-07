@@ -1,9 +1,9 @@
 classdef PixelDataSmoothing
-%% ----------------------------------------------------------------------------
+%% -----------------------------------------------------------------------------
 %%
 %% Class 'PixelDataSmoothing':
 %%
-%% ----------------------------------------------------------------------------
+%% -----------------------------------------------------------------------------
 %
 %% Description:
 %       Data structure representing algorithm and parameters of the selected
@@ -14,7 +14,7 @@ classdef PixelDataSmoothing
 %
 %       Properties of 'PixelDataSmoothing' objects:
 %
-%       filter: "median"\{"none"}\"UWT"\"MRS"\"wiener"
+%       filter: "median"|{"none"}|"UWT"|"MRS"|"wiener"
 %           Defines the algorithm to be applied for the data smoothing.
 %
 %       window: two-element vector, def. []
@@ -31,12 +31,12 @@ classdef PixelDataSmoothing
 %           The number of filterbank iterations. If the "filter" property is
 %           set to other than "UWT" or "MRS" this property is ignored.
 %
-%       scaling: {"none"}\"noscale"\"scale"\"sqrt"
+%       scaling: {"none"}|"noscale"|"scale"|"sqrt"
 %           Wavelet filter scaling. See ufwt of the ltfat package for more
 %           information. If the "filter" property is set to other than "UWT"
 %           or "MRS" this property is ignored.
 %
-%       threshold: {"none"}\"hard"\"soft"
+%       threshold: {"none"}|"hard"|"soft"
 %           Type of thresholding to bbe used when pixel data smoothing is done
 %           using wavelet transform algorithms ("UWT" and "MRS"). For "hard"
 %           thresholding, threshold level is determined by formula:
@@ -54,7 +54,7 @@ classdef PixelDataSmoothing
 %           If the "filter" property is set to other than "UWT" or "MRS" this
 %           property is ignored.
 %
-%       modifier: {"none"}\"erode"\"dilate"
+%       modifier: {"none"}|"erode"|"dilate"
 %           Threshold mask modifier. It uses imdilate() or imerode() functions
 %           of the Octave's "image" package to additionally modify
 %           coefficients threshold mask. The modification is performed using
@@ -63,50 +63,73 @@ classdef PixelDataSmoothing
 %           If the "filter" property is set to other than "UWT" or "MRS" this
 %           property is ignored.
 %
-%       setype: "none"\"."\"+"\"x"\"square"
+%       setype: "none"|"."|"+"|"x"|"square"
 %           Structuring element used to perform mask dilation. For types of
 %           structuring elements are currently supported: ".", "+", "x" and
 %           "square", defined by 3x3 matrices respectively:
 %
-%               \ 0 0 0 \   \ 0 1 0 \   \ 1 0 1 \   \ 1 1 1 \
-%               \ 0 1 0 \   \ 1 1 1 \   \ 0 1 0 \   \ 1 1 1 \
-%               \ 0 0 0 \,  \ 0 1 0 \,  \ 1 0 1 \,  \ 1 1 1 \
+%               | 0 0 0 |   | 0 1 0 |   | 1 0 1 |   | 1 1 1 |
+%               | 0 1 0 |   | 1 1 1 |   | 0 1 0 |   | 1 1 1 |
+%               | 0 0 0 |,  | 0 1 0 |,  | 1 0 1 |,  | 1 1 1 |
 %
 %           If the "filter" property is set to other than "UWT" or "MRS" this
 %           property is ignored.
 %
-%  ----------------------------------------------------------------------------
+%
+%% Public methods:
+%
+%       - PixelDataSmoothing(varargin): Class constructor.
+%
+%       - disp(): The disp method is used by Octave whenever a class instance
+%         should be displayed on the screen.
+%
+%       - str_rep(): A convenience method that is used to format string
+%         representation of the PixelDataSmoothing instance.
+%
+%       - ascell(): Return smoothing object structure as cell array.
+%
+%       - isnone(): Return whether the PixelDataSmoothing object is 'None' or
+%         not. PixelDataSmoothing instance is None if it's filter value is
+%         equal to 'none'.
+%
+%       - isequal(other): Return whether or not two 'PixelDataSmoothing'
+%         instances are equal. Two instances are equal if all of their fields
+%         have identical values.
+%
+%       - smooth(f): Return smoothed pixel data of input data f.
+%
+% -----------------------------------------------------------------------------
 
 
     properties (SetAccess = private, GetAccess = public)
-%% ----------------------------------------------------------------------------
+%% -----------------------------------------------------------------------------
 %%
-%% Public properties section
+%% Properties section
 %%
-%% ----------------------------------------------------------------------------
+%% -----------------------------------------------------------------------------
 
         % Filter ('none', 'median', 'wiener', 'UWT', 'MRS')
         filter    = 'none';
-        % Smoothing window (equals [] if filter is 'none'\'UWT'\'MRS')
+        % Smoothing window (equals [] if filter is 'none'|'UWT'|'MRS')
         window    = [];
-        % Wavelet definition (equals 'none' if filter is 'none'\'median'\
-        % \'wiener')
+        % Wavelet definition (equals 'none' if filter is 'none'|'median'|
+        % |'wiener')
         w         = 'none';
-        % Number of wavelet filterban iterations (equals 0 if filter is 'none'\
-        % \'median'\'wiener')
+        % Number of wavelet filterban iterations (equals 0 if filter is 'none'|
+        % |'median'|'wiener')
         J         = 0;
         % Wavelet transform filter scaling ('none', 'sqrt', 'noscale', 'scale'.
-        % Equals 'none' if filter is 'none'\'median'\'wiener')
+        % Equals 'none' if filter is 'none'|'median'|'wiener')
         fs        = 'none';
         % Wavelet denoising threshold type ('none', 'hard', 'soft'. Equals
-        % 'none' if filter is 'none'\'median'\'wiener')
+        % 'none' if filter is 'none'|'median'|'wiener')
         threshold = 'none';
         % Wavelet denoising threshold mask modifier ('none', 'erode', 'dilate'.
-        % Equals 'none' if filter is 'none'\'median'\'wiener')
+        % Equals 'none' if filter is 'none'|'median'|'wiener')
         modifier  = 'none';
         % Structuring element used to perform threshold mask dilation|errosion
-        % ('none', '+', 'x', 'square'. Equals 'none' if filter is 'none'\
-        % \'median'\'wiener')
+        % ('none', '+', 'x', 'square'. Equals 'none' if filter is 'none'|
+        % |'median'|'wiener')
         setype    = 'none';
 
     endproperties;  % Public properties section
@@ -120,80 +143,80 @@ classdef PixelDataSmoothing
 %% ----------------------------------------------------------------------------
 
         function pds = PixelDataSmoothing(varargin)
-%  ----------------------------------------------------------------------------
+% -----------------------------------------------------------------------------
 %
-%  Method 'PixelDataSmoothing':
+% Method 'PixelDataSmoothing':
 %
-%  Use:
-%       -- pds = PixelDataSmoothing()
-%       -- pds = PixelDataSmoothing(..., "PROPERTY", VALUE, ...)
-%       -- pds = PixelDataSmoothing(other)
+% Use:
+%      -- pds = PixelDataSmoothing()
+%      -- pds = PixelDataSmoothing(..., "PROPERTY", VALUE, ...)
+%      -- pds = PixelDataSmoothing(other)
 %
-%  Description:
-%          Class constructor.
+% Description:
+%         Class constructor.
 %
-%          Class constructor supports following property-value pairs:
+%         Class constructor supports following property-value pairs:
 %
-%          filter: "median"\{"none"}\"UWT"\"MRS"\"wiener"
-%              Defines the algorithm to be applied for the data smoothing.
+%         filter: "median"|{"none"}|"UWT"|"MRS"|"wiener"
+%             Defines the algorithm to be applied for the data smoothing.
 %
-%          window: two-element vector, def. []
-%              A vector specifying the size of the NHOOD matrix to be used for
-%              median and wiener filters if selected. Otherwise, this property
-%              is ignored.
+%         window: two-element vector, def. []
+%             A vector specifying the size of the NHOOD matrix to be used for
+%             median and wiener filters if selected. Otherwise, this property
+%             is ignored.
 %
-%          wdef: string, def. "none"
-%              Wavelet filterbank. For all accepted paramter formats, see the
-%              fwtinit function of the ltfat package. If the "filter" property
-%              is`set to other than "UWT" or "MRS" this property is ignored.
+%         wdef: string, def. "none"
+%             Wavelet filterbank. For all accepted paramter formats, see the
+%             fwtinit function of the ltfat package. If the "filter" property
+%             is`set to other than "UWT" or "MRS" this property is ignored.
 %
-%`         J: double, def. 1
-%              The number of filterbank iterations. If the "filter" property is
-%              set to other than "UWT" or "MRS" this property is ignored.
+%`        J: double, def. 1
+%             The number of filterbank iterations. If the "filter" property is
+%             set to other than "UWT" or "MRS" this property is ignored.
 %
-%          scaling: {"none"}\"noscale"\"scale"\"sqrt"
-%              Wavelet filter scaling. See ufwt of the ltfat package for more
-%              information. If the "filter" property is set to other than "UWT"
-%              or "MRS" this property is ignored.
+%         scaling: {"none"}|"noscale"|"scale"|"sqrt"
+%             Wavelet filter scaling. See ufwt of the ltfat package for more
+%             information. If the "filter" property is set to other than "UWT"
+%             or "MRS" this property is ignored.
 %
-%          threshold: {"none"}\"hard"\"soft"
-%              Type of thresholding to bbe used when pixel data smoothing is
-%              done using wavelet transform algorithms ("UWT" and "MRS"). For
-%              "hard" thresholding, threshold level is determined by formula:
+%         threshold: {"none"}|"hard"|"soft"
+%             Type of thresholding to bbe used when pixel data smoothing is
+%             done using wavelet transform algorithms ("UWT" and "MRS"). For
+%             "hard" thresholding, threshold level is determined by formula:
 %
-%                  t(i) = 3 * stdev(w(i))
+%                 t(i) = 3 * stdev(w(i))
 %
-%              for each of the decomposition coefficients. While for "soft"
-%              thresholding, threshold level is determined by the formula:
+%             for each of the decomposition coefficients. While for "soft"
+%             thresholding, threshold level is determined by the formula:
 %
-%                  t(i) = stdev(w(i)) * sqrt(2 * log(n))
+%                 t(i) = stdev(w(i)) * sqrt(2 * log(n))
 %
-%              where n  is the number of samples (pixels) in the coefficients
-%              matrix.
+%             where n  is the number of samples (pixels) in the coefficients
+%             matrix.
 %
-%              If the "filter" property is set to other than "UWT" or "MRS" this
-%              property is ignored.
+%             If the "filter" property is set to other than "UWT" or "MRS" this
+%             property is ignored.
 %
-%          modifier: {"none"}\"erode"\"dilate"
-%              Threshold mask modifier. It uses imdilate() or imerode()
-%              functions of the Octave's "image" package to additionally modify
-%              coefficients threshold mask. The modification is performed using
-%              structuring element defined with "setype" parameter.
+%         modifier: {"none"}|"erode"|"dilate"
+%             Threshold mask modifier. It uses imdilate() or imerode()
+%             functions of the Octave's "image" package to additionally modify
+%             coefficients threshold mask. The modification is performed using
+%             structuring element defined with "setype" parameter.
 %
-%              If the "filter" property is set to other than "UWT" or "MRS" this
-%              property is ignored.
+%             If the "filter" property is set to other than "UWT" or "MRS" this
+%             property is ignored.
 %
-%          setype: "none"\"."\"+"\"x"\"square"
-%              Structuring element used to perform mask dilation. For types of
-%              structuring elements are currently supported: ".", "+", "x" and
-%              "square", defined by 3x3 matrices respectively:
+%         setype: "none"|"."|"+"|"x"|"square"
+%             Structuring element used to perform mask dilation. For types of
+%             structuring elements are currently supported: ".", "+", "x" and
+%             "square", defined by 3x3 matrices respectively:
 %
-%                  \ 0 0 0 \   \ 0 1 0 \   \ 1 0 1 \   \ 1 1 1 \
-%                  \ 0 1 0 \   \ 1 1 1 \   \ 0 1 0 \   \ 1 1 1 \
-%                  \ 0 0 0 \,  \ 0 1 0 \,  \ 1 0 1 \,  \ 1 1 1 \
+%                 | 0 0 0 |   | 0 1 0 |   | 1 0 1 |   | 1 1 1 |
+%                 | 0 1 0 |   | 1 1 1 |   | 0 1 0 |   | 1 1 1 |
+%                 | 0 0 0 |,  | 0 1 0 |,  | 1 0 1 |,  | 1 1 1 |
 %
-%              If the "filter" property is set to other than "UWT" or "MRS" this
-%              property is ignored.
+%             If the "filter" property is set to other than "UWT" or "MRS" this
+%             property is ignored.
 %
 % -----------------------------------------------------------------------------
             fname = 'PixelDataSmoothing';
@@ -209,7 +232,7 @@ classdef PixelDataSmoothing
 
             elseif(1 == nargin)
                 if(isa(varargin{1}, 'PixelDataSmoothing'))
-                    % Copy constructor invoked
+                    % Copy constructor invoked --------------------------------
                     pds.filt      = varargin{1}.filter;
                     pds.window    = varargin{1}.window;
                     pds.wt        = varargin{1}.w;
@@ -220,7 +243,7 @@ classdef PixelDataSmoothing
                     pds.setype    = varargin{1}.fs;
 
                 else
-                    % Invalid call to constructor
+                    % Invalid call to the copy constructor --------------------
                     error( ...
                         'Invalid call to %s. Correct usage is:\n%s\n%s\n%s', ...
                         fname, ...
@@ -674,7 +697,7 @@ classdef PixelDataSmoothing
             % Initialize result to a default value
             result = false;
             if( ...
-                    && isequal(pds.filter, other.filter) ...
+                    isequal(pds.filter, other.filter) ...
                     && isequal(pds.window, other.window) ...
                     && isequal(pds.w, other.w) ...
                     && isequal(pds.J, other.J) ...
@@ -807,7 +830,7 @@ classdef PixelDataSmoothing
         endfunction;
 
 
-        function sf = _uwt_smooth(pds. f)
+        function sf = _uwt_smooth(pds, f)
 % -----------------------------------------------------------------------------
 %
 % Method '_uwt_smooth':
@@ -839,7 +862,7 @@ classdef PixelDataSmoothing
         endfunction;
 
 
-        function sf = _mrs_smooth(pds. f)
+        function sf = _mrs_smooth(pds, f)
 % -----------------------------------------------------------------------------
 %
 % Method '_mrs_smooth':

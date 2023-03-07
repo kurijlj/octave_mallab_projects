@@ -13,7 +13,7 @@ classdef Measurement
 %
 %       'Measurement' class instances have following properties:
 %
-%       title: string, def. "Measurement dd-MM-yyyy"
+%       title: string, def. "Measurement dd-mmm-yyyy"
 %           A string containing a title describing measured data points.
 %
 %       dss: cell array of 'DataSample' instances, def. {}
@@ -58,7 +58,7 @@ classdef Measurement
 %
 %          title:
 %              String representing measurement title. Deafult value is
-%              'Measurement dd-MM-yyyy' (i.e. 'Measurement 05-Mar-2023').
+%              'Measurement dd-mmm-yyyy' (i.e. 'Measurement 05-Mar-2023').
 %
 %  ----------------------------------------------------------------------------
             fname = 'Measurement';
