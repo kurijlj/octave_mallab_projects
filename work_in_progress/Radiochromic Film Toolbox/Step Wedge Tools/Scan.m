@@ -37,20 +37,20 @@ classdef Scan
 %       title: string, def. "Signal scan"
 %           A string containing a title describing scanned data.
 %
-%       dateir: serial date number (see: datenum), def. NaN
+%       DateOfIrradiation: serial date number (see: datenum), def. NaN
 %           Serial date number representing the date of irradiation of the
 %           scan, if applicable. The date of irradiation must be no older than
 %           01-Jan-2022.
 %
-%       datesc: serial date number (see: datenum), def. current date, or file
-%               modification date
+%       DateOfScan: serial date number (see: datenum), def. current date, or
+%               file modification date
 %           Serial date number representing the date when the pixel data of the
 %           image were generated. If pixel data are read from the file, the
 %           date of scan is automatically set from the file metadata.
 %           Otherwise, it is set as the current date. The date of the scan
 %           must be no older than 01-Jan-2022.
 %
-%       sctype: "BkgScan"|"DummyBkg"|"DummyScan"|"DummyZeroL"|{"SignalScan"}
+%       ScanType: "BkgScan"|"DummyBkg"|"DummyScan"|"DummyZeroL"|{"SignalScan"}
 %               |"ZeroLScan"
 %           Defines the type of scan. This property defines how the object will
 %           be used for the calculation of the optical density of the
@@ -70,11 +70,11 @@ classdef Scan
         % Source file (if applicable)
         file   = 'None';
         % Date of irradiation (if applicable)
-        dateir = NaN;
+        dtofir = NaN;
         % Date of scanning (mandatory)
-        datesc = NaN;
+        dtofsc = NaN;
         % Scan type (mandatory)
-        sctype   = 'SignalScan';
+        sctype = 'SignalScan';
         % Raw pixel data
         pd     = [];
         % Image resolution (if applicable)
@@ -82,7 +82,7 @@ classdef Scan
         % Resolution units (if applicable)
         rslu   = 'None';
         % Warning generated during the initialization of the object
-        ws     = 'None';
+        ws     = {};
 
     endproperties;
 
@@ -135,15 +135,15 @@ classdef Scan
                 [ ...
                     pos, ...
                     title, ...
-                    dateir, ...
-                    datesc, ...
+                    dtofir, ...
+                    dtofsc, ...
                     sctype ...
                     ] = parseparams( ...
                     varargin, ...
                     'title', 'Signal scan', ...
-                    'dateir', NaN, ...
-                    'datesc', NaN, ...
-                    'sctype', 'SignalScan' ...
+                    'DateOfIrradiation', NaN, ...
+                    'DateOfScan', NaN, ...
+                    'ScanType', 'SignalScan' ...
                     );
 
                 if(1 ~= numel(pos))
@@ -182,13 +182,13 @@ classdef Scan
                         'DummyScan' ...
                         }, ...
                     fname, ...
-                    'sctype' ...
+                    'ScanType' ...
                     );
 
-                % Validate value supplied for the dateir
-                if(~isnan(dateir))
+                % Validate value supplied for the DateOfIrradiation
+                if(~isnan(dtofir))
                     validateattributes( ...
-                        dateir, ...
+                        dtofir, ...
                         {'numeric'}, ...
                         { ...
                             'nonempty', ...
@@ -198,24 +198,24 @@ classdef Scan
                             'positive' ...
                             }, ...
                         fname, ...
-                        'dateir' ...
+                        'DateOfIrradiation' ...
                         );
 
                     % Check if given date comes after the 01-Jan-2000
-                    if(datenum(2000, 1, 1) > dateir)
+                    if(datenum(2000, 1, 1) > dtofir)
                         error( ...
-                            '%s: Date of irradiation (dateir) too old: %s', ...
-                            datestr(dateir) ...
+                            '%s: Date of irradiation (dtofir) too old: %s', ...
+                            datestr(dtofir) ...
                             );
 
                     endif;
 
-                endif;  % ~isnan(dateir)
+                endif;  % ~isnan(dtofir)
 
-                % Validate value supplied for the datesc
-                if(~isnan(datesc))
+                % Validate value supplied for the DateOfScan
+                if(~isnan(dtofsc))
                     validateattributes( ...
-                        datesc, ...
+                        dtofsc, ...
                         {'numeric'}, ...
                         { ...
                             'nonempty', ...
@@ -225,22 +225,382 @@ classdef Scan
                             'positive' ...
                             }, ...
                         fname, ...
-                        'datesc' ...
+                        'DateOfScan' ...
                         );
 
-                    % Check if given date comes after the 01-Jan-2000
+                    % Check if the given date comes after the 01-Jan-2000
                     if(datenum(2000, 1, 1) > props{2, 2})
                         error( ...
-                            '%s: Date of scan (datesc) too old: %s', ...
-                            datestr(datesc) ...
+                            '%s: Date of scan (dtofsc) too old: %s', ...
+                            datestr(dtofsc) ...
                             );
 
                     endif;
 
-                endif;  % ~isnan(datesc)
+                endif;  % ~isnan(dtofsc)
 
-                % Deteremine type of the constructor by the data type of the
+                % Determine the type of the constructor by the data type of the
                 % supplied positional argument.
+                if(isnumeric(pos{1}))
+                    % It seems that the user passed pixel data as a matrix.
+                    % Validate if supplied pixel data matrix is of the proper
+                    % format
+                    validateattributes( ...
+                        pos{1}, ...
+                        {'float'}, ...
+                        { ...
+                            '3d', ...
+                            'finite', ...
+                            'nonempty', ...
+                            'nonnan' ...
+                            }, ...
+                        fname, ...
+                        'pd' ...
+                        );
+
+                    % Check if we are dealing with an grayscale or an RGB image
+                    if(1 ~= size(pos{1}, 3) || 3 ~= size(pos{1}, 3))
+                        % We have neither a grayscale nor an RGB image. Format
+                        % the warning message and add the message to the
+                        % warnings stack
+                        w = sprintf( ...
+                            cstrcat( ...
+                                'Unsupported pixel data format. ', ...
+                                'Expected single channel, or three ', ...
+                                'channel image, got %d channels' ...
+                                ), ...
+                            size(pos{1}, 3) ...
+                            );
+
+                        % Display the warning in the Command Window prompt
+                        warning( ...
+                            '%s: %s. Ignoring pixel data ...', ...
+                            fname, ...
+                            w ...
+                            );
+
+                        % Add the warning to the warnings stack
+                        sc.ws{end + 1} = w;
+
+                        % Stop further constructor execution
+                        return;
+
+                    % Check if the image size complies with minimal required
+                    % signal size
+                    elseif(12 > size(pos{1}, 1) || 12 > size(pos{1}, 2))
+                        % The size doesn't comply with the minimum required
+                        % image size of 12 pixels x 12 pixels (4 mm x 4 mm).
+                        % Format the warning message and add the message to the
+                        % warnings stack
+                        w = sprintf( ...
+                            cstrcat( ...
+                                'Unsupported pixel data format. ', ...
+                                'Expected at least 12 pixels x 12 ', ...
+                                'pixels image, got %d pixels x %d ', ...
+                                'pixels' ...
+                                ), ...
+                            size(pos{1}, 1), ...
+                            size(pos{1}, 2) ...
+                            );
+
+                        % Display the warning in the Command Window prompt
+                        warning( ...
+                            '%s: %s. Ignoring pixel data ...', ...
+                            fname, ...
+                            w ...
+                            );
+
+                        % Add the warning to the warnings stack
+                        sc.ws{end + 1} = w;
+
+                        % Stop further constructor execution
+                        return;
+
+                    endif;  % 12x12 > LxW
+
+                    % Set given matrix as pixel data
+                    sc.pd = pos{1};
+
+                    % Check if user supplied date of scan
+                    if(isnan(dtofsc))
+                        % Date of scan not set, use the current date
+                        dtofsc = datenum(date());
+
+                    endif;
+
+                elseif(ischar(pos{1}))
+                    % It seems that the user passed pixel data as a path to a
+                    % tif file.
+
+                    % Check if we are dealing with non-empty string
+                    if(~ischar(pos{1}) || isempty(pos{1}))
+                        error( ...
+                            '%s: tif path must be a non-empty string', ...
+                            fname ...
+                            );
+
+                    endif;
+
+                    % Check if we have a regular file
+                    if(~isfile(pos{1}))
+                        % We don't have a regular file. Format the warning
+                        % message and add the message to the warnings stack
+                        w = sprintf('%s is not a regular file', pos{1});
+
+                        % Display the warning in the Command Window prompt
+                        warning( ...
+                            '%s: %s. Ignoring file ...', ...
+                            fname, ...
+                            w ...
+                            );
+
+                        % Add the warning to the warnings stack
+                        sc.ws{end + 1} = w;
+
+                        % Stop further constructor execution
+                        return;
+
+                    endif;
+
+                    % Load required packages
+                    pkg load image;
+
+                    % Load image file info
+                    ifi = NaN;
+                    try
+                        ifi = imfinfo(pos{1});
+
+                    catch
+                        % We don't have an image file. Format the warning
+                        % message and add the message to the warnings stack
+                        w = sprintf('%s is not an image file', pos{1});
+
+                        % Display the warning in the Command Window prompt
+                        warning( ...
+                            '%s: %s. Ignoring file ...', ...
+                            fname, ...
+                            w ...
+                            );
+
+                        % Add the warning to the warnings stack
+                        sc.ws{end + 1} = w;
+
+                        % Stop further constructor execution
+                        return;
+
+                    end_try_catch;
+
+                    % Check if we have a TIFF image
+                    if(~isequal('TIFF', ifi.Format))
+                        % We don't have a TIFF image. Format the warning message
+                        % and add the message to the warnings stack
+                        w = sprintf('%s is not an TIFF image', pos{1});
+
+                        % Display the warning in the Command Window prompt
+                        warning( ...
+                            '%s: %s. Ignoring file ...', ...
+                            fname, ...
+                            w ...
+                            );
+
+                        % Add the warning to the warnings stack
+                        sc.ws{end + 1} = w;
+
+                        % Stop further constructor execution
+                        return;
+
+                    endif;
+
+                    % Check if we have an RGB TIFF image
+                    if(2 ~= tiff_tag_read(pos{1}, 262))
+                        % We don't have an RGB image. Format the warning message
+                        % and add the message to the wrnings stack
+                        w = sprintf('%s is not an RGB image', pos{1});
+
+                        % Display the warning in the Command Window prompt
+                        warning( ...
+                            '%s: %s. Ignoring file ...', ...
+                            fname, ...
+                            w ...
+                            );
+
+                        % Add the warning to the warnings stack
+                        sc.ws{end + 1} = w;
+
+                        % Stop further constructor execution
+                        return;
+
+                    endif;
+
+                    % Check if we have the right bit depth
+                    if(16 ~= ifi.BitDepth)
+                        % We don't have 16 bits per sample. Format the warning
+                        % message and add the message to the warnings stack
+                        w = sprintf( ...
+                            cstrcat( ...
+                                '%s has noncomplying bit depth ', ...
+                                '(%d bps, expected 16 bps)' ...
+                                ), ...
+                            pos{1}, ...
+                            ifi.BitDepth ...
+                            );
+
+                        % Display the warning in the Command Window prompt
+                        warning( ...
+                            '%s: %s. Ignoring file ...', ...
+                            fname, ...
+                            w ...
+                            );
+
+                        % Add the warning to the warnings stack
+                        sc.ws{end + 1} = w;
+
+                        % Stop further constructor execution
+                        return;
+
+                    endif;
+
+                    % Check if we are dealing with an uncompressed image
+                    if(1 ~= tiff_tag_read(pos{1}, 259))
+                        % We don't have an uncompressed image. Format the
+                        % warning message and add the message to the warnings
+                        % stack
+                        w = sprintf( ...
+                            '%s is not an uncompressed TIFF image', ...
+                            pos{1} ...
+                            );
+
+                        % Display the warning in the Command Window prompt
+                        warning( ...
+                            '%s: %s. Ignoring file ...', ...
+                            fname, ...
+                            w ...
+                            );
+
+                        % Add the warning to the warnings stack
+                        sc.ws{end + 1} = w;
+
+                        % Stop further constructor execution
+                        return;
+
+                    endif;
+
+                    % Check if horizontal and vertical image resolutions
+                    % are the same
+                    if(ifi.XResolution ~= ifi.YResolution)
+                        % Vertical and horisontal image resolutions are not the
+                        % same. Format the warning message and add the message
+                        % to the warnings stack
+                        w = sprintf( ...
+                            cstrcat( ...
+                                '%s vertical and horisontal resolutions ', ...
+                                'do not comply (%d ~= %d)' ...
+                                ), ...
+                            pos{1}, ...
+                            ifi.XResolution, ...
+                            ifi.YResolution ...
+                            );
+
+                        % Display the warning in the Command Window prompt
+                        warning( ...
+                            '%s: %s. Ignoring file ...', ...
+                            fname, ...
+                            w ...
+                            );
+
+                        % Add the warning to the warnings stack
+                        sc.ws{end + 1} = w;
+
+                        % Stop further constructor execution
+                        return;
+
+                    endif;
+
+                    % Check if the image size complies with minimal required
+                    % signal size
+                    if(12 > ifi.Height || 12 > ifi.Width)
+                        % The size doesn't comply with the minimum required
+                        % image size of 12 pixels x 12 pixels (4 mm x 4 mm).
+                        % Format the warning message and add the message to the
+                        % warnings stack
+                        w = sprintf( ...
+                            cstrcat( ...
+                                'Unsupported image size. ', ...
+                                'Expected at least 12 pixels x 12 ', ...
+                                'pixels image, got %d pixels x %d ', ...
+                                'pixels' ...
+                                ), ...
+                            ifi.Width, ...
+                            ifi.Height ...
+                            );
+
+                        % Display the warning in the Command Window prompt
+                        warning( ...
+                            '%s: %s. Ignoring pixel data ...', ...
+                            fname, ...
+                            w ...
+                            );
+
+                        % Add the warning to the warnings stack
+                        sc.ws{end + 1} = w;
+
+                        % Stop further constructor execution
+                        return;
+
+                    endif;
+
+                    % Assign file name to the file attribute
+                    sc.file = pos{1};
+                    % Load pixel data from file to a temporary variable
+                    sc.pd = double(imread(pos{1}));
+                    % Assign resolution to temporary variable
+                    sc.rsl = [ifi.XResolution, ifi.YResolution];
+                    % Load resolution units from the file
+                    rslu = tiff_tag_read(pos{1}, 296);
+                    % Convert units number to units string
+                    if(1 == ru)
+                        sc.rslu = 'None';
+
+                    elseif(2 == ru)
+                        sc.rslu = 'dpi';
+
+                    else
+                        sc.rslu = 'dpcm';
+
+                    endif;
+
+                    % Check if user passed the date of scan
+                    if(isnan(dtofsc))
+                        % DateOfScan not set, use the file modification date as
+                        % the default for the DateOfScan
+                        dtofsc = datenum(strsplit(ifi.FileModDate){1});
+
+                    endif;
+
+                else
+                    % Unsupported data type passed as positional argument.
+                    % Invalid call to constructor
+                    error( ...
+                        sprintf( ...
+                            cstrcat( ...
+                                'Invalid call to %s. Correct usage ', ...
+                                'is:\n%s\n%s\n%s\n%s' ...
+                                ), ...
+                            fname, ...
+                            use_case_a, ...
+                            use_case_b, ...
+                            use_case_c, ...
+                            use_case_d ...
+                            ) ...
+                        );
+
+                endif;  % ischar(pos{1})
+
+                % Assign validated values to the instance parameters
+                sc.title  = title;
+                sc.dtofir = dtofir;
+                sc.dtofsc = dtofsc;
+                sc.sctype = sctype;
 
             endif;  % 0 == nargin
 
@@ -270,11 +630,11 @@ classdef Scan
                 endif;
                 printf('\t\tValid:                True,\n');
                 printf('\t\tDate of scan:         %s,\n', ...
-                    datestr(sc.datesc, 'dd-mmm-yyyy') ...
+                    datestr(sc.dtofsc, 'dd-mmm-yyyy') ...
                     );
-                if(~isnan(sc.dateir))
+                if(~isnan(sc.dtofir))
                     printf('\t\tDate of irradiation:  %s,\n', ...
-                        datestr(sc.dateir, 'dd-mmm-yyyy') ...
+                        datestr(sc.dtofir, 'dd-mmm-yyyy') ...
                         );
 
                 endif;
@@ -345,15 +705,15 @@ classdef Scan
                 sccell{end + 1} = sc.file;
 
             endif;
-            if(~isnan(sc.datesc))
-                sccell{end + 1} = datestr(sc.datesc, 'dd-mmm-yyyy');
+            if(~isnan(sc.dtofsc))
+                sccell{end + 1} = datestr(sc.dtofsc, 'dd-mmm-yyyy');
 
             else
                 sccell{end + 1} = 'N/A';
 
             endif;
-            if(~isnan(sc.dateir))
-                sccell{end + 1} = datestr(sc.dateir, 'dd-mmm-yyyy');
+            if(~isnan(sc.dtofir))
+                sccell{end + 1} = datestr(sc.dtofir, 'dd-mmm-yyyy');
 
             else
                 sccell{end + 1} = 'N/A';
@@ -416,30 +776,30 @@ classdef Scan
                 return;
 
             endif;
-            if(isnan(sc.datesc))
-                if(isnan(sc.datesc) && ~isnan(other.datesc))
+            if(isnan(sc.dtofsc))
+                if(isnan(sc.dtofsc) && ~isnan(other.dtofsc))
                     result = false;
                     return;
 
                 endif;
 
             else
-                if(sc.datesc ~= other.datesc)
+                if(sc.dtofsc ~= other.dtofsc)
                     result = false;
                     return;
 
                 endif;
 
             endif;
-            if(isnan(sc.dateir))
-                if(isnan(sc.dateir) && ~isnan(other.dateir))
+            if(isnan(sc.dtofir))
+                if(isnan(sc.dtofir) && ~isnan(other.dtofir))
                     result = false;
                     return;
 
                 endif;
 
             else
-                if(sc.dateir ~= other.dateir)
+                if(sc.dtofir ~= other.dtofir)
                     result = false;
                     return;
 
@@ -505,30 +865,30 @@ classdef Scan
                 return;
 
             endif;
-            if(isnan(sc.datesc))
-                if(isnan(sc.datesc) && ~isnan(other.datesc))
+            if(isnan(sc.dtofsc))
+                if(isnan(sc.dtofsc) && ~isnan(other.dtofsc))
                     result = false;
                     return;
 
                 endif;
 
             else
-                if(sc.datesc ~= other.datesc)
+                if(sc.dtofsc ~= other.dtofsc)
                     result = false;
                     return;
 
                 endif;
 
             endif;
-            if(isnan(sc.dateir))
-                if(isnan(sc.dateir) && ~isnan(other.dateir))
+            if(isnan(sc.dtofir))
+                if(isnan(sc.dtofir) && ~isnan(other.dtofir))
                     result = false;
                     return;
 
                 endif;
 
             else
-                if(sc.dateir ~= other.dateir)
+                if(sc.dtofir ~= other.dtofir)
                     result = false;
                     return;
 
@@ -593,10 +953,10 @@ classdef Scan
 %
 % Description:
 %          Return if scan is whether valid or not. The scan is valid if during
-%          object initialization no waning was generated (i.e. sc.ws = 'None').
+%          object initialization no waning was generated (i.e. sc.ws = {}).
 %
 % -----------------------------------------------------------------------------
-            result = isequal('None', sc.ws);
+            result = isempty(sc.ws);
 
         endfunction;
 
