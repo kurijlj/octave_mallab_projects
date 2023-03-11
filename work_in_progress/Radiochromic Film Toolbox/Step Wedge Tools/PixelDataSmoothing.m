@@ -6,8 +6,8 @@ classdef PixelDataSmoothing
 %% -----------------------------------------------------------------------------
 %
 %% Description:
-%       Data structure representing algorithm and parameters of the selected
-%       algorithm to be used for the pixel data smoothing of the image data.
+%       Class representing algorithm and parameters of the selected algorithm to
+%       be used for the pixel data smoothing of the image data.
 %
 %       Multiple property-value pairs may be specified for the
 %       PixelDataSmoothing object, but they must appear in pairs.

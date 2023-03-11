@@ -9,7 +9,7 @@ classdef Scan
 %       Single data scan (film scan).
 %
 %       Invoke class constructor with a string representing the path to a 'TIFF'
-%       image, a 2D or 3D matrix representing scan pixel data, or with another
+%       image, a 2D or a 3D matrix representing scan pixel data, or with another
 %       instance of the 'Scan".
 %
 %       The minimum required scan signal size is 12x12 pixels, which roughly
@@ -25,9 +25,9 @@ classdef Scan
 %       size, same date of scanning, same date of irradiation, and of the same
 %       resolution.
 %
-%       The scan object is valid if there are no warnings generated (sc.ws =
-%       'None') during object initialization. The validity of the scan object
-%       can be checked using 'is_valid' method.
+%       The scan object is valid if there was no warnings generated (Scan.ws =
+%       {}) during object initialization. The validity of the scan object
+%       can be checked calling 'is_valid' method.
 %
 %       Multiple property-value pairs may be specified for the scan object, but
 %       they must appear in pairs.
@@ -70,31 +70,31 @@ classdef Scan
 %
 %       - ascell(): Return scan object structure as cell array.
 %
-%       - isequivalent(): Return whether or not two Scan instances are
+%       - isequivalent(other): Return whether or not two Scan instances are
 %         equivalent. Two instances are equivalent if they are of the same type,
 %         same size, same date of scanning, same date of irradiation, and of
 %         same resolution.
 %
-%       - isequal(): Return whether or not two 'Scan' instances are equal. Two
-%         instances are equal if all of their fields have identical values.
+%       - isequal(other): Return whether or not two 'Scan' instances are equal.
+%         Two instances are equal if all of their fields have identical values.
 %
 %       - scan_size(): Return scan size (size of the pixel data matrix).
 %
 %       - is_valid(): Return if scan is whether valid or not. The scan is valid
 %         if during object initialization no waning was generated
-%         (i.e. sc.ws = {}).
+%         (i.e. Scan.ws = {}).
 %
-%       - pixel_data: Return copy of the scan pixel data. If pixel data
+%       - pixel_data(pds): Return copy of the scan pixel data. If pixel data
 %         smoothing is defined, return smoothed data.
 %
 % -----------------------------------------------------------------------------
 
     properties (SetAccess = private, GetAccess = public)
-%% ----------------------------------------------------------------------------
+%% -----------------------------------------------------------------------------
 %%
 %% Properties section
 %%
-%% ----------------------------------------------------------------------------
+%% -----------------------------------------------------------------------------
         % Film piece title (unique ID)
         title  = 'Signal scan';
         % Source file (if applicable)
@@ -118,11 +118,11 @@ classdef Scan
 
 
     methods (Access = public)
-%% ----------------------------------------------------------------------------
+%% -----------------------------------------------------------------------------
 %%
 %% Public methods section
 %%
-%% ----------------------------------------------------------------------------
+%% -----------------------------------------------------------------------------
 
         function sc = Scan(varargin)
 %  ----------------------------------------------------------------------------
