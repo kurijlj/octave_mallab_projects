@@ -194,14 +194,14 @@ classdef Scan
                     dtofsc, ...
                     sctype ...
                     ] = parseparams( ...
-                    varargin, ...
+                    varargin(2:end), ...
                     'title', 'Signal scan', ...
                     'DateOfIrradiation', NaN, ...
                     'DateOfScan', NaN, ...
                     'ScanType', 'SignalScan' ...
                     );
 
-                if(1 ~= numel(pos))
+                if(0 ~= numel(pos))
                     % Invalid call to constructor
                     error( ...
                         sprintf( ...
@@ -217,7 +217,9 @@ classdef Scan
                             ) ...
                         );
 
-                endif;  % (1 ~= numel(pos))
+                endif;  % (0 ~= numel(pos))
+
+                pos = varargin(1);
 
                 % Validate value supplied for the Title
                 if(~ischar(title) || isempty(title))
@@ -314,7 +316,7 @@ classdef Scan
                         );
 
                     % Check if we are dealing with an grayscale or an RGB image
-                    if(1 ~= size(pos{1}, 3) || 3 ~= size(pos{1}, 3))
+                    if(1 ~= size(pos{1}, 3) && 3 ~= size(pos{1}, 3))
                         % We have neither a grayscale nor an RGB image. Format
                         % the warning message and add the message to the
                         % warnings stack
@@ -613,10 +615,10 @@ classdef Scan
                     % Load resolution units from the file
                     rslu = tiff_tag_read(pos{1}, 296);
                     % Convert units number to units string
-                    if(1 == ru)
+                    if(1 == rslu)
                         sc.rslu = 'None';
 
-                    elseif(2 == ru)
+                    elseif(2 == rslu)
                         sc.rslu = 'dpi';
 
                     else
@@ -1028,7 +1030,7 @@ classdef Scan
 % -----------------------------------------------------------------------------
         fname = 'pixel_data';
 
-        if(~isa(other, 'PixelDataSmoothing'))
+        if(~isa(pds, 'PixelDataSmoothing'))
             error( ...
                 sprintf( ...
                     cstrcat( ...
