@@ -6,11 +6,11 @@ classdef Scan
 %% -----------------------------------------------------------------------------
 %
 %% Description:
-%       Data structure representing a single data scan.
+%       Single data scan (film scan).
 %
-%       The class constructor can be invoked with a string representing the
-%       path to a 'TIFF' image, a 2D or 3D matrix representing scan pixel data,
-%       or with another class instance.
+%       Invoke class constructor with a string representing the path to a 'TIFF'
+%       image, a 2D or 3D matrix representing scan pixel data, or with another
+%       instance of the 'Scan".
 %
 %       The minimum required scan signal size is 12x12 pixels, which roughly
 %       corresponds to an 4 mm x 4 mm area if a film piece is scanned using
@@ -56,6 +56,36 @@ classdef Scan
 %           be used for the calculation of the optical density of the
 %           measurement, and is one of the parameters determining which scan
 %           objects are mutually equivalent and can form a scan set.
+%
+%
+%% Public methods:
+%
+%       - Scan(varargin): Class constructor.
+%
+%       - disp(): The disp method is used by Octave whenever a class instance
+%         should be displayed on the screen.
+%
+%       - str_rep(): A convenience method that is used to format string
+%         representation of the Scan instance.
+%
+%       - ascell(): Return scan object structure as cell array.
+%
+%       - isequivalent(): Return whether or not two Scan instances are
+%         equivalent. Two instances are equivalent if they are of the same type,
+%         same size, same date of scanning, same date of irradiation, and of
+%         same resolution.
+%
+%       - isequal(): Return whether or not two 'Scan' instances are equal. Two
+%         instances are equal if all of their fields have identical values.
+%
+%       - scan_size(): Return scan size (size of the pixel data matrix).
+%
+%       - is_valid(): Return if scan is whether valid or not. The scan is valid
+%         if during object initialization no waning was generated
+%         (i.e. sc.ws = {}).
+%
+%       - pixel_data: Return copy of the scan pixel data. If pixel data
+%         smoothing is defined, return smoothed data.
 %
 % -----------------------------------------------------------------------------
 
@@ -107,6 +137,31 @@ classdef Scan
 %
 %  Description:
 %          Class constructor.
+%
+%         Class constructor supports following property-value pairs:
+%
+%         title: string, def. "Signal scan"
+%             A string containing a title describing scanned data.
+%
+%         DateOfIrradiation: serial date number (see: datenum), def. NaN
+%             Serial date number representing the date of irradiation of the
+%             scan, if applicable. The date of irradiation must be no older than
+%             01-Jan-2022.
+%
+%         DateOfScan: serial date number (see: datenum), def. current date, or
+%                 file modification date
+%             Serial date number representing the date when the pixel data of
+%             the image were generated. If pixel data are read from the file,
+%             the date of scan is automatically set from the file metadata.
+%             Otherwise, it is set as the current date. The date of the scan
+%             must be no older than 01-Jan-2022.
+%
+%         ScanType: "BkgScan"|"DummyBkg"|"DummyScan"|"DummyZeroL"|{"SignalScan"}
+%                 |"ZeroLScan"
+%             Defines the type of scan. This property defines how the object
+%             will be used for the calculation of the optical density of the
+%             measurement, and is one of the parameters determining which scan
+%             objects are mutually equivalent and can form a scan set.
 %
 %  ----------------------------------------------------------------------------
             fname = 'Scan';
@@ -677,10 +732,10 @@ classdef Scan
 %
 % -----------------------------------------------------------------------------
             if(~isequal('None', sc.file))
-                result = sprintf('Scan("%s")', sc.file);
+                result = sprintf('Scan(%s: "%s")', sc.sctype, sc.file);
 
             else
-                result = sprintf('Scan("%s")', sc.title);
+                result = sprintf('Scan(%s: "%s")', sc.sctype, sc.title);
 
             endif;
 
@@ -719,17 +774,14 @@ classdef Scan
                 sccell{end + 1} = 'N/A';
 
             endif;
-            if(~isempty(sc.pd))
-                sccell{end + 1} = sprintf( ...
-                    'Pixel data: [%dx%dx%d]', ...
-                    size(sc.pd, 1), ...
-                    size(sc.pd, 2), ...
-                    size(sc.pd, 3) ...
-                    );
-            else
-                sccell{end + 1} = 'Pixel data: [0x0x0]';
 
-            endif;
+            sccell{end + 1} = sprintf( ...
+                'Pixel data: [%dx%dx%d]', ...
+                size(sc.pd, 1), ...
+                size(sc.pd, 2), ...
+                size(sc.pd, 3) ...
+                );
+
             if(~isempty(sc.rsl))
                 sccell{end + 1} = sprintf('%d', sc.rsl(1));
                 sccell{end + 1} = sprintf('%d', sc.rsl(2));
