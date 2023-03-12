@@ -23,7 +23,7 @@ function F = makedummyscan(varargin)
 %           noise that is to be added to the dummy scan. If set to zero no noise
 %           is added to the scan.
 %
-%       ScanType: "DummyBkg"|{"DummyScan"}|"DummyZeroL"
+%       ScanType: 'Background'|{'Signal'}|'ZeroLight'
 %           Define the type of dummy scan to generate.
 %
 % -----------------------------------------------------------------------------

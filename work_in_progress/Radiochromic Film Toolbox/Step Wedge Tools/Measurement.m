@@ -84,6 +84,24 @@ classdef Measurement
                     % Construct measurement out of one data sample
                     m.dss = {varargin{1}};
 
+                else
+                    % Invalid call to constructor
+                    error( ...
+                        sprintf( ...
+                            cstrcat( ...
+                                'Invalid call to %s. Correct usage ' ...
+                                'is:\n%s\n%s\n%s\n%s' ...
+                                ), ...
+                            fname, ...
+                            use_case_a, ...
+                            use_case_b, ...
+                            use_case_c, ...
+                            use_case_d ...
+                            ) ...
+                        );
+
+                endif;  % isa(varargin{1}, 'Measurement')
+
             elseif(1 < nargin)
                 % Regular constructor invoked
 
@@ -112,7 +130,7 @@ classdef Measurement
                             ) ...
                         );
 
-                endif;
+                endif;  % 0 ~= numel(pos)
 
                 % Validate value supplied for the Title
                 if(~ischar(title) || isempty(title))
@@ -134,7 +152,7 @@ classdef Measurement
                                 idx ...
                                 ) ...
                             );
-                    endif;
+                    endif;  % ~isa(pos(idx), 'DataSample')
 
                     % Check if DataSample instance is equivalent with previous
                     % data samples
@@ -153,11 +171,11 @@ classdef Measurement
 
                         endif;
 
-                    endif;
+                    endif;  % 0 < numel(m.dss)
 
                     ++idx;
 
-                endwhile;
+                endwhile;  % numel(pos) >= idx
 
             endif;  % 0 == nargin
 

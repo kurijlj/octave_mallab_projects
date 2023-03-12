@@ -34,7 +34,7 @@ classdef Scan
 %
 %       Properties of 'Scan' objects:
 %
-%       title: string, def. "Signal scan"
+%       Title: string, def. "Signal scan"
 %           A string containing a title describing scanned data.
 %
 %       DateOfIrradiation: serial date number (see: datenum), def. NaN
@@ -96,23 +96,23 @@ classdef Scan
 %%
 %% -----------------------------------------------------------------------------
         % Film piece title (unique ID)
-        title  = 'Signal scan';
+        sctitle = 'Signal scan';
         % Source file (if applicable)
-        file   = 'None';
+        file    = 'None';
         % Date of irradiation (if applicable)
-        dtofir = NaN;
+        dtofir  = NaN;
         % Date of scanning (mandatory)
-        dtofsc = NaN;
+        dtofsc  = NaN;
         % Scan type (mandatory)
-        sctype = 'SignalScan';
+        sctype  = 'SignalScan';
         % Raw pixel data
-        pd     = [];
+        pd      = [];
         % Image resolution (if applicable)
-        rsl    = [];
+        rsl     = [];
         % Resolution units (if applicable)
-        rslu   = 'None';
+        rslu    = 'None';
         % Warning generated during the initialization of the object
-        ws     = {};
+        ws      = {};
 
     endproperties;
 
@@ -140,7 +140,7 @@ classdef Scan
 %
 %         Class constructor supports following property-value pairs:
 %
-%         title: string, def. "Signal scan"
+%         Title: string, def. "Signal scan"
 %             A string containing a title describing scanned data.
 %
 %         DateOfIrradiation: serial date number (see: datenum), def. NaN
@@ -189,13 +189,13 @@ classdef Scan
                 % Parse arguments
                 [ ...
                     pos, ...
-                    title, ...
+                    sctitle, ...
                     dtofir, ...
                     dtofsc, ...
                     sctype ...
                     ] = parseparams( ...
                     varargin(2:end), ...
-                    'title', 'Signal scan', ...
+                    'Title', 'Signal scan', ...
                     'DateOfIrradiation', NaN, ...
                     'DateOfScan', NaN, ...
                     'ScanType', 'SignalScan' ...
@@ -221,8 +221,8 @@ classdef Scan
 
                 pos = varargin(1);
 
-                % Validate value supplied for the Title
-                if(~ischar(title) || isempty(title))
+                % Validate value supplied for the sctitle
+                if(~ischar(sctitle) || isempty(sctitle))
                     error('%s: Title must be a non-empty string', fname);
 
                 endif;
@@ -654,10 +654,10 @@ classdef Scan
                 endif;  % ischar(pos{1})
 
                 % Assign validated values to the instance parameters
-                sc.title  = title;
-                sc.dtofir = dtofir;
-                sc.dtofsc = dtofsc;
-                sc.sctype = sctype;
+                sc.sctitle = sctitle;
+                sc.dtofir  = dtofir;
+                sc.dtofsc  = dtofsc;
+                sc.sctype  = sctype;
 
             endif;  % 0 == nargin
 
@@ -679,7 +679,7 @@ classdef Scan
 % -----------------------------------------------------------------------------
             printf('\tScan(\n');
             if(sc.is_valid())
-                printf('\t\tTitle:                %s,\n', sc.title);
+                printf('\t\tTitle:                %s,\n', sc.sctitle);
                 printf('\t\tScan type:            %s,\n', sc.sctype);
                 if(~isequal('None', sc.file))
                     printf('\t\tFile:                 "%s",\n', sc.file);
@@ -707,7 +707,7 @@ classdef Scan
 
                 endif;
             else
-                printf('\t\tTitle:      %s,\n', sc.title);
+                printf('\t\tTitle:      %s,\n', sc.sctitle);
                 printf('\t\tScan type:  %s,\n', sc.sctype);
                 if(~isequal('None', sc.file))
                     printf('\t\tFile:      "%s",\n', sc.file);
@@ -737,7 +737,7 @@ classdef Scan
                 result = sprintf('Scan(%s: "%s")', sc.sctype, sc.file);
 
             else
-                result = sprintf('Scan(%s: "%s")', sc.sctype, sc.title);
+                result = sprintf('Scan(%s: "%s")', sc.sctype, sc.sctitle);
 
             endif;
 
@@ -757,7 +757,7 @@ classdef Scan
 %
 % -----------------------------------------------------------------------------
             sccell = {};
-            sccell = {sc.title, sc.sctype};
+            sccell = {sc.sctitle, sc.sctype};
             if(~isequal('None', sc.file))
                 sccell{end + 1} = sc.file;
 
@@ -899,7 +899,7 @@ classdef Scan
 
             % Initialize result to a default value
             result = true;
-            if(~isequal(sc.title, other.title));
+            if(~isequal(sc.sctitle, other.sctitle));
                 result = false;
                 return;
 
@@ -987,7 +987,7 @@ classdef Scan
 %
 % -----------------------------------------------------------------------------
             if(sc.is_valid())
-                result = [size(sc.pd, 1), size(sc.pd, 2), size(sc.pd, 3)];
+                result = size(sc.pd);
 
             else
                 result = [0, 0, 0];
@@ -1015,7 +1015,7 @@ classdef Scan
         endfunction;
 
 
-        function pd = pixel_data(sc, pds)
+        function pd = pixel_data(sc, pds=PixelDataSmoothing())
 % -----------------------------------------------------------------------------
 %
 % Method 'pixel_data':
@@ -1028,22 +1028,28 @@ classdef Scan
 %          defined, return smoothed data.
 %
 % -----------------------------------------------------------------------------
-        fname = 'pixel_data';
+            fname = 'pixel_data';
 
-        if(~isa(pds, 'PixelDataSmoothing'))
-            error( ...
-                sprintf( ...
-                    cstrcat( ...
-                        '%s: other must be an instance of the ', ...
-                        '"PixelDataSmoothing" class' ...
-                        ), ...
-                    fname ...
-                    ) ...
-                );
+            if(~isa(pds, 'PixelDataSmoothing'))
+                error( ...
+                    sprintf( ...
+                        cstrcat( ...
+                            '%s: other must be an instance of the ', ...
+                            '"PixelDataSmoothing" class' ...
+                            ), ...
+                        fname ...
+                        ) ...
+                    );
 
-        endif;
+            endif;
 
-        pd = pds.smooth(sc.pd);
+            if(sc.is_valid())
+                pd = pds.smooth(sc.pd);
+
+            else
+                pd = sc.pd;
+
+            endif;  % sc.is_valid()
 
         endfunction;
 

@@ -252,7 +252,7 @@ classdef PixelDataSmoothing
                         use_case_c ...
                         );
 
-                endif;
+                endif;  % isa(varargin{1}, 'PixelDataSmoothing')
 
             elseif(2 <= nargin && 14 >= nargin)
                 % Regular constructor invoked ---------------------------------
@@ -290,7 +290,7 @@ classdef PixelDataSmoothing
                         use_case_c ...
                         );
 
-                endif;
+                endif;  % 0 ~= numel(pos)
 
                 % Validate value supplied for the Filter
                 validatestring( ...
@@ -309,7 +309,7 @@ classdef PixelDataSmoothing
                     if(isempty(window))
                         window = [3 3];
 
-                    endif;
+                    endif;  % isempty(window)
 
                     validateattributes( ...
                         window, ...
@@ -329,7 +329,7 @@ classdef PixelDataSmoothing
                     % Window property
                     window = [];
 
-                endif;
+                endif;  % isequal('median', filter) || isequal('wiener', filter)
 
                 % Validate values of the properties related to wavelet denoising
                 if(isequal('UWT', filter) || isequal('MRS', filter))
@@ -349,7 +349,7 @@ classdef PixelDataSmoothing
                     if(isequal('none', w))
                         w = 'spline2:2';
 
-                    endif;
+                    endif;  % isequal('none', w)
 
                     try
                         w = fwtinit(w);
@@ -361,7 +361,7 @@ classdef PixelDataSmoothing
                             err.message ...
                             );
 
-                    end_try_catch;
+                    end_try_catch;  % w = fwtinit(w)
 
                     % Validate value for the number of wavelet filterbank
                     % iterations property (WtFbIter)
@@ -370,7 +370,7 @@ classdef PixelDataSmoothing
                     if(0 == J)
                         J = 2;
 
-                    endif;
+                    endif;  % 0 == J
 
                     validateattributes( ...
                         J, ...
@@ -393,7 +393,7 @@ classdef PixelDataSmoothing
                     if(isequal('none', fs))
                         fs = 'sqrt';
 
-                    endif;
+                    endif;  % isequal('none', fs)
 
                     validatestring( ...
                         fs, ...
@@ -409,7 +409,7 @@ classdef PixelDataSmoothing
                     if(isequal('none', threshold))
                         fs = 'hard';
 
-                    endif;
+                    endif;  % isequal('none', threshold)
 
                     validatestring( ...
                         threshold, ...
@@ -441,7 +441,7 @@ classdef PixelDataSmoothing
                     if(isequal('none', modifier))
                         setype = 'none';
 
-                    endif;
+                    endif;  % isequal('none', modifier)
 
                 else
                     % ... for all other cases we ignore the values of these
@@ -453,7 +453,7 @@ classdef PixelDataSmoothing
                     modifier  = 'none';
                     setype    = 'none';
 
-                endif;
+                endif;  % isequal('UWT', filter) || isequal('MRS', filter)
 
                 % Assign values to a new instance -----------------------------
                 pds.filter    = filter;
@@ -475,7 +475,7 @@ classdef PixelDataSmoothing
                     use_case_c ...
                     );
 
-            endif;
+            endif;  % 0 == nargin
 
         endfunction;  % PixelDataSmoothing()
 
