@@ -201,9 +201,19 @@ function [Vt, Ht, Dt] = ufwt2thresh(V, H, D, varargin)
         );
 
     % Validate value supplied for the SEType
+
+    % If modifier is none ignore SEType value
+    if(isequal('none', modifier))
+        setype = 'none';
+
+    elseif(isequal('none', setype))
+        setype = 'x';
+
+    endif;
+
     validatestring( ...
         setype, ...
-        {'.', '+', 'x', 'square'}, ...
+        {'none', '.', '+', 'x', 'square'}, ...
         fname, ...
         'SEType' ...
         );

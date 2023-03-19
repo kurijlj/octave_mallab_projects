@@ -25,7 +25,7 @@ classdef Scanset
 %
 %       The Scanset object is valid if there was no warnings generated
 %       (Scanset.ws = {}) during object initialization. The validity of the
-%       Scanset object can be checked calling 'is_valid' method.
+%       Scanset object can be checked calling 'isvalid' method.
 %
 %       Multiple property-value pairs may be specified for the Scanset object,
 %       but they must appear in pairs.
@@ -62,23 +62,46 @@ classdef Scanset
 %
 %% Public methods:
 %
-%       - Scanset(varargin):
+%       - Scanset(varargin): Class constructor.
 %
-%       - disp():
+%       - disp(): The disp method is used by Octave whenever a class instance
+%         should be displayed on the screen.
 %
-%       - str_rep():
+%       - str_rep(): A convenience method that is used to format string
+%         representation of the Scanset instance.
 %
-%       - ascell():
+%       - ascell(): Return scanset object structure as cell array.
 %
-%       - isequivalent(other):
+%       - isequivalent(other): Return whether or not two Scanset instances are
+%         equivalent. Two instances are equivalent if their pixel data are of
+%         the same size, and they are of the same resolution.
 %
-%       - isequal(other):
+%       - isequal(other): Return whether or not two 'Scanset' instances are
+%         equal. Two instances are equal if all of their fields have
+%         identical values.
 %
-%       - size():
+%       - data_size(): Return size of the pixel data matrix.
 %
-%       - is_valid():
+%       - isvalid(): Return if scan set is valid or not. The scan set is valid
+%         if during object initialization no waning was generated
+%         (i.e. ss.ws = {}).
 %
-%       - pixel_data(pds):
+%       - pixel_data(pds): Return copy of the scan set pixel data. If pixel data
+%         smoothing is defined, return smoothed data.
+%
+%       - inprofile(pds, x): Return in profile data for the given scanset and
+%         the given column index.
+%
+%       - crossprofile(pds, y): Return cross profile data for the given scanset
+%         and the given row index.
+%
+%       - inplot(pds, x): Plot in profile data for the given scanset and the
+%         given column index.
+%
+%       - crossplot(pds, y): Plot cross profile data for the given scanset and
+%         the given row index.
+%
+%       - imshow(pds, heq): Plot scan set pixel data as image.
 %
 % -----------------------------------------------------------------------------
 
@@ -100,6 +123,10 @@ classdef Scanset
         sstype  = 'Signal';
         % Pixel data
         pd      = [];
+        % Image resolution (if applicable)
+        rsl     = [];
+        % Resolution units (if applicable)
+        rslu    = 'None';
         % List of warnings generated during the initialization of the object
         ws      = {};
 
@@ -167,6 +194,8 @@ classdef Scanset
                     ss.sstype  = varargin{1}.sstype;
                     ss.pd      = varargin{1}.pd;
                     ss.pdsd    = varargin{1}.pdsd;
+                    ss.rsl     = varargin{1}.rsl;
+                    ss.rslu    = varargin{1}.rslu;
                     ss.ws      = varargin{1}.ws;
 
                     return;
@@ -181,14 +210,14 @@ classdef Scanset
 
                 endif;  % isa(varargin{1}, 'Scanset')
 
-                if(~scref.is_valid())
+                if(~scref.isvalid())
                     % Add warning message to the warnings stack
                     ss.ws{end + 1} = scref.ws;
 
                     % Stop further constructor execution
                     return;
 
-                endif;  % scref.is_valid()
+                endif;  % scref.isvalid()
 
                 ss.files{end + 1} = scref.file;
                 ss.dtofir         = scref.dtofir;
@@ -442,13 +471,13 @@ classdef Scanset
                             'Title', sprintf('Scan #%d', idx) ...
                             );
 
-                        if(~scref.is_valid())
+                        if(~scref.isvalid())
                             % Add the waring to the warnings stack
                             ss.ws{end + 1} = scref.ws{:};
 
                             return;
 
-                        endif;  % ~scref.is_valid()
+                        endif;  % ~scref.isvalid()
 
                     endif;
 
@@ -462,7 +491,7 @@ classdef Scanset
 
                     endif;
 
-                    if(~sc.is_valid())
+                    if(~sc.isvalid())
                         % Add the waring to the warnings stack
                         ss.ws{end + 1} = sc.ws{:};
 
@@ -473,7 +502,7 @@ classdef Scanset
 
                         return;
 
-                    endif;  % ~sc.is_valid()
+                    endif;  % ~sc.isvalid()
 
                     % Check if argument with the index idx is equivalent to the
                     % reference (first) argument
@@ -516,9 +545,12 @@ classdef Scanset
 
                     ++idx;
 
-                endwhile;
+                endwhile;  % End of go through all positional arguments
 
                 % Determine scanset attributes --------------------------------
+                ss.rsl = scref.rsl;
+                ss.rslu = scref.rslu;
+
                 if(isequal('Unknown', sstype))
                     if( ...
                             isequal('ZeroLScan', scref.sctype) ...
@@ -543,7 +575,7 @@ classdef Scanset
                 endif;  % isequal('Unknown', sstype)
 
                 if(isequal('Unknown', sstitle))
-                    ss.sstitle = ss.sctype;
+                    ss.sstitle = ss.sstype;
 
                 else
                     ss.sstitle = sstitle;
@@ -591,7 +623,7 @@ classdef Scanset
             % date (dtofir) is set, or not. If the irradiation date is set we
             % need more space for the fields, so we need to ident field values
             % more
-            if(~ss.is_valid())
+            if(~ss.isvalid())
                 printf('\t\tTitle:               "Invalid",\n');
                 printf('\t\tType:                Invalid,\n');
                 printf('\t\tDate of scan:        Invalid,\n');
@@ -664,7 +696,7 @@ classdef Scanset
 %          the Scanset instance.
 %
 % -----------------------------------------------------------------------------
-            if(~ss.is_valid())
+            if(~ss.isvalid())
                 result = sprintf( ...
                         'Scanset("Invalid", Invalid, Invalid, Invalid)' ...
                     );
@@ -708,7 +740,7 @@ classdef Scanset
 % -----------------------------------------------------------------------------
             css = {};
 
-            if(~ss.is_valid())
+            if(~ss.isvalid())
                 css = {'Invalid', 'Invalid', 'Invalid', 'Invalid', 'Invalid'};
 
             else
@@ -748,7 +780,8 @@ classdef Scanset
 %
 % Description:
 %          Return whether or not two Scanset instances are equivalent. Two
-%          instances are equivalent if their pixel data are of the same size.
+%          instances are equivalent if their pixel data are of the same size,
+%          and they are of the same resolution.
 % -----------------------------------------------------------------------------
             fname = 'isequivalent';
 
@@ -764,9 +797,13 @@ classdef Scanset
             result = false;
 
             % If either of object is invalid we return false
-            if(ss.is_valid() && other.is_valid())
+            if(ss.isvalid() && other.isvalid())
                 % Check for equivalency
-                if(size(ss.pwmean) == size(other.pwmean));
+                if( ...
+                        size(ss.pwmean) == size(other.pwmean) ...
+                        && isequal(ss.rslu, other.rslu) ...
+                        && isequal(ss.rsl, other.rsl) ...
+                        );
                     result = true;
 
                 endif;
@@ -803,7 +840,7 @@ classdef Scanset
             result = false;
 
             % If either of object is invalid we return false
-            if(ss.is_valid() && other.is_valid())
+            if(ss.isvalid() && other.isvalid())
                 % Check for equality
                 if( ...
                         isequal(ss.sstitle, other.sstitle) ...
@@ -812,13 +849,15 @@ classdef Scanset
                         && isequal(ss.dtofsc, other.dtofsc) ...
                         && isequal(ss.sstype, other.sstype) ...
                         && isequal(ss.pd, other.pd) ...
+                        && isequal(ss.rslu, other.rslu) ...
+                        && isequal(ss.rsl, other.rsl) ...
                         && isequal(ss.ws, other.ws) ...
                         )
                     result = true;
 
                 endif;
 
-            endif;  % ss.is_valid() && other.is_valid()
+            endif;  % ss.isvalid() && other.isvalid()
 
         endfunction;  % isequal()
 
@@ -835,7 +874,7 @@ classdef Scanset
 %          Return size of the pixel data matrix.
 %
 % -----------------------------------------------------------------------------
-            if(ss.is_valid())
+            if(ss.isvalid())
                 result = size(ss.pd);
 
             else
@@ -846,13 +885,13 @@ classdef Scanset
         endfunction;
 
 
-        function result = is_valid(ss)
+        function result = isvalid(ss)
 % -----------------------------------------------------------------------------
 %
-% Method 'is_valid':
+% Method 'isvalid':
 %
 % Use:
-%       -- result = ss.is_valid()
+%       -- result = ss.isvalid()
 %
 % Description:
 %          Return if scan set is valid or not. The scan set is valid if during
@@ -870,6 +909,7 @@ classdef Scanset
 % Method 'pixel_data':
 %
 % Use:
+%       -- pd = ss.pixel_data()
 %       -- pd = ss.pixel_data(pds)
 %
 % Description:
@@ -890,17 +930,627 @@ classdef Scanset
                         ) ...
                     );
 
-            endif;
+            endif;  % ~isa(pds, 'PixelDataSmoothing')
 
-            if(ss.is_valid())
+            if(ss.isvalid())
                 pd = pds.smooth(ss.pd);
 
             else
                 pd = ss.pd;
 
-            endif;  % ss.is_valid()
+            endif;  % ss.isvalid()
 
         endfunction;  % pixel_data(pds)
+
+
+        function IP = inprofile(ss, pds=PixelDataSmoothing(), rsp=0, x=0)
+% -----------------------------------------------------------------------------
+%
+% Method 'inprofile':
+%
+% Use:
+%       -- IP = ss.inprofile()
+%       -- IP = ss.inprofile(pds)
+%       -- IP = ss.inprofile(pds, rsp)
+%       -- IP = ss.inprofile(pds, rsp, x)
+%
+% Description:
+%          Return in profile data for the given scanset and the given column
+%          index. If default value is used for the column index it extracts data
+%          for the calculated column at the middle of the columns range.
+%
+%          For additional data smoothing one may pass a PixelDataSmoothing
+%          instance to the method call.
+%
+%          If instance is not valid it returns an empty array;
+%
+% -----------------------------------------------------------------------------
+            fname = 'inprofile';
+
+            if(~isa(pds, 'PixelDataSmoothing'))
+                error( ...
+                    sprintf( ...
+                        cstrcat( ...
+                            '%s: pds must be an instance of the ', ...
+                            '"PixelDataSmoothing" class' ...
+                            ), ...
+                        fname ...
+                        ) ...
+                    );
+
+            endif;  % ~isa(pds, 'PixelDataSmoothing')
+
+            validateattributes( ...
+                rsp, ...
+                {'numeric'}, ...
+                { ...
+                    'nonempty', ...
+                    'scalar', ...
+                    'integer', ...
+                    'finite', ...
+                    '>=', 0 ...
+                    }, ...
+                fname, ...
+                'rsp' ...
+                );
+
+            validateattributes( ...
+                x, ...
+                {'numeric'}, ...
+                { ...
+                    'nonempty', ...
+                    'scalar', ...
+                    'integer', ...
+                    'finite', ...
+                    '>=', 0 ...
+                    }, ...
+                fname, ...
+                'x' ...
+                );
+
+            IP = [];
+
+            if(ss.isvalid())
+                % Check if resample points has viable value
+                if(0 ~= rsp)
+                    if(ss.data_size()(1) > rsp)
+                        error( ...
+                            '%s: rsp must have a value >= number of rows', ...
+                            fname ...
+                            );
+
+                    endif;  % ss.data_size()(1) > rsp
+
+                else
+                    rsp = ss.data_size()(1);
+
+                endif;  % 0 ~= rsp
+
+                % Check if column index set to default value
+                if(0 == x)
+                    % Column index set to default value. Calculate the position
+                    % of the middle of the column range
+                    x = ceil(ss.data_size()(2) / 2);
+
+                endif;
+
+                % Validate if given column index is within viable index range
+                if(ss.data_size()(2) < x)
+                    error( ...
+                        '%s: x out of bound (expected value <= %d, got %d', ...
+                        fname, ...
+                        ss.data_size()(2), ...
+                        x ...
+                        );
+
+                endif;  % ss.data_size()(2) < x
+
+                IP = squeeze(ss.pixel_data(pds)(:, x, :));
+                k = size(IP, 1) - numel(0:1/size(IP, 1):1);
+                IP = interp1( ...
+                    0:1/size(IP, 1):(1 + k/size(IP, 1)), ...
+                    IP, ...
+                    0:1/rsp:(1 + k/rsp) ...
+                    );
+
+                if(1 == size(IP, 1))
+                    IP = IP';
+
+                endif;
+
+            endif;  % ss.isvalid()
+
+        endfunction;  % inprofile(x, pds)
+
+
+        function CP = crossprofile(ss, pds=PixelDataSmoothing(), rsp=0, y=0)
+% -----------------------------------------------------------------------------
+%
+% Method 'crossprofile':
+%
+% Use:
+%       -- CP = ss.crossprofile()
+%       -- CP = ss.crossprofile(pds)
+%       -- CP = ss.crossprofile(pds, rsp)
+%       -- CP = ss.crossprofile(pds, rsp, y)
+%
+% Description:
+%          Return cross profile data for the given scanset and the given row
+%          index. If default value is used for the row index it extracts data
+%          for the calculated column at the middle of the rows range.
+%
+%          For additional data smoothing one may pass a PixelDataSmoothing
+%          instance to the method call.
+%
+%          If instance is not valid it returns an empty array;
+%
+% -----------------------------------------------------------------------------
+            fname = 'crossprofile';
+
+            if(~isa(pds, 'PixelDataSmoothing'))
+                error( ...
+                    sprintf( ...
+                        cstrcat( ...
+                            '%s: pds must be an instance of the ', ...
+                            '"PixelDataSmoothing" class' ...
+                            ), ...
+                        fname ...
+                        ) ...
+                    );
+
+            endif;  % ~isa(pds, 'PixelDataSmoothing')
+
+            validateattributes( ...
+                rsp, ...
+                {'numeric'}, ...
+                { ...
+                    'nonempty', ...
+                    'scalar', ...
+                    'integer', ...
+                    'finite', ...
+                    '>=', 0 ...
+                    }, ...
+                fname, ...
+                'rsp' ...
+                );
+
+            validateattributes( ...
+                y, ...
+                {'numeric'}, ...
+                { ...
+                    'nonempty', ...
+                    'scalar', ...
+                    'integer', ...
+                    'finite', ...
+                    '>=', 0 ...
+                    }, ...
+                fname, ...
+                'y' ...
+                );
+
+            CP = [];
+
+            if(ss.isvalid())
+                % Check if resample points has viable value
+                if(0 ~= rsp)
+                    if(ss.data_size()(2) > rsp)
+                        error( ...
+                            '%s: rsp must have a value >= number of rows', ...
+                            fname ...
+                            );
+
+                    endif;  % ss.data_size()(1) > rsp
+
+                else
+                    rsp = ss.data_size()(2);
+
+                endif;  % 0 ~= rsp
+
+
+                % Check if row index set to default value
+                if(0 == y)
+                    % Row index set to default value. Calculate the position
+                    % of the middle of the row range
+                    y = ceil(ss.data_size()(1) / 2);
+
+                endif;
+
+                % Validate if given row index is within viable index range
+                if(ss.data_size()(1) < y)
+                    error( ...
+                        '%s: y out of bound (expected value <= %d, got %d', ...
+                        fname, ...
+                        ss.data_size()(1), ...
+                        y ...
+                        );
+
+                endif;  % ss.data_size()(1) < x
+
+                CP = squeeze(ss.pixel_data(pds)(y, :, :));
+                k = size(CP, 1) - numel(0:1/size(CP, 1):1);
+                CP = interp1( ...
+                    0:1/size(CP, 1):(1 + k/size(CP, 1)), ...
+                    CP, ...
+                    0:1/rsp:(1 + k/rsp) ...
+                    );
+
+                if(1 == size(CP, 1))
+                    CP = CP';
+
+                endif;
+
+            endif;  % ss.isvalid()
+
+        endfunction;  % crossprofile(y, pds)
+
+
+        function inplot(ss, pds=PixelDataSmoothing(), x=0)
+% -----------------------------------------------------------------------------
+%
+% Method 'inplot':
+%
+% Use:
+%       -- ss.inplot()
+%       -- ss.inplot(pds)
+%       -- ss.inplot(pds, x)
+%
+% Description:
+%          Plot in profile data for the given scanset and the given column
+%          index. If default value is used for the column index it extracts data
+%          for the calculated column at the middle of the columns range.
+%
+%          For additional data smoothing one may pass a PixelDataSmoothing
+%          instance to the method call.
+%
+%          If instance is not valid it ignores a function call.
+%
+% -----------------------------------------------------------------------------
+            fname = 'inplot';
+
+            if(~isa(pds, 'PixelDataSmoothing'))
+                error( ...
+                    sprintf( ...
+                        cstrcat( ...
+                            '%s: pds must be an instance of the ', ...
+                            '"PixelDataSmoothing" class' ...
+                            ), ...
+                        fname ...
+                        ) ...
+                    );
+
+            endif;  % ~isa(pds, 'PixelDataSmoothing')
+
+            validateattributes( ...
+                x, ...
+                {'numeric'}, ...
+                { ...
+                    'nonempty', ...
+                    'scalar', ...
+                    'integer', ...
+                    'finite', ...
+                    '>=', 0 ...
+                    }, ...
+                fname, ...
+                'x' ...
+                );
+
+            if(ss.isvalid())
+
+                % Check if column index set to default value
+                if(0 == x)
+                    % Column index set to default value. Calculate the position
+                    % of the middle of the column range
+                    x = ceil(ss.data_size()(2) / 2);
+
+                endif;
+
+                % Validate if given column index is within viable index range
+                if(ss.data_size()(2) < x)
+                    error( ...
+                        '%s: x out of bound (expected value <= %d, got %d', ...
+                        fname, ...
+                        ss.data_size()(2), ...
+                        x ...
+                        );
+
+                endif;  % ss.data_size()(2) < x
+
+                IP = squeeze(ss.pixel_data(pds)(:, x, :));
+                xscale = 1:1:size(IP, 1);
+
+                switch(ss.rslu)
+                    case 'dpi'
+                        xscale = (xscale.*25.4)./ss.rsl(2);
+
+                    case 'dpcm'
+                        xscale = (xscale.*10.0)./ss.rsl(2);
+
+                endswitch;
+
+                hfig  = figure();
+                haxes = axes( ...
+                    'parent', hfig, ...
+                    'xlim', [xscale(1) xscale(end)], ...
+                    'ylim', [0 65535] ...
+                    );
+                hold(haxes, 'on');
+                if(1 < size(IP, 2))
+                    plot(xscale, IP(:, 1), 'color', 'r');
+                    plot(xscale, IP(:, 2), 'color', 'g');
+                    plot(xscale, IP(:, 3), 'color', 'b');
+
+                else
+                    plot(xscale, IP, 'color', 'k');
+
+                endif;  % 1 < size(IP, 2)
+                hold(haxes, 'off');
+                xlabel('Y [mm]');
+                ylabel('pixel intensity');
+                if(1 < size(IP, 2))
+                    legend( ...
+                        haxes, ...
+                        { ...
+                            'red channel', ...
+                            'green channel', ...
+                            'blue channel' ...
+                            }, ...
+                        'Location', 'northeast' ...
+                        );
+
+                else
+                    legend( ...
+                        haxes, ...
+                        { ...
+                            'gray channel' ...
+                            }, ...
+                        'Location', 'northeast' ...
+                        );
+
+                endif;  % 1 < size(IP, 2)
+                title( ...
+                    haxes, ...
+                    cstrcat( ...
+                        datestr(ss.dtofsc, 'dd-mmm-yyyy'), ...
+                        ' - ', ...
+                        ss.sstitle ...
+                        ) ...
+                    );
+
+            endif;  % ss.isvalid()
+
+        endfunction;  % inplot(x, pds)
+
+
+        function crossplot(ss, pds=PixelDataSmoothing(), y=0)
+% -----------------------------------------------------------------------------
+%
+% Method 'crossplot':
+%
+% Use:
+%       -- ss.crossplot()
+%       -- ss.crossplot(pds)
+%       -- ss.crossplot(pds, y)
+%
+% Description:
+%          Plot cross profile data for the given scanset and the given row
+%          index. If default value is used for the row index it extracts data
+%          for the calculated row at the middle of the rows range.
+%
+%          For additional data smoothing one may pass a PixelDataSmoothing
+%          instance to the method call.
+%
+%          If instance is not valid it ignores a function call.
+%
+% -----------------------------------------------------------------------------
+            fname = 'inplot';
+
+            if(~isa(pds, 'PixelDataSmoothing'))
+                error( ...
+                    sprintf( ...
+                        cstrcat( ...
+                            '%s: pds must be an instance of the ', ...
+                            '"PixelDataSmoothing" class' ...
+                            ), ...
+                        fname ...
+                        ) ...
+                    );
+
+            endif;  % ~isa(pds, 'PixelDataSmoothing')
+
+            validateattributes( ...
+                y, ...
+                {'numeric'}, ...
+                { ...
+                    'nonempty', ...
+                    'scalar', ...
+                    'integer', ...
+                    'finite', ...
+                    '>=', 0 ...
+                    }, ...
+                fname, ...
+                'y' ...
+                );
+
+            if(ss.isvalid())
+
+                % Check if row index set to default value
+                if(0 == y)
+                    % Row index set to default value. Calculate the position
+                    % of the middle of the row range
+                    y = ceil(ss.data_size()(1) / 2);
+
+                endif;
+
+                % Validate if given row index is within viable index range
+                if(ss.data_size()(1) < y)
+                    error( ...
+                        '%s: y out of bound (expected value <= %d, got %d', ...
+                        fname, ...
+                        ss.data_size()(1), ...
+                        y ...
+                        );
+
+                endif;  % ss.data_size()(1) < x
+
+                CP = squeeze(ss.pixel_data(pds)(y, :, :));
+                xscale = 1:1:size(CP, 1);
+
+                switch(ss.rslu)
+                    case 'dpi'
+                        xscale = (xscale.*25.4)./ss.rsl(1);
+
+                    case 'dpcm'
+                        xscale = (xscale.*10.0)./ss.rsl(1);
+
+                endswitch;
+
+                hfig  = figure();
+                haxes = axes( ...
+                    'parent', hfig, ...
+                    'xlim', [xscale(1) xscale(end)], ...
+                    'ylim', [0 65535] ...
+                    );
+                hold(haxes, 'on');
+                if(1 < size(CP, 2))
+                    plot(xscale, CP(:, 1), 'color', 'r');
+                    plot(xscale, CP(:, 2), 'color', 'g');
+                    plot(xscale, CP(:, 3), 'color', 'b');
+
+                else
+                    plot(xscale, CP, 'color', 'k');
+
+                endif;  % 1 < size(IP, 2)
+                hold(haxes, 'off');
+                xlabel('X [mm]');
+                ylabel('pixel intensity');
+                if(1 < size(CP, 2))
+                    legend( ...
+                        haxes, ...
+                        { ...
+                            'red channel', ...
+                            'green channel', ...
+                            'blue channel' ...
+                            }, ...
+                        'Location', 'northeast' ...
+                        );
+
+                else
+                    legend( ...
+                        haxes, ...
+                        { ...
+                            'gray channel' ...
+                            }, ...
+                        'Location', 'northeast' ...
+                        );
+
+                endif;  % 1 < size(IP, 2)
+                title( ...
+                    haxes, ...
+                    cstrcat( ...
+                        datestr(ss.dtofsc, 'dd-mmm-yyyy'), ...
+                        ' - ', ...
+                        ss.sstitle ...
+                        ) ...
+                    );
+
+            endif;  % ss.isvalid()
+
+        endfunction;  % crossplot(y, pds)
+
+
+        function imshow(ss, pds=PixelDataSmoothing(), heq='off')
+% -----------------------------------------------------------------------------
+%
+% Method 'imshow':
+%
+% Use:
+%       -- ss.imshow()
+%       -- ss.imshow(pds)
+%       -- ss.imshow(pds, heq)
+%
+% Description:
+%          Plot scan set pixel data as image.
+%
+%          heq: string, def. 'off'
+%              If set to 'on' perform histogram equivalization of each image
+%              channel.
+%
+% -----------------------------------------------------------------------------
+            fname = 'imshow';
+
+            if(~isa(pds, 'PixelDataSmoothing'))
+                error( ...
+                    sprintf( ...
+                        cstrcat( ...
+                            '%s: pds must be an instance of the ', ...
+                            '"PixelDataSmoothing" class' ...
+                            ), ...
+                        fname ...
+                        ) ...
+                    );
+
+            endif;  % ~isa(pds, 'PixelDataSmoothing')
+
+            validatestring( ...
+                heq, ...
+                { ...
+                    'on', ...
+                    'off' ...
+                    }, ...
+                fname, ...
+                'heq' ...
+                );
+
+            if(ss.isvalid())
+                PD = uint16(ss.pixel_data(pds));
+
+                xscale = 1:1:size(PD, 2);
+                yscale = 1:1:size(PD, 1);
+                cc = size(PD, 3);
+
+                if(isequal('on', heq))
+                    idx = 1;
+                    while(cc >= idx)
+                        PD(:, :, idx) = histeq(PD(:, :, idx));
+
+                        ++idx;
+
+                    endwhile;
+
+                endif;
+
+                switch(ss.rslu)
+                    case 'dpi'
+                        xscale = (xscale.*25.4)./ss.rsl(1);
+                        yscale = (yscale.*25.4)./ss.rsl(2);
+
+                    case 'dpcm'
+                        xscale = (xscale.*10.0)./ss.rsl(1);
+                        yscale = (yscale.*10.0)./ss.rsl(2);
+
+                endswitch;
+
+                hfig  = figure();
+                haxes = axes( ...
+                    'parent', hfig, ...
+                    'xlim', [xscale(1) xscale(end)], ...
+                    'ylim', [yscale(1) yscale(end)] ...
+                    );
+                imshow(PD);
+                xlabel('X [mm]');
+                ylabel('Y [mm]');
+                title( ...
+                    haxes, ...
+                    cstrcat( ...
+                        datestr(ss.dtofsc, 'dd-mmm-yyyy'), ...
+                        ' - ', ...
+                        ss.sstitle ...
+                        ) ...
+                    );
+
+            endif;  % ss.isvalid()
+
+        endfunction;  % imshow(varargin)
 
     endmethods;  % Public methods
 

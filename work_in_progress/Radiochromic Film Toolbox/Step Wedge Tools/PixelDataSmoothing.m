@@ -407,7 +407,7 @@ classdef PixelDataSmoothing
 
                     % Use the default value if 'none' assigned
                     if(isequal('none', threshold))
-                        fs = 'hard';
+                        threshold = 'hard';
 
                     endif;  % isequal('none', threshold)
 
@@ -429,9 +429,16 @@ classdef PixelDataSmoothing
 
                     % Validate the value for the structuring element property
                     % (setype)
+
+                    % Use the default value if 'none' assigned
+                    if(isequal('none', setype))
+                        setype = 'x';
+
+                    endif;  % isequal('none', setype)
+
                     validatestring( ...
                         setype, ...
-                        {'none', '.', '+', 'x', 'square'}, ...
+                        {'.', '+', 'x', 'square'}, ...
                         fname, ...
                         'setype' ...
                         );

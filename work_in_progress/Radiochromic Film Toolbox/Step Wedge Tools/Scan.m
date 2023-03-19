@@ -27,7 +27,7 @@ classdef Scan
 %
 %       The scan object is valid if there was no warnings generated (Scan.ws =
 %       {}) during object initialization. The validity of the scan object
-%       can be checked calling 'is_valid' method.
+%       can be checked calling 'isvalid' method.
 %
 %       Multiple property-value pairs may be specified for the scan object, but
 %       they must appear in pairs.
@@ -80,7 +80,7 @@ classdef Scan
 %
 %       - scan_size(): Return scan size (size of the pixel data matrix).
 %
-%       - is_valid(): Return if scan is whether valid or not. The scan is valid
+%       - isvalid(): Return if scan is whether valid or not. The scan is valid
 %         if during object initialization no waning was generated
 %         (i.e. Scan.ws = {}).
 %
@@ -678,7 +678,7 @@ classdef Scan
 %
 % -----------------------------------------------------------------------------
             printf('\tScan(\n');
-            if(sc.is_valid())
+            if(sc.isvalid())
                 printf('\t\tTitle:                %s,\n', sc.sctitle);
                 printf('\t\tScan type:            %s,\n', sc.sctype);
                 if(~isequal('None', sc.file))
@@ -860,12 +860,12 @@ classdef Scan
                 endif;
 
             endif;
-            if(~isequal(sc.rslu, sc.rslu))
+            if(~isequal(sc.rslu, other.rslu))
                 result = false;
                 return;
 
             endif;
-            if(~isequal(sc.rsl, sc.rsl))
+            if(~isequal(sc.rsl, other.rsl))
                 result = false;
                 return;
 
@@ -986,7 +986,7 @@ classdef Scan
 %          Return scan size (size of the pixel data matrix).
 %
 % -----------------------------------------------------------------------------
-            if(sc.is_valid())
+            if(sc.isvalid())
                 result = size(sc.pd);
 
             else
@@ -997,13 +997,13 @@ classdef Scan
         endfunction;
 
 
-        function result = is_valid(sc)
+        function result = isvalid(sc)
 % -----------------------------------------------------------------------------
 %
-% Method 'is_valid':
+% Method 'isvalid':
 %
 % Use:
-%       -- result = sc.is_valid()
+%       -- result = sc.isvalid()
 %
 % Description:
 %          Return if scan is whether valid or not. The scan is valid if during
@@ -1043,13 +1043,13 @@ classdef Scan
 
             endif;
 
-            if(sc.is_valid())
+            if(sc.isvalid())
                 pd = pds.smooth(sc.pd);
 
             else
                 pd = sc.pd;
 
-            endif;  % sc.is_valid()
+            endif;  % sc.isvalid()
 
         endfunction;
 
