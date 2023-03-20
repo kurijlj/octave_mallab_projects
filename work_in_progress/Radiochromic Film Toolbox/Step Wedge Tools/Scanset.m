@@ -73,8 +73,9 @@ classdef Scanset
 %       - ascell(): Return scanset object structure as cell array.
 %
 %       - isequivalent(other): Return whether or not two Scanset instances are
-%         equivalent. Two instances are equivalent if their pixel data are of
-%         the same size, and they are of the same resolution.
+%         equivalent. Two instances are equivalent if they have same resolution,
+%         and linear dimensions of their pixel data do not differ more than 10
+%         pixels for each linear dimension.
 %
 %       - isequal(other): Return whether or not two 'Scanset' instances are
 %         equal. Two instances are equal if all of their fields have
@@ -189,11 +190,10 @@ classdef Scanset
                     % Copy constructor invoked
                     ss.sstitle = varargin{1}.sstitle;
                     ss.files   = varargin{1}.files;
-                    ss.dtofir = varargin{1}.dtofir;
-                    ss.dtofsc = varargin{1}.dtofsc;
+                    ss.dtofir  = varargin{1}.dtofir;
+                    ss.dtofsc  = varargin{1}.dtofsc;
                     ss.sstype  = varargin{1}.sstype;
                     ss.pd      = varargin{1}.pd;
-                    ss.pdsd    = varargin{1}.pdsd;
                     ss.rsl     = varargin{1}.rsl;
                     ss.rslu    = varargin{1}.rslu;
                     ss.ws      = varargin{1}.ws;
@@ -780,8 +780,10 @@ classdef Scanset
 %
 % Description:
 %          Return whether or not two Scanset instances are equivalent. Two
-%          instances are equivalent if their pixel data are of the same size,
-%          and they are of the same resolution.
+%          instances are equivalent if they have same resolution, and linear
+%          dimensions of their pixel data do not differ more than 2 pixels for
+%          each linear dimension.
+%
 % -----------------------------------------------------------------------------
             fname = 'isequivalent';
 
@@ -800,7 +802,13 @@ classdef Scanset
             if(ss.isvalid() && other.isvalid())
                 % Check for equivalency
                 if( ...
-                        size(ss.pwmean) == size(other.pwmean) ...
+                        size(ss.pwmean, 3) == size(other.pwmean, 3) ...
+                        && 10 >= abs( ...
+                            size(ss.pwmean, 2) - size(other.pwmean, 2) ...
+                            ) ...
+                        && 10 >= abs( ...
+                            size(ss.pwmean, 1) - size(other.pwmean, 1) ...
+                            ) ...
                         && isequal(ss.rslu, other.rslu) ...
                         && isequal(ss.rsl, other.rsl) ...
                         );
@@ -808,7 +816,42 @@ classdef Scanset
 
                 endif;
 
-            endif;
+            endif;  % ss.isvalid() && other.isvalid()
+
+            % Rise a warning if sizes differ within acceptable limits
+            delta = size(ss.pwmean, 1) - size(other.pwmean, 1);
+            if(0 ~= delta)
+                warning( ...
+                    sprintf( ...
+                        cstrcat( ...
+                            '%s: Number of rows of the scan sets "%s" and', ...
+                            ' "%s" differ for %d pixels' ...
+                            ), ...
+                        fname, ...
+                        ss.sstitle, ...
+                        other.sstitle, ...
+                        delta ...
+                        ) ...
+                    );
+
+            endif;  % 0 ~= delta
+
+            delta = size(ss.pwmean, 2) - size(other.pwmean, 2);
+            if(0 ~= delta)
+                warning( ...
+                    sprintf( ...
+                        cstrcat( ...
+                            '%s: Number of columns of the scan sets "%s" and', ...
+                            ' "%s" differ for %d pixels' ...
+                            ), ...
+                        fname, ...
+                        ss.sstitle, ...
+                        other.sstitle, ...
+                        delta ...
+                        ) ...
+                    );
+
+            endif;  % 0 ~= delta
 
         endfunction;  % isequivalent()
 
@@ -940,7 +983,7 @@ classdef Scanset
 
             endif;  % ss.isvalid()
 
-        endfunction;  % pixel_data(pds)
+        endfunction;  % pixel_data()
 
 
         function IP = inprofile(ss, pds=PixelDataSmoothing(), rsp=0, x=0)
@@ -1060,7 +1103,7 @@ classdef Scanset
 
             endif;  % ss.isvalid()
 
-        endfunction;  % inprofile(x, pds)
+        endfunction;  % inprofile()
 
 
         function CP = crossprofile(ss, pds=PixelDataSmoothing(), rsp=0, y=0)
