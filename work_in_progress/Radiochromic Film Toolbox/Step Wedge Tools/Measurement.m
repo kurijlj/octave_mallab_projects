@@ -247,6 +247,20 @@ classdef Measurement
                 'StDev' ...
                 };
 
+            if(1 == m.at(1).numch())
+                titles{end + 1} = 'Mean pixel value';
+                titles{end + 1} = 'StDev';
+
+            else
+                titles{end + 1} = 'Mean pixel value (R)';
+                titles{end + 1} = 'Mean pixel value (G)';
+                titles{end + 1} = 'Mean pixel value (B)';
+                titles{end + 1} = 'StDev (R)';
+                titles{end + 1} = 'StDev (G)';
+                titles{end + 1} = 'StDev (B)';
+
+            endif;
+
         endfunction;
 
 
