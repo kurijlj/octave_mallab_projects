@@ -325,16 +325,17 @@ classdef Measurement
         endfunction;
 
 
-        function m = append(m, ds)
+        function msr = append(m, ds)
 %  ----------------------------------------------------------------------------
 %
 %  Method 'append':
 %
 %  Use:
-%       -- m = m.append(ds)
+%       -- msr = m.append(ds)
 %
 %  Description:
-%          Append given data sample to the end of the data samples array.
+%          Return a copy of given "Measurement" instance, and append the given
+%          data sample instance "ds" to teh end.
 %
 %  ----------------------------------------------------------------------------
             fname = 'append';
@@ -347,7 +348,7 @@ classdef Measurement
 
             endif;
 
-            m.dss{end + 1} = ds;
+            msr = Measurement(m.dss{:}, ds, 'Title', m.title);
 
         endfunction;
 
@@ -437,8 +438,9 @@ classdef Measurement
 %
 %  Description:
 %          Return whether or not two measurements are equivalent. Two
-%          measurements are equivalent if they have same number of data samples
-%          and data samples are equivalent.
+%          measurements are equivalent if they have same number of data samples,
+%          data samples are equivalent, and corresponding data samples have
+%          equal position vectors.
 %
 %  ----------------------------------------------------------------------------
             fname = 'isequivalent';
@@ -460,7 +462,13 @@ classdef Measurement
             if(other.numel() == m.numel())
                 idx = 1;
                 while(m.numel() >= idx)
-                    if(~m.at(idx).isequivalent(other.at(idx)))
+                    if( ...
+                            ~m.at(idx).isequivalent(other.at(idx)) ...
+                            || ~isequal( ...
+                                m.at(idx).position, ...
+                                other.at(idx).position ...
+                                ) ...
+                            )
                         break;
 
                     endif;
