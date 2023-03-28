@@ -369,6 +369,45 @@ function dsrow = asrow(ds)
 
         endfunction;  % numch()
 
+
+        function result = stderr(cl=1)
+%  ----------------------------------------------------------------------------
+%
+%  Method 'stderr':
+%
+%  Use:
+%       -- result = ds.stderr()
+%       -- result = ds.stderr(cl)
+%
+%  Description:
+%          Return standard error for the given datasample and given confidence
+%          level.
+%
+%          cl: double, def. 1
+%              Confidence level. It takes values 1, 2, or 3 for the 1 sigma, 2
+%              sigma and 3 sigma confidence level respectively.
+%
+%  ----------------------------------------------------------------------------
+            fname = 'stderr';
+
+            if(0 == sum([1 2 3] == cl))
+                error( ...
+                    sprintf( ...
+                        cstrcat( ...
+                            '%s: cl must be 1, 2 or 3 (got %d)' ...
+                            ), ...
+                        fname, ...
+                        cl ...
+                        ) ...
+                    );
+
+            endif;  % cl ~= 1, 2, 3
+
+            result = (cl * ds.stdev) / sqrt(ds.n);
+
+        endfunction;
+
+
         function result = isequivalent(ds, other)
 %  ----------------------------------------------------------------------------
 %
