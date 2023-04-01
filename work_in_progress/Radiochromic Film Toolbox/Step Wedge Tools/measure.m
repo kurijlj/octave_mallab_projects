@@ -88,7 +88,8 @@ function msr = measure(AT, ss, window, varargin)
 
     endif;  % ~ss.isvalid()
 
-    [l, w] = ss.data_size();
+    l = ss.data_size()(1);
+    w = ss.data_size()(2);
 
     % Validate window argument
     validateattributes( ...
@@ -123,6 +124,7 @@ function msr = measure(AT, ss, window, varargin)
                     ), ...
                 fname, ...
                 window ...
+                ) ...
             );
 
     endif;  % l < size(window, 1) || w < size(window, 2)
@@ -165,14 +167,14 @@ function msr = measure(AT, ss, window, varargin)
         % outside scanset's pixel data bounds.
         x = AT(idx, 1);
         y = AT(idx, 2);
-        whw = ceil(window(1) / 2);
         whh = ceil(window(2) / 2);
+        whw = ceil(window(1) / 2);
 
         % Calculate bounding box coordinates
         bbox = [ ...
             y - whh, x - whw; ...
             y + whh, x + whw ...
-            ];
+            ]
 
         % Check if upper left corner of the bounding box falls outside pixel
         % data area
@@ -192,6 +194,7 @@ function msr = measure(AT, ss, window, varargin)
                         ), ...
                     fname, ...
                     idx ...
+                    ) ...
                 );
 
         endif;  % bbox(1, 1) < 1
@@ -211,6 +214,7 @@ function msr = measure(AT, ss, window, varargin)
                         ), ...
                     fname, ...
                     idx ...
+                    ) ...
                 );
 
         endif;  % bbox(1, 2) < 1
@@ -233,6 +237,7 @@ function msr = measure(AT, ss, window, varargin)
                         ), ...
                     fname, ...
                     idx ...
+                    ) ...
                 );
 
         endif;  % bbox(2, 1) > l
@@ -252,6 +257,7 @@ function msr = measure(AT, ss, window, varargin)
                         ), ...
                     fname, ...
                     idx ...
+                    ) ...
                 );
 
         endif;  % bbox(2, 2) > w
@@ -260,7 +266,7 @@ function msr = measure(AT, ss, window, varargin)
         pkg("load", "image");
 
         % Extract pixel data inside the sample are
-        roipd = ss.pixel_data(bbox(1, 1):bbox(2, 1), bbox(1, 2):bbox(2, 2), :);
+        roipd = ss.pixel_data()(bbox(1, 1):bbox(2, 1), bbox(1, 2):bbox(2, 2), :);
         if(1 == size(roipd, 3))
             roin     = numel(roipd);
             roival   = [mean2(roipd)];
@@ -285,6 +291,6 @@ function msr = measure(AT, ss, window, varargin)
 
         ++idx;
 
-    endwile;  % End of AT rows trversal
+    endwhile;  % End of AT rows trversal
 
 endfunction;  % measure(AT, ss, window)

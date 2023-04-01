@@ -74,7 +74,7 @@ classdef DataSample
             use_case_a = sprintf( ...
                 cstrcat( ...
                     ' -- ds = ', ...
-                    '%s(position, window, value, stdev)' ...
+                    '%s(position, window, n, value, stdev)' ...
                     ), ...
                 fname ...
                 );
@@ -227,7 +227,7 @@ classdef DataSample
                     'Invalid call to %s. Correct usage is:\n%s\n%s', ...
                     fname, ...
                     use_case_a, ...
-                    use_case_b, ...
+                    use_case_b ...
                     );
 
             endif;  % 0 == nargin
@@ -337,16 +337,16 @@ function dsrow = asrow(ds)
             ];
 
             if(1 == numel(ds.value))
-                dsrow{end + 1) = ds.value(1);
-                dsrow{end + 1) = ds.stdev(1);
+                dsrow(end + 1) = ds.value(1);
+                dsrow(end + 1) = ds.stdev(1);
 
             else
-                dsrow{end + 1) = ds.value(1);
-                dsrow{end + 1) = ds.value(2);
-                dsrow{end + 1) = ds.value(3);
-                dsrow{end + 1) = ds.stdev(1);
-                dsrow{end + 1) = ds.stdev(2);
-                dsrow{end + 1) = ds.stdev(3);
+                dsrow(end + 1) = ds.value(1);
+                dsrow(end + 1) = ds.value(2);
+                dsrow(end + 1) = ds.value(3);
+                dsrow(end + 1) = ds.stdev(1);
+                dsrow(end + 1) = ds.stdev(2);
+                dsrow(end + 1) = ds.stdev(3);
 
             endif;  % 1 == numel(ds.value)
 

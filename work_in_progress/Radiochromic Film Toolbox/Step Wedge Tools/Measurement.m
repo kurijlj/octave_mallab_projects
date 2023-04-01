@@ -40,7 +40,7 @@ classdef Measurement
 %% ----------------------------------------------------------------------------
     methods (Access = public)
 
-        function list = Measurement(varargin)
+        function m = Measurement(varargin)
 %  ----------------------------------------------------------------------------
 %
 %  Method 'Measurement':
@@ -89,7 +89,7 @@ classdef Measurement
                     error( ...
                         sprintf( ...
                             cstrcat( ...
-                                'Invalid call to %s. Correct usage ' ...
+                                'Invalid call to %s. Correct usage ', ...
                                 'is:\n%s\n%s\n%s\n%s' ...
                                 ), ...
                             fname, ...
@@ -114,34 +114,19 @@ classdef Measurement
                     'Title', datestr(datenum(date())) ...
                     );
 
-                if(0 ~= numel(pos))
-                    % Invalid call to constructor
-                    error( ...
-                        sprintf( ...
-                            cstrcat( ...
-                                'Invalid call to %s. Correct usage ' ...
-                                'is:\n%s\n%s\n%s\n%s' ...
-                                ), ...
-                            fname, ...
-                            use_case_a, ...
-                            use_case_b, ...
-                            use_case_c, ...
-                            use_case_d ...
-                            ) ...
-                        );
-
-                endif;  % 0 ~= numel(pos)
-
                 % Validate value supplied for the Title
                 if(~ischar(title) || isempty(title))
                     error('%s: Title must be a non-empty string', fname);
 
                 endif;
 
+                % Intialize cell array to store data samples
+                dss = {};
+
                 % Validate values supplied as positional arguments
-                idx = 0;
+                idx = 1;
                 while(numel(pos) >= idx)
-                    if(~isa(pos(idx), 'DataSample'))
+                    if(~isa(pos{idx}, 'DataSample'))
                         error( ...
                             sprintf( ...
                                 cstrcat( ...
@@ -152,12 +137,12 @@ classdef Measurement
                                 idx ...
                                 ) ...
                             );
-                    endif;  % ~isa(pos(idx), 'DataSample')
+                    endif;  % ~isa(pos{idx}, 'DataSample')
 
                     % Check if DataSample instance is equivalent with previous
                     % data samples
-                    if(0 < numel(m.dss))
-                        if(~m.dss{1}.isequivalent(pos(idx)))
+                    if(1 < numel(dss))
+                        if(~dss{1}.isequivalent(pos{idx}))
                             error( ...
                                 sprintf( ...
                                     cstrcat( ...
@@ -173,9 +158,14 @@ classdef Measurement
 
                     endif;  % 0 < numel(m.dss)
 
+                    dss{end+1} = pos{idx};
+
                     ++idx;
 
                 endwhile;  % numel(pos) >= idx
+
+                m.title = title;
+                m.dss   = dss;
 
             endif;  % 0 == nargin
 
@@ -209,7 +199,7 @@ classdef Measurement
                 printf('\t\t%s, ...\n', m.title);
                 printf('\t\t[ ...\n');
                 idx = 1;
-                while(list.numel() >= idx)
+                while(m.numel() >= idx)
                     printf('\t\t');
                     disp(m.dss{idx}.asrow());
                     printf(' ...\n');
@@ -348,7 +338,13 @@ classdef Measurement
 
             endif;
 
-            msr = Measurement(m.dss{:}, ds, 'Title', m.title);
+            if(m.isempty())
+                msr = Measurement(ds, 'Title', m.title);
+
+            else
+                msr = Measurement(m.dss{:}, ds, 'Title', m.title);
+
+            endif;  % m.isempty()
 
         endfunction;
 
