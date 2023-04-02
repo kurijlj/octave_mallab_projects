@@ -167,14 +167,15 @@ function msr = measure(AT, ss, window, varargin)
         % outside scanset's pixel data bounds.
         x = AT(idx, 1);
         y = AT(idx, 2);
-        whh = ceil(window(2) / 2);
-        whw = ceil(window(1) / 2);
+        whh = round((window(2) - 1)/2);
+        whw = round((window(1) - 1)/2);
+        window = [2*whw + 1, 2*whh + 1];
 
         % Calculate bounding box coordinates
         bbox = [ ...
             y - whh, x - whw; ...
             y + whh, x + whw ...
-            ]
+            ];
 
         % Check if upper left corner of the bounding box falls outside pixel
         % data area

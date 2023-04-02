@@ -141,8 +141,8 @@ classdef Measurement
 
                     % Check if DataSample instance is equivalent with previous
                     % data samples
-                    if(1 < numel(dss))
-                        if(~dss{1}.isequivalent(pos{idx}))
+                    if(1 < numel(pos))
+                        if(~pos{1}.isequivalent(pos{idx}))
                             error( ...
                                 sprintf( ...
                                     cstrcat( ...
@@ -233,8 +233,6 @@ classdef Measurement
                 'L [pixels]', ...
                 'W [pixels]', ...
                 'Number of samples', ...
-                'Mean pixel value', ...
-                'StDev' ...
                 };
 
             if(1 == m.at(1).numch())
@@ -304,13 +302,19 @@ classdef Measurement
             if(~m.isempty())
                 idx = 1;
                 while(m.numel() >= idx)
-                    mmat(end + 1) = m.at(idx).asrow();
+                    if(1 == idx)
+                        mmat = m.at(1).asrow();
+
+                    else
+                        mmat(end + 1, :) = m.at(idx).asrow();
+
+                    endif;  % 1 == idx
 
                     ++idx;
 
                 endwhile;
 
-            endif;
+            endif;  % ~m.isempty()
 
         endfunction;
 
@@ -434,9 +438,9 @@ classdef Measurement
 %
 %  Description:
 %          Return whether or not two measurements are equivalent. Two
-%          measurements are equivalent if they have same number of data samples,
-%          data samples are equivalent, and corresponding data samples have
-%          equal position vectors.
+%          measurements are equivalent if their data samples have same number of
+%          channels i.e. ds1i.numch() == ds2i.numch(). Two measurement instances
+%          that are empty are considered equivalent.
 %
 %  ----------------------------------------------------------------------------
             fname = 'isequivalent';
@@ -455,25 +459,17 @@ classdef Measurement
             endif;
 
             result = false;
-            if(other.numel() == m.numel())
-                idx = 1;
-                while(m.numel() >= idx)
-                    if( ...
-                            ~m.at(idx).isequivalent(other.at(idx)) ...
-                            || ~isequal( ...
-                                m.at(idx).position, ...
-                                other.at(idx).position ...
-                                ) ...
-                            )
-                        break;
 
-                    endif;
+            if(other.isempty() && m.isempty())
+                result = true;
 
-                    ++idx;
+            elseif(~other.isempty() && ~m.isempty())
+                if(other.at(1).numch() == m.at(1).numch())
+                    result = true;
 
-                endwhile;
+                endif;  % other.at(1).numch() == m.at(1).numch()
 
-            endif;  % other.numel() == m.numel()
+            endif;  % End of equivalency tests
 
         endfunction;
 
@@ -506,11 +502,12 @@ classdef Measurement
 
             endif;
 
-            result = false;
+            result = true;
             if(other.numel() == m.numel())
                 idx = 1;
                 while(m.numel() >= idx)
-                    if(~m.at(idx).isequval(other.at(idx)))
+                    if(other.at(idx) != m.at(idx))
+                        result = false;
                         break;
 
                     endif;
@@ -519,9 +516,79 @@ classdef Measurement
 
                 endwhile;
 
+            else
+                % other.numel() != m.numel()
+                result = false;
+
             endif;  % other.numel() == m.numel()
 
         endfunction;
+
+
+        function result = eq(m, other)
+%  ----------------------------------------------------------------------------
+%
+%  Method 'eq':
+%
+%  Use:
+%       -- result = m.eq(other)
+%
+%  Description:
+%          Overload equality operator (==) for the Measurement class. It wraps
+%          'isequal' method.
+%
+%  ----------------------------------------------------------------------------
+            fname = 'eq';
+
+            if(~isa(other, 'Measurement'))
+                error( ...
+                    sprintf( ...
+                        cstrcat( ...
+                            '%s: other must be an instance of the ', ...
+                            '"Measurement" class' ...
+                            ), ...
+                        fname ...
+                        ) ...
+                    );
+
+            endif;
+
+            result = m.isequal(other);
+
+        endfunction;  % eq()
+
+
+        function result = ne(m, other)
+%  ----------------------------------------------------------------------------
+%
+%  Method 'ne':
+%
+%  Use:
+%       -- result = m.ne(other)
+%
+%  Description:
+%          Overload non equality operator (!=) for the Measurement class. It
+%          wraps 'isequal' method.
+%
+%  ----------------------------------------------------------------------------
+            fname = 'ne';
+
+            if(~isa(other, 'Measurement'))
+                error( ...
+                    sprintf( ...
+                        cstrcat( ...
+                            '%s: other must be an instance of the ', ...
+                            '"Measurement" class' ...
+                            ), ...
+                        fname ...
+                        ) ...
+                    );
+
+            endif;
+
+            result = ~m.isequal(other);
+
+        endfunction;  % eq()
 
     endmethods;
 
