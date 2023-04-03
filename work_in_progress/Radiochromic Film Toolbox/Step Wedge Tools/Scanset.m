@@ -32,7 +32,7 @@ classdef Scanset
 %
 %       Properties of 'Scanset' objects:
 %
-%       Title: string, def. 'Scanset #1'
+%       Title: string, def. same as sstype
 %           A string containing a title describing scanned data.
 %
 %       DateOfIrradiation: serial date number (see: datenum), def. NaN
