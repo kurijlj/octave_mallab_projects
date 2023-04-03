@@ -32,7 +32,7 @@ classdef Scanset
 %
 %       Properties of 'Scanset' objects:
 %
-%       Title: string, def. 'Signal scanset'
+%       Title: string, def. 'Scanset #1'
 %           A string containing a title describing scanned data.
 %
 %       DateOfIrradiation: serial date number (see: datenum), def. NaN
@@ -55,7 +55,7 @@ classdef Scanset
 %
 %       Smoothing: PixelDataSmotthing, def. PixelDataSmoothing()
 %           Data smoothing algorithm and parameters of the smoothing algorithm
-%           to be used on each individual scan before averasging pixel data.
+%           to be used on each individual scan before averaging pixel data.
 %           By default no smoothing is applied to the pixel data. See help on
 %           PixelDataSmoothing class for details.
 %

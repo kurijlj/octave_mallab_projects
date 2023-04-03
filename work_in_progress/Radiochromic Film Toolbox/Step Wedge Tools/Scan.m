@@ -14,7 +14,7 @@ classdef Scan
 %
 %       The minimum required scan signal size is 12x12 pixels, which roughly
 %       corresponds to an 4 mm x 4 mm area if a film piece is scanned using
-%       lowest acceptable resolution (72 dpi x 72 dpi). If the scan signal
+%       lowest acceptable resolution (75 dpi x 75 dpi). If the scan signal
 %       is loaded from an image file, the following requirements are mandatory:
 %           - must be a TIFF file;
 %           - must be an RGB image;
@@ -608,23 +608,81 @@ classdef Scan
 
                     % Assign file name to the file attribute
                     sc.file = pos{1};
-                    % Load pixel data from file to a temporary variable
+                    % Load pixel data from the file
                     sc.pd = double(imread(pos{1}));
-                    % Assign resolution to temporary variable
-                    sc.rsl = [ifi.XResolution, ifi.YResolution];
-                    % Load resolution units from the file
+                    % Load resolution units from the file into a temporary
+                    % variable
                     rslu = tiff_tag_read(pos{1}, 296);
                     % Convert units number to units string
                     if(1 == rslu)
-                        sc.rslu = 'None';
+                        rslu = 'None';
 
                     elseif(2 == rslu)
-                        sc.rslu = 'dpi';
+                        rslu = 'dpi';
 
                     else
-                        sc.rslu = 'dpcm';
+                        rslu = 'dpcm';
 
                     endif;
+
+                    % Check if the image complies to the minimum specified image
+                    % resolution
+                    if(isequal('dpi', sc.rslu) && 75 > sc.rsl(1))
+                        % Unsupported image resolution
+                        w = sprintf( ...
+                            cstrcat( ...
+                                '%s has noncomplying image resolution ', ...
+                                '(%d dpi, expected at least 75 dpi)' ...
+                                ), ...
+                            pos{1}, ...
+                            ifi.XResolution ...
+                            );
+
+                        % Display the warning in the Command Window prompt
+                        warning( ...
+                            '%s: %s. Ignoring file ...', ...
+                            fname, ...
+                            w ...
+                            );
+
+                        % Add the warning to the warnings stack
+                        sc.ws{end + 1} = w;
+
+                        % Stop further constructor execution
+                        return;
+
+                    elseif(isequal('dpcm', sc.rslu) && 30 > sc.rsl(1))
+                        % Unsupported image resolution
+                        w = sprintf( ...
+                            cstrcat( ...
+                                '%s has noncomplying image resolution ', ...
+                                '(%d dpi, expected at least 30 dpcm)' ...
+                                ), ...
+                            pos{1}, ...
+                            ifi.XResolution ...
+                            );
+
+                        % Display the warning in the Command Window prompt
+                        warning( ...
+                            '%s: %s. Ignoring file ...', ...
+                            fname, ...
+                            w ...
+                            );
+
+                        % Add the warning to the warnings stack
+                        sc.ws{end + 1} = w;
+
+                        % Stop further constructor execution
+                        return;
+
+                    endif;
+
+                    % Assign validated values to the instance parameters
+                    sc.rslu = rslu;
+                    if(~isequal('None', rslu))
+                        sc.rsl = [ifi.XResolution, ifi.YResolution];
+
+                    endif;  % ~isequal('None', rslu)
 
                     % Check if user passed the date of scan
                     if(isnan(dtofsc))
