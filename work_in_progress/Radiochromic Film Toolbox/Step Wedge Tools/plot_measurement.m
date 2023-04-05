@@ -46,7 +46,7 @@ function plot_measurement(AT, ss, window, varargin)
 % -----------------------------------------------------------------------------
     fname = 'plot_measurement';
     use_case_a = sprintf(' -- %s(AT, ss, window)', fname);
-    use_case_a = sprintf(' -- %s(..., "PROPERTY", VALUE, ...)', fname);
+    use_case_b = sprintf(' -- %s(..., "PROPERTY", VALUE, ...)', fname);
 
     if(3 > nargin)
         % Invalid call to function
