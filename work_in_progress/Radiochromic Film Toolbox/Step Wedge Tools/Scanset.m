@@ -1547,8 +1547,8 @@ classdef Scanset
             if(ss.isvalid())
                 PD = uint16(ss.pixel_data(pds));
 
-                xscale = 1:1:size(PD, 2);
-                yscale = 1:1:size(PD, 1);
+                xscale = [1, size(PD, 2)];
+                yscale = [1, size(PD, 1)];
                 cc = size(PD, 3);
 
                 if(isequal('on', heq))
@@ -1562,14 +1562,22 @@ classdef Scanset
 
                 endif;
 
+                % Initialize label for the axes
+                xlbl = "X [points]";
+                ylbl = "Y [points]";
+
                 switch(ss.rslu)
                     case 'dpi'
                         xscale = (xscale.*25.4)./ss.rsl(1);
                         yscale = (yscale.*25.4)./ss.rsl(2);
+                        xlbl = "X [mm]";
+                        ylbl = "Y [mm]";
 
                     case 'dpcm'
                         xscale = (xscale.*10.0)./ss.rsl(1);
                         yscale = (yscale.*10.0)./ss.rsl(2);
+                        xlbl = "X [mm]";
+                        ylbl = "Y [mm]";
 
                 endswitch;
 
@@ -1579,9 +1587,10 @@ classdef Scanset
                     'xlim', [xscale(1) xscale(end)], ...
                     'ylim', [yscale(1) yscale(end)] ...
                     );
-                imshow(PD);
-                xlabel('X [mm]');
-                ylabel('Y [mm]');
+                image(PD, "xdata", xscale, "ydata", yscale, "parent", haxes);
+                daspect(haxes, [1 1]);
+                xlabel(haxes, xlbl);
+                ylabel(haxes, ylbl);
                 title( ...
                     haxes, ...
                     cstrcat( ...
