@@ -249,7 +249,7 @@ classdef Scanset
             else
                 % Determine index of the first optional argument
                 idx = 1;
-                while(nargin >= idx);
+                while(nargin >= idx)
                     if(ischar(varargin{idx}))
                         switch(varargin{idx})
                             case 'Title'
