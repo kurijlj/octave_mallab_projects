@@ -121,6 +121,7 @@ function [F, info] = mrs_denoise_soft(f, wt, J, scaling='sqrt')
     % Allocate output and mid result
     [L, W] = size(f);
     w = zeros(L, W, J + 1);
+    M = ones(L, W, J);
     w(:, :, 1) = f;
     F = zeros(L, W);
 
@@ -151,16 +152,28 @@ function [F, info] = mrs_denoise_soft(f, wt, J, scaling='sqrt')
         w(:, :, 1) = squeeze(c(:, 1, :))';
 
         % Calculate significant coefficients using soft threshold
-        m = w(:, :, runPtr) > std2(w(:, :, runPtr))*sqrt(2*log(L*W));
+        M(:, :, jj) = w(:, :, runPtr) > std2(w(:, :, runPtr))*sqrt(2*log(L*W));
+
+        kk = 1;
+        Mjj = ones(L, W);
+        while(jj >= kk)
+            Mjj = M(:, :, kk).*Mjj;
+
+            ++kk;
+
+        endwhile;  % kk = 1 .. jj
+        Mjj = M(:, :, jj) - Mjj;
+        assert(0 == sum(sum(Mjj < 0)), 'Mjj < 0');
+
         % m = w(:, :, runPtr) > std2(w(:, :, runPtr))*sqrt(2*log(sum(sum(~m)));
         % m = w(:, :, runPtr) > std2(w(:, :, runPtr));
         % m = w(:, :, runPtr) > std2(w(:, :, runPtr).*m)*sqrt(2*log(L*W));
-        w(:, :, runPtr) = w(:, :, runPtr).*m;
+        w(:, :, runPtr) = w(:, :, runPtr).*Mjj;
 
         --runPtr;
         ++jj;
 
-    endwhile;
+    endwhile;  % jj = 1 .. J
 
     jj = 1;
     while(size(w, 3) >= jj)
