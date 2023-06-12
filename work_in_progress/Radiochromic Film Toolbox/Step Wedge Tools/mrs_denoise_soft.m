@@ -121,7 +121,7 @@ function [F, info] = mrs_denoise_soft(f, wt, J, scaling='sqrt')
     % Allocate output and mid result
     [L, W] = size(f);
     w = zeros(L, W, J + 1);
-    M = ones(L, W, J);
+    M = zeros(L, W, J);
     w(:, :, 1) = f;
     F = zeros(L, W);
 
@@ -169,6 +169,7 @@ function [F, info] = mrs_denoise_soft(f, wt, J, scaling='sqrt')
         % m = w(:, :, runPtr) > std2(w(:, :, runPtr));
         % m = w(:, :, runPtr) > std2(w(:, :, runPtr).*m)*sqrt(2*log(L*W));
         w(:, :, runPtr) = w(:, :, runPtr).*Mjj;
+        % w(:, :, runPtr) = w(:, :, runPtr).*M(:, :, jj);
 
         --runPtr;
         ++jj;
