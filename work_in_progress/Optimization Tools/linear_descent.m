@@ -1,4 +1,5 @@
-function [theta, cost_history] = linear_descent(X, y, alpha, num_iterations)
+function [theta, cost_history] = linear_descent(X, y, theta0, alpha,
+        num_iterations)
 %% -----------------------------------------------------------------------------
 %%
 %% Function 'linear_descent':
@@ -43,7 +44,7 @@ function [theta, cost_history] = linear_descent(X, y, alpha, num_iterations)
     m = length(y);   % number of training examples
     n = size(X, 2);  % number of features
 
-    theta = zeros(n, 1);  % initialize theta to zeros
+    theta = theta0;  % initialize theta to zeros
     cost_history = zeros(num_iterations, 1);  % track the cost function history
 
     i = 1;
@@ -55,7 +56,7 @@ function [theta, cost_history] = linear_descent(X, y, alpha, num_iterations)
         error = h - y;
 
         % Update theta using gradient descent
-        theta = theta - (alpha/m) * (X' * error);
+        theta = theta - (alpha/m) .* sum(error .* X)';
         
         % Compute the cost function
         cost = (1/(2*m)) * sum(error.^2);
