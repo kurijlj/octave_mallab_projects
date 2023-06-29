@@ -1,5 +1,5 @@
-function [theta, cost_history, theta_history] = linear_descent(X, y, theta0,
-        alpha, num_iterations)
+function [theta, cost_history, theta_history] = linear_momentum_descent(X, y,
+        theta0, alpha, beta, num_iterations)
 %% -----------------------------------------------------------------------------
 %%
 %% Function 'linear_descent':
@@ -22,6 +22,8 @@ function [theta, cost_history, theta_history] = linear_descent(X, y, theta0,
 %         theta0: The initial value of theta, a column vector of size (n x 1)
 %         alpha: The learning rate, which determines the step size in
 %         each iteration
+%         beta: The momentum parameter, which determines the weight of the
+%         previous step in the current step
 %         num_iterations: The number of iterations to perform the
 %         gradient descent
 %
@@ -36,7 +38,7 @@ function [theta, cost_history, theta_history] = linear_descent(X, y, theta0,
 %         m = length(y);   % number of training examples
 %         X = [ones(m, 1), data(:, 1)];  % Assuming x is the feature matrix
 %                                        % without the intercept term
-%         [theta, cost_history] = linear_descent(X, y, 0.01, 1500);
+%         [theta, cost_history] = linear_descent(X, y, 0.01, 0.9, 1500);
 %
 %       Note:
 %         The input X must be a matrix of size (m x n) where:
@@ -48,6 +50,7 @@ function [theta, cost_history, theta_history] = linear_descent(X, y, theta0,
     n = size(X, 2);  % number of features
 
     theta = theta0;                           % initialize theta
+    velocity = zeros(n, 1);                   % initialize velocity
     cost_history = zeros(num_iterations, 1);  % track the cost function history
     theta_history = theta0;                   % track the theta history
 
@@ -59,9 +62,15 @@ function [theta, cost_history, theta_history] = linear_descent(X, y, theta0,
         % Compute the error
         error = h - y;
 
-        % Update theta using gradient descent
-        theta = theta - (alpha/m) .* sum(error .* X)';
-        
+        % Compute the gradient
+        grad = (1/m) .* X' * error;
+
+        % Update velocity
+        velocity = (beta .* velocity) + ((1 - beta) .* grad);
+
+        % Update theta using momentum
+        theta = theta - (alpha .* velocity);
+
         % Compute the cost function
         cost = (1/(2*m)) * sum(error.^2);
         cost_history(i) = cost;
