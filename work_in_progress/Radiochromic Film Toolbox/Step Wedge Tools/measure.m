@@ -18,7 +18,7 @@ function msr = measure(AT, ss, window, varargin)
 %           Array of coordinates to sample data from for the given scanset.
 %
 %       ss: instance of the Scanset class
-%           A scanset from which to sample dara for the given coordinates.
+%           A scanset from which to sample data for the given coordinates.
 %
 %       window: two elements row vector
 %           Two elements row vector determing the size of the sampling window.
