@@ -688,7 +688,7 @@ classdef Scan
                     if(isnan(dtofsc))
                         % DateOfScan not set, use the file modification date as
                         % the default for the DateOfScan
-                        dtofsc = datenum(strsplit(ifi.FileModDate){1});
+                        dtofsc = datenum(strsplit(strtrim(ifi.FileModDate)){1});
 
                     endif;
 
