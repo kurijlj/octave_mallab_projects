@@ -1,44 +1,47 @@
-function BW = segment_film_piece(ss)
-%% -----------------------------------------------------------------------------
-%%
-%% Function: 'segment_film_piece':
-%%
-%% -----------------------------------------------------------------------------
-%
-%  Use:
-%       -- BW = segment_film_piece(ss)
-%
-%% Description:
-%       Return binary mask of a film piece for each color channel from a Scanset
-%       object.
-%
-%       The function is used to segment a film piece from a Scanset object, for
-%       each color channel. The steps that are taken to segment the film %
-%       piece or a optical density step wedge from the scanner background are:
-%           1.  Smooth the image with a Gaussian filter.
-%           2.  Subtract smoothed image from original image to get the unsharp
-%               mask.
-%           3.  Normalize the edges to the range [0, 1].
-%           4.  Apply unsharp mask to original image.
-%           5.  Calculate the image gradient of the edge enhanced image.
-%           6.  Apply iamge dilate to the gradient image.
-%           7.  Apply watershed segmentation to the dilated gradient image.
-%           8.  Apply image fill holes to the watershed segmented image.
-%           9.  Apply image erode to the filled image.
-%
-%       Function parameters:
-%       ss: Scanset object
-%           The Scanset object of the scanned film piece.
-%
-%       Return values:
-%       BW: matrix
-%           Binary mask of the film piece for each color channel.
-%
-% -----------------------------------------------------------------------------
-    fname = "segment_film_piece";
+function BW = Segment_Film_Piece(ss)
+    %% -------------------------------------------------------------------------
+    %%
+    %% Function: 'Segment_Film_Piece':
+    %%
+    %% -------------------------------------------------------------------------
+    %
+    %  Use:
+    %       -- BW = Segment_Film_Piece(ss)
+    %
+    %% Description:
+    %       Return binary mask of a film piece for each color channel from
+    %       a Scanset object.
+    %
+    %       The function is used to segment a film piece from a Scanset object,
+    %       for each color channel. The steps that are taken to segment
+    %       the film piece or a optical density step wedge from the scanner
+    %       background are:
+    %           1.  Smooth the image with a Gaussian filter.
+    %           2.  Subtract smoothed image from original image to get
+    %               the unsharp mask.
+    %           3.  Normalize the edges to the range [0, 1].
+    %           4.  Apply unsharp mask to original image.
+    %           5.  Calculate the image gradient of the edge enhanced image.
+    %           6.  Apply iamge dilate to the gradient image.
+    %           7.  Apply watershed segmentation to the dilated gradient image.
+    %           8.  Apply image fill holes to the watershed segmented image.
+    %           9.  Apply image erode to the filled image.
+    %
+    %       Function parameters:
+    %       ss: Scanset object
+    %           The Scanset object of the scanned film piece.
+    %
+    %       Return values:
+    %       BW: matrix
+    %           Binary mask of the film piece for each color channel.
+    %
+    % (C) Copyright 2023 Ljubomir Kurij
+    %
+    % --------------------------------------------------------------------------
+    fname = "Segment_Film_Piece";
     use_case_a = sprintf(" -- BW = %s(ss)", fname);
 
-    % Check input arguments ---------------------------------------------------
+    % Check input arguments ----------------------------------------------------
 
     % Check number of input arguments
     if nargin != 1
@@ -59,7 +62,7 @@ function BW = segment_film_piece(ss)
     
     endif;  % if !isa(ss, "Scanset")
 
-    % Do the computation ------------------------------------------------------
+    % Do the computation -------------------------------------------------------
 
     % Make a kernel for the Gaussian filter
     sigma = 2;  % Standard deviation of the Gaussian kernel
@@ -115,7 +118,38 @@ function BW = segment_film_piece(ss)
     maskG = imerode(filledG, se);
     maskB = imerode(filledB, se);
 
-    % Return the binary mask for each color channel
-    BW = cat(3, maskR, maskG, maskB);
+    % Calculate the distance transform of the eroded image
+    maskR = bwdist(maskR);
+    maskG = bwdist(maskG);
+    maskB = bwdist(maskB);
 
-endfunction;  % function segment_film_piece
+    % Discard all pixels that are closer than 3 pixels from the edge
+    maskR = maskR >= 3;
+    maskG = maskG >= 3;
+    maskB = maskB >= 3;
+
+    % Return the binary mask for each color channel
+    mask = cat(3, maskR, maskG, maskB);
+    clear maskR maskG maskB;
+
+    % Smooth edges of the binary mask by applying a Gaussian filter
+    sigma = 1;
+    kernel_size = (2 * ceil(3 * sigma) + 1) .* [1 1];
+    kernel = fspecial('gaussian', kernel_size, 2);
+    mask = imfilter(mask, kernel, "symmetric");
+
+    % Normalize the binary mask to the range [0, 1]
+    mask = mat2gray(mask);
+
+    % Threshold all pixels below 0.5 intensity
+    mask = mask < 0.5;
+
+    % Make a uninon of the binary masks for each color channel
+    BW = mask(:, :, 1) | mask(:, :, 2) | mask(:, :, 3);
+
+    % Return the binary mask for each color channel
+    BW = cat(3, BW, BW, BW);
+
+endfunction;  % function Segment_Film_Piece
+
+% End of file Segment_Film_Piece.m
