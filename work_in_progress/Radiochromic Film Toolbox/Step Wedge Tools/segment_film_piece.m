@@ -1,7 +1,7 @@
 function BW = Segment_Film_Piece(ss)
     %% -------------------------------------------------------------------------
     %%
-    %% Function: 'Segment_Film_Piece':
+    %% Function: Segment_Film_Piece(ss):
     %%
     %% -------------------------------------------------------------------------
     %
@@ -35,7 +35,7 @@ function BW = Segment_Film_Piece(ss)
     %       BW: matrix
     %           Binary mask of the film piece for each color channel.
     %
-    % (C) Copyright 2023 Ljubomir Kurij
+    %% (C) Copyright 2023 Ljubomir Kurij
     %
     % --------------------------------------------------------------------------
     fname = "Segment_Film_Piece";
