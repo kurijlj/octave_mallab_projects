@@ -1,12 +1,20 @@
-function [p0, q0, w, h] = Roi_2_Fov(x0, y0, W, H, p0, q0, w, h)
+function [ ...
+          roi_x, roi_y, ...
+          roi_w, roi_h ...
+         ] = Roi_2_Fov( ...
+                       fov_w, fov_h, ...
+                       roi_x, roi_y, ...
+                       roi_w, roi_h ...
+                      )
     %% -------------------------------------------------------------------------
     %%
-    %% Function: Roi_2_Fov(x0, y0, W, H, p0, q0, w, h):
+    %% Function: Roi_2_Fov(fov_w, fov_h, roi_x, roi_y, roi_w, roi_h)
     %%
     %% -------------------------------------------------------------------------
     %
     %% Use:
-    %       - [p0, q0, w, h] = Roi_2_Fov(x0, y0, W, H, p0, q0, w, h)
+    %       - [roi_x, roi_y, roi_w, roi_h] = Roi_2_Fov(fov_w, fov_h, roi_x,
+    %       roi_y, roi_w, roi_h)
     %
     %% Description:
     %       This function recalculates the coordinates and dimensions of the
@@ -14,97 +22,95 @@ function [p0, q0, w, h] = Roi_2_Fov(x0, y0, W, H, p0, q0, w, h)
     %       given FoV (Field of View).
     %
     %% Function parameters:
-    %       - x0, y0: origin of the FoV (in pixels)
-    %       - W, H: dimensions (width and height) of the FoV (in pixels)
-    %       - p0, q0: origin of the ROI (in pixels)
-    %       - w, h: dimensions (width and height) of the ROI (in pixels)
+    %       - fov_w, fov_h: dimensions (width and height) of the FoV (in pixels)
+    %       - roi_x, roi_y: origin of the ROI (in pixels) relative to the FoV
+    %       - roi_w, roi_h: dimensions (width and height) of the ROI (in pixels)
     %
     %% Return:
-    %       - p0, q0: new origin (if applicable) of the ROI (in pixels)
-    %       - w, h: new dimensions (if applicable) of the ROI (in pixels)
+    %       - roi_x, roi_y: new origin (if applicable) of the ROI (in pixels)
+    %       - roi_w, roi_h: new dimensions (if applicable) of the ROI
+    %                       (in pixels)
     %
     %% Examples:
-    %       - [10, 10, 50, 50] = Roi_2_Fov(0, 0, 100, 100, 10, 10, 50, 50)
-    %       - [0, 0, 100, 100] = Roi_2_Fov(0, 0, 100, 100, 0, 0, 100, 100)
-    %       - [0, 0, 100, 100] = Roi_2_Fov(0, 0, 100, 100, 0, 0, 200, 200)
-    %       - [0, 0, 100, 100] = Roi_2_Fov(0, 0, 100, 100, -100, -100, 200, 100)
+    %       >> Roi_2_Fov(100, 100, 10, 10, 50, 50)
+    %       ans =
+    %           10   10   50   50
+    %
+    %       >> Roi_2_Fov(100, 100, 0, 0, 100, 100)
+    %       ans =
+    %           0    0   100   100
+    %
+    %       >> Roi_2_Fov(100, 100, 0, 0, 200, 200)
+    %       ans =
+    %           0    0   100   100
+    %
+    %       >> Roi_2_Fov(100, 100, -100, -100, 200, 100)
+    %       ans =
+    %           0    0   100   100
     %
     %% (C) Copyright 2023 Ljubomir Kurij
     %
     %% -------------------------------------------------------------------------
-    fname = "Roi_2_Fov";
+    fname = 'Roi_2_Fov';
     use_case_a = sprintf( ...
-        " -- [p0, q0, w, h] = %s(x0, y0, W, H, q0, p0, w, h)", ...
-        fname ...
-        );
+                         cstrcat( ...
+                                 ' -- [roi_x, roi_y, roi_w, roi_h] = ', ...
+                                 '%s(fov_w, fov_h, roi_y, roi_x, roi_w, ', ...
+                                 'roi_h)' ...
+                                ), ...
+                         fname ...
+                        );
 
     % Check input parameters ---------------------------------------------------
 
     % Check number of input parameters
-    if nargin ~= 8
+    if nargin ~= 6
         error( ...
-            "Invalid call to %s. Correct usage is:\n%s", ...
-            fname, ...
-            use_case_a ...
-            );
+              'Invalid call to %s. Correct usage is:\n%s', ...
+              fname, ...
+              use_case_a ...
+             );
 
-    endif;  % End of if nargin ~= 8
+    end  % End of if nargin ~= 6
 
-    % Check input parameters' types
+    % Check input parameters types
     i = 1;
-    while (nargin >= i)
-        pname = {"x0", "y0", "W", "H", "p0", "q0", "w", "h"};
+    while 6 >= i
+        pname = {'fov_w', 'fov_h', 'roi_x', 'roi_y', 'roi_w', 'roi_h'};
         validateattributes( ...
-            x0, ...
-            {"numeric"}, ...
-            { ...
-                "scalar", ...
-                "integer", ...
-                "nonnegative" ...
-            }, ...
-            fname, ...
-            pname{i}, ...
-            i ...
-        );
+                           varargin{i}, ...
+                           {'numeric'}, ...
+                           { ...
+                            'scalar', ...
+                            'integer', ...
+                            '>=', 1 ...
+                           }, ...
+                           fname, ...
+                           pname{i}, ...
+                           i ...
+                          );
 
         i += 1;
 
-    endwhile;  % End of parameter type check
+    end  % End of parameter type check
+    clear('i', 'pname');
 
     % Do the computation -------------------------------------------------------
 
+    % Set FoV origin (for convenience)
+    x0 = 1;
+    y0 = 1;
+
     % Resize ROI if it extents beyond the FoV
-    if (w > W)
-        w = W;
-
-    endif;  % End of if (w > W)
-
-    if (h > H)
-        h = H;
-
-    endif;  % End of if (h > H)
+    roi_w = min(fov_w, roi_w);
+    roi_h = min(fov_h, roi_h);
 
     % Move ROI if it is outside the FoV
-    if (0 > p0 - x0)
-        p0 = x0;
+    roi_x = max(roi_x, x0);
+    roi_x = min(roi_x, x0 + fov_w - roi_w);
+    roi_y = max(roi_y, y0);
+    roi_y = min(roi_y, y0 + fov_h - roi_h);
 
-    endif;  % End of if (0 > p0 - x0)
-
-    if (0 > q0 - y0)
-        q0 = y0;
-
-    endif;  % End of if (0 > q0 - y0)
-
-    if (0 > x0 + W - p0 - w)
-        p0 = W - w + x0;
-
-    endif;  % End of if (0 > x0 + W - p0 - w)
-
-    if (0 > y0 + H - q0 - h)
-        q0 = H - h + y0;
-
-    endif;  % End of if (0 > y0 + H - q0 - h)
-
-endfunction;  % End of Roi_2_Fov
+end  % End of Roi_2_Fov
 
 % End of file Roi_2_Fov.m
