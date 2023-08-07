@@ -1,11 +1,4 @@
-function [ ...
-          roi_x, roi_y, ...
-          roi_w, roi_h ...
-         ] = Roi_2_Fov( ...
-                       fov_w, fov_h, ...
-                       roi_x, roi_y, ...
-                       roi_w, roi_h ...
-                      )
+function roi = Roi_2_Fov(varargin)
     %% -------------------------------------------------------------------------
     %%
     %% Function: Roi_2_Fov(fov_w, fov_h, roi_x, roi_y, roi_w, roi_h)
@@ -13,7 +6,7 @@ function [ ...
     %% -------------------------------------------------------------------------
     %
     %% Use:
-    %       - [roi_x, roi_y, roi_w, roi_h] = Roi_2_Fov(fov_w, fov_h, roi_x,
+    %       - roi = Roi_2_Fov(fov_w, fov_h, roi_x,
     %       roi_y, roi_w, roi_h)
     %
     %% Description:
@@ -27,9 +20,9 @@ function [ ...
     %       - roi_w, roi_h: dimensions (width and height) of the ROI (in pixels)
     %
     %% Return:
-    %       - roi_x, roi_y: new origin (if applicable) of the ROI (in pixels)
-    %       - roi_w, roi_h: new dimensions (if applicable) of the ROI
-    %                       (in pixels)
+    %       - roi: a column vector containing the coordinates and dimensions of
+    %              the ROI (in pixels) relative to the FoV in the following
+    %              order: [roi_x; roi_y; roi_w; roi_h]
     %
     %% Examples:
     %       >> Roi_2_Fov(100, 100, 10, 10, 50, 50)
@@ -95,21 +88,28 @@ function [ ...
     end  % End of parameter type check
     clear('i', 'pname');
 
+    % Store input parameters listo into local variables
+    positional = parseparams(varargin);
+    [fov_w, fov_h, roi_x, roi_y, roi_w, roi_h] = positional{:};
+    clear('positional');
+
     % Do the computation -------------------------------------------------------
 
     % Set FoV origin (for convenience)
     x0 = 1;
     y0 = 1;
 
+    % Allocate ROI vector
+    roi = [roi_x; roi_y; roi_w; roi_h];
     % Resize ROI if it extents beyond the FoV
-    roi_w = min(fov_w, roi_w);
-    roi_h = min(fov_h, roi_h);
+    roi(3) = min(fov_w, roi_w);
+    roi(4) = min(fov_h, roi_h);
 
     % Move ROI if it is outside the FoV
-    roi_x = max(roi_x, x0);
-    roi_x = min(roi_x, x0 + fov_w - roi_w);
-    roi_y = max(roi_y, y0);
-    roi_y = min(roi_y, y0 + fov_h - roi_h);
+    roi(1) = max(roi_x, x0);
+    roi(1) = min(roi_x, x0 + fov_w - roi_w);
+    roi(2) = max(roi_y, y0);
+    roi(2) = min(roi_y, y0 + fov_h - roi_h);
 
 end  % End of Roi_2_Fov
 
