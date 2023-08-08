@@ -115,8 +115,8 @@ function Roi_2_Plot(varargin)
 
     % Set plot origin. When pltting over an image, the origin of the plot is
     % the upper left corner of the image at position (0.5, 0.5)
-    X0 = 0.5;
-    Y0 = 0.5;
+    X0 = -0.5;
+    Y0 = -0.5;
 
     % Freeze the axes. We want to plot on top of the existing content
     hold(hax, 'on');
