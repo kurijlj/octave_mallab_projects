@@ -34,13 +34,62 @@ this subproject are outlined below:
 
 The subproject is structured as follows:
 
-- **`src/`**: This directory contains the source code for the algorithms
-mentioned above. Each function is designed to fulfill a specific objective
-outlined in the project.
+- **`./Make_Dummy_Fov.,`**: This file contains the source code for the
+computational FoV generation mentioned above. The FoV is specified by its width
+and height. Example:
+   ```
+   >> MakeDummyFov(30, 20)
+   ```
+creates a dummy FoV pixel map of 30 pixels wide and 20 pixels high.
 
-- **`tests/`**: Here, you'll find the test suite that rigorously assesses the
-functionality of the algorithms. Each test case aims to validate the correctness
-of the functions and their ability to handle different input scenarios.
+- **`./Roi_2_Fov.m`**: This file contains the source code for the general
+algorithm to reposition and resize a given Region of Interest bounding box
+within provided FoV. Example:
+   ```
+   >> Roi_2_Fov(30, 20, 5, 5, 25, 15)
+   ans =
+
+       5
+       5
+      25
+      15
+
+   >>
+   ```
+creates a dummy FoV pixel map of 30 pixels wide and 20 pixels high.
+
+- **`./Roi_2_Bw.m`**: This file contains the source code for the general
+algorithm to calculate a binary mask representing the presence of the given ROI
+within the provided FoV. Example:
+   ```
+   >> Roi_2_Bw(5, 5, 2, 2, 3, 3)
+   ans =
+
+      0   0   0   0   0
+      0   1   1   1   0
+      0   1   1   1   0
+      0   1   1   1   0
+      0   0   0   0   0
+
+>>
+   ```
+
+- **`./Roi_2_Plot.m`**: This file contains the source code for the general
+algorithm to plot the bounding box of a given ROI over the plot of a FoV,
+providing a visual representation of their spatial relationship. Example:
+   ```
+   >> hfig = figure();
+   >> hax = axes('parent', hfig);
+   >> Roi_2_Plot(hax, 10, 10, 50, 50)
+   >> Roi_2_Plot(hax, 10, 10, 50, 50, 'color', 'g')
+   ```
+
+- **`./Test_Fov_Elements.m`**: This file contains the source code for the test
+suite that covers all the aforementioned algorithms. To see the test results
+execute:
+   ```
+   >> Test_Fov_Elements.m
+   ```
 
 ## Getting Started
 
@@ -51,21 +100,8 @@ To get started with using the FoV Elements subproject, follow these steps:
    git clone [repository_url]
    ```
 
-2. Navigate to the `src/` directory to explore and utilize the algorithms
-implemented for FoV manipulation.
+2. Navigate to the `FoV_Elements/` directory to explore and utilize the
+algorithms implemented for FoV manipulation.
 
-3. If you're interested in testing the algorithms, navigate to the `tests/`
-directory and run the test suite to ensure the accuracy and reliability of the
-functions.
-
-## Contribution
-
-Contributions to this subproject are welcome! If you have improvements, bug
-fixes, or additional functionalities to propose, feel free to submit a pull
-request. Please ensure that any new code is adequately tested and follows the
-coding conventions established in the project.
-
-Let's work together to enhance the FoV Elements subproject and make it a
-powerful toolkit for Field of View manipulation and analysis!
-
-Happy coding! 🚀🔬
+3. If you're interested in testing the algorithms, execute `Test_Fov_Elements.m`
+from within Octave/Matlab environment.
